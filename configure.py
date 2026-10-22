@@ -36,11 +36,17 @@ ROOT = Path.cwd()
 
 # —— Toolchain and paths ——
 
-# The two compilers of the retail build: tools/compilers/game-compiler (the
-# reconstructed Sony/Cygnus 2.9-ee-991111b, game code) and
-# tools/compilers/sdk-compiler (the vendored EE-GCC 2.9-991111-01, the SDK
-# libraries).  The build stages tools/compilers as tools/cc.
+# All compilers live in tools/compilers (setup.sh installs them; make elf
+# copies the folder into build/baseline):
+#   game-compiler     game code (reconstructed Sony/Cygnus 2.9-ee-991111b)
+#   sdk-compiler      SDK libraries (EE-GCC 2.9-991111-01)
+#   sn-compiler       SN EE-GCC 2.95.2 and its Ps2EeAs assembler (all game
+#                     code is assembled by Ps2EeAs; ROUTE_EXCEPTIONS units also
+#                     compile with it)
+COMPILERS = ROOT / "tools/compilers"
+GAME_COMPILER = COMPILERS / "game-compiler"
 SDK_COMPILER = "sdk-compiler"
+SN_COMPILER = COMPILERS / "sn-compiler"
 
 # decomp.me id of the SDK compiler, for the permuter settings.
 SDK_COMPILER_DECOMPME = "ee-gcc2.9-991111-01"
@@ -53,17 +59,6 @@ COMPILER_FLAGS = "-DMATCHING_DECOMP -O2 -g2 -gstabs"
 SDK_COMPILER_FLAGS = "-DMATCHING_DECOMP -O2"
 
 LANG_DEFINE = "-DBUILD_US_VERSION"
-
-# Overrides for the game compiler location (default tools/compilers/game-compiler,
-# rebuilt from patches/sce-991111b).
-GAME_COMPILER_ROOT = os.environ.get("GAME_COMPILER_ROOT", "").strip()
-
-# Retiring toolchains, needed only by ROUTE_EXCEPTIONS below: the SN tree
-# (cc_sn, cc_sn_padless and the Ps2EeAs assembler) and the locally built
-# patched 991111 cc1 (cc_ee_gcc_patched, docs/patched-toolchain.md).
-SN_TOOLCHAIN_ROOT = os.environ.get("SN_TOOLCHAIN_ROOT", "").strip()
-
-EE_GCC_PATCHED_ROOT = os.environ.get("EE_GCC_PATCHED_ROOT", "").strip()
 
 LANGUAGES = {
     "SCUS_971.99": "us",
@@ -154,14 +149,6 @@ ROUTE_EXCEPTIONS = {
     # fun_00232d00: bind the stash RPC server, read its IOP buffer and reset the
     # stash slots
     "storage/stash/init_stash": "cc_sn_padless",
-    # SDK code still built by the patched 991111 compiler (plus the SN assembler).
-    # Retail uses classic mult/mflo; the frozen trees emit the R5900 rd-form.
-    # 100/100/100 + patha linked-byte equal (0x12D3A0), 2026-09-12.
-    "sdk/time/bcd_to_time": "cc_ee_gcc_patched",
-    # _pictureCodingExtension: the absolute IPU_CTRL volatile stores fill the
-    # _nextBit call delay slots through $at (lui $1 before the call, sw in
-    # the slot), which the patched profile does for every unit.
-    "sdk/library/picturecodingextension": "cc_ee_gcc_patched",
 }
 
 # Per-unit assembler policies applied by the generated padless-asm.py helper.
@@ -721,7 +708,7 @@ def suppress_stdout_stderr():
             os.close(fd)
 
 def get_compiler_command(command: str) -> Path:
-    compiler_dir = Path("tools") / "cc" / SDK_COMPILER
+    compiler_dir = Path("tools") / "compilers" / SDK_COMPILER
     ee_dir = compiler_dir / "lib" / "gcc-lib" / "ee"
     ee_compiler_dirname = next(os.walk(ee_dir))[1][0]
 
@@ -734,7 +721,7 @@ def get_compiler_command(command: str) -> Path:
 
 def make_compiler_cmd(config_dir: Path, src_path: Path) -> tuple[str, str]:
     rel_root = Path(os.path.relpath(ROOT, config_dir))
-    sdk_cc_dir = f"{rel_root}/tools/cc/{SDK_COMPILER}/bin"
+    sdk_cc_dir = f"{rel_root}/tools/compilers/{SDK_COMPILER}/bin"
 
     common_includes = (
         f"-I{src_path.parent / 'src'} "
@@ -750,74 +737,20 @@ def make_compiler_cmd(config_dir: Path, src_path: Path) -> tuple[str, str]:
     return compile_cmd, common_includes
 
 def sn_compiler_configured() -> bool:
-    return (
-        bool(SN_TOOLCHAIN_ROOT)
-        and (Path(SN_TOOLCHAIN_ROOT) / "bin/ee-gcc.exe").is_file()
-    )
-
-def _game_compiler_root() -> Path:
-    """Locate the reconstructed game compiler.
-
-    The repository keeps it under tools/compilers/game-compiler; the baseline
-    staging workspace copies the whole compilers tree to tools/cc, and
-    GAME_COMPILER_ROOT overrides both.
-    """
-    if GAME_COMPILER_ROOT:
-        return Path(GAME_COMPILER_ROOT)
-    for candidate in (ROOT / "tools/compilers/game-compiler", ROOT / "tools/cc/game-compiler"):
-        if (candidate / "ee-gcc").is_file():
-            return candidate
-    return ROOT / "tools/compilers/game-compiler"
+    return (SN_COMPILER / "bin/ee-gcc.exe").is_file()
 
 def game_compiler_configured() -> bool:
-    root = _game_compiler_root()
-    return all((root / name).is_file() for name in ("ee-gcc", "cc1", "sdk-as"))
+    return all((GAME_COMPILER / name).is_file() for name in ("ee-gcc", "cc1", "sdk-as"))
 
-def ee_gcc_patched_configured() -> bool:
-    return bool(EE_GCC_PATCHED_ROOT) and (Path(EE_GCC_PATCHED_ROOT) / "xgcc").is_file()
-
-def _win_path(value: str) -> str:
-    """Convert a WSL mount path to the form the Windows driver needs.
-
-    The drive letter is derived from the mount itself, so any /mnt/<drive>
-    mount works regardless of the actual drive letter on a given machine.
-    """
-    match = re.match(r"^/mnt/([A-Za-z])/(.*)$", value)
-    if match:
-        return f"{match.group(1).upper()}:/{match.group(2)}".replace("/", "\\")
-    # Under wine the PE reads the Unix path directly (wine maps / to Z:),
-    # and it cannot resolve a UNC path at all: keep the path unchanged.
-    if _wine_binary():
-        return value
-    # A native WSL path (e.g. a BASELINE_ROOT on ext4) is reachable from
-    # Windows only over UNC (\\wsl.localhost\<distro>\...).
-    distro = os.environ.get("WSL_DISTRO_NAME")
-    if distro and value.startswith("/"):
-        return f"\\\\wsl.localhost\\{distro}{value}".replace("/", "\\")
-    return value.replace("/", "\\")
-
-def _wine_binary() -> str:
-    """The wine binary the PE tools must run under, or "" to run them directly."""
-    wine = os.environ.get("RNC_WINE")
-    if wine is not None:
-        return wine
-    on_windows_drive = re.match(r"^/mnt/[A-Za-z]/", str(ROOT)) is not None
-    return "" if on_windows_drive else (shutil.which("wine") or "")
 
 def _windows_exe(path: str) -> str:
     """Spell a Windows tool (Ps2EeAs, the SN driver) for a ninja command.
 
-    A checkout on a Windows drive under WSL (/mnt/<drive>/, see _win_path)
-    runs the PE natively through WSL interop. Anywhere else the PE can only run
-    under wine, so it is launched through an explicit `wine` rather than
-    whatever binfmt_misc resolves: launched that way, Ps2EeAs exits 253
-    printing nothing on some inputs (fun_001ec530, a div.s in a branch delay
-    slot) that `wine Ps2EeAs.exe` assembles. RNC_WINE overrides the wine
-    binary; an empty RNC_WINE runs the PE directly.
+    It runs under an explicit `wine`, not through binfmt_misc: launched that
+    way, Ps2EeAs exits 253 printing nothing on some inputs (fun_001ec530, a
+    div.s in a branch delay slot) that `wine Ps2EeAs.exe` assembles.
     """
-    wine = _wine_binary()
-    quoted = shlex.quote(path)
-    return f"{shlex.quote(wine)} {quoted}" if wine else quoted
+    return f"wine {shlex.quote(path)}"
 
 def _unit_from_object(object_path: Path) -> str:
     """Derive the unit name from the ninja object path.
@@ -832,20 +765,6 @@ def _unit_from_object(object_path: Path) -> str:
     if joined.endswith(".c.o"):
         joined = joined[: -len(".c.o")]
     return joined
-
-# C aliases in promoted sources: ALIAS __attribute__((alias("TARGET"))).
-# The oracle fallback keeps the bytes but not the aliases, so they are handed
-# to the linker (PROVIDE, only when nothing else defines them).
-# The declaration may carry a parameter list between the name and the
-# attribute, so the name is not always immediately followed by __attribute__.
-_ALIAS_RE = re.compile(
-    r"([A-Za-z_]\w*)\s*(?:\([^;{]*?\))?\s*__attribute__\s*\(\(\s*alias\s*\(\s*\"([^\"]+)\"\s*\)\s*\)\)"
-)
-
-def _alias_symbols(source: Path) -> set[tuple[str, str]]:
-    """(alias, target) pairs declared in a source file."""
-    text = source.read_text(errors="replace")
-    return {(match.group(1), match.group(2)) for match in _ALIAS_RE.finditer(text)}
 
 PADLESS_ASM_HELPER = r'''#!/usr/bin/env python3
 """Normalize SN cc1 output for Ps2EeAs and drop section tail padding.
@@ -1233,7 +1152,7 @@ compiler_type = "gcc"
 [preserve_macros]
 
 [decompme.compilers]
-"tools/cc/{SDK_COMPILER}/bin/ee-gcc" = "{SDK_COMPILER_DECOMPME}"
+"tools/compilers/{SDK_COMPILER}/bin/ee-gcc" = "{SDK_COMPILER_DECOMPME}"
 """
         )
 
@@ -1329,32 +1248,30 @@ def build_stuff(
     if not game_compiler_configured():
         # The reconstructed game compiler is mandatory, not optional.  Without
         # it, every unit in GAME_COMPILER_UNITS silently falls through to
-        # another rule (patched/SN/EE-GCC 2.9), which changes codegen for 297
+        # another rule (SN/EE-GCC 2.9), which changes codegen for 297
         # units without any error - the repository ignores tools/, so a fresh
         # clone reroutes them unnoticed.  Failing here keeps the build honest
         # and makes the per-unit SN entries for game-compiler owners unreachable, so
         # they can be deleted instead of sitting as dead configuration.
         raise SystemExit(
             "the reconstructed game compiler is required: "
-            f"{_game_compiler_root()} has no ee-gcc/cc1/sdk-as.\n"
-            "Install it at tools/compilers/game-compiler (the baseline "
-            "workspace stages it under tools/cc/game-compiler) or point "
-            "GAME_COMPILER_ROOT at it. The patch stack that rebuilds it from "
-            "the pinned source archive is in patches/sce-991111b; see "
-            "docs/building.md."
+            f"{GAME_COMPILER} has no ee-gcc/cc1/sdk-as.\n"
+            "Run ./setup.sh to install it at tools/compilers/game-compiler. "
+            "The patch stack that rebuilds it from the pinned source archive "
+            "is in patches/sce-991111b; see docs/build/building.md."
         )
 
     if not sn_compiler_configured():
         raise SystemExit(
-            "the game code is assembled by Ps2EeAs: set SN_TOOLCHAIN_ROOT to the "
-            "SN tree that holds ee/bin/Ps2EeAs.exe (see docs/building.md)"
+            "the game code is assembled by Ps2EeAs: run ./setup.sh to install "
+            "tools/compilers/sn-compiler (see docs/build/building.md)"
         )
     # The generated helper rewrites GNU alias assignments to labels for
     # Ps2EeAs and trims only the section tail padding Ps2EeAs adds.
     (config_dir / "padless-asm.py").write_text(PADLESS_ASM_HELPER)
-    ee_assembler = _windows_exe(str(Path(SN_TOOLCHAIN_ROOT) / "ee/bin/Ps2EeAs.exe"))
+    ee_assembler = _windows_exe(str(SN_COMPILER / "ee/bin/Ps2EeAs.exe"))
 
-    game_root = _game_compiler_root()
+    game_root = GAME_COMPILER
     # SDK code: the SDK compiler's cc1, assembled by sdk-as (built with the
     # game compiler from the same archive): GNU as with patch 0059, which fills
     # an empty jump delay slot the way retail's SDK assembler did.
@@ -1384,7 +1301,7 @@ def build_stuff(
             f"{game_root}/ee-gcc -S -I{game_root}/include {common_includes} "
             f"{LANG_DEFINE} -DMATCHING_DECOMP -O2 $in $extra -o $gc_work/cand.s && "
             f"{sys.executable} padless-asm.py normalize $gc_work/cand.s $gc_work/cand-final.s none && "
-            f"{ee_assembler} -o '$gc_work_win/cand-padded.o' '$gc_work_win/cand-final.s' && "
+            f"{ee_assembler} -o '$gc_work/cand-padded.o' '$gc_work/cand-final.s' && "
             f"{game_root}/as -mabi=eabi -o $gc_work/cand-ref.o $gc_work/cand-final.s && "
             f"{sys.executable} padless-asm.py finish $gc_work/cand-padded.o $out $gc_work/cand-ref.o && "
             f"{CROSS}strip $out -N dummy-symbol-name -R .mdebug"
@@ -1403,17 +1320,15 @@ def build_stuff(
     )
 
     if sn_compiler_configured():
-        sn_root = Path(SN_TOOLCHAIN_ROOT)
+        sn_root = SN_COMPILER
         sn_repo = ROOT
         sn_driver = _windows_exe(str(sn_root / "bin/ee-gcc.exe"))
-        sn_lib = _win_path(str(sn_root / "lib/gcc-lib/ee/2.95.2"))
-        sn_eebin = _win_path(str(sn_root / "ee/bin"))
-        sn_inc = _win_path(str(sn_root / "lib/gcc-lib/ee/2.95.2/include"))
-        sn_repo_inc = _win_path(str(sn_repo / "include"))
-        # The SN driver is a Windows PE: it can only read/write native
-        # Windows paths, so this rule stages the source under the real
-        # repository (a WSL mount) and copies the object back into the
-        # staging build.
+        sn_lib = str(sn_root / "lib/gcc-lib/ee/2.95.2")
+        sn_eebin = str(sn_root / "ee/bin")
+        sn_inc = str(sn_root / "lib/gcc-lib/ee/2.95.2/include")
+        sn_repo_inc = str(sn_repo / "include")
+        # The SN driver is a Windows program run under wine: it compiles a
+        # copy of the source in its work folder and the object is copied back.
         ninja.rule(
             "cc_sn",
             description="cc_sn $in",
@@ -1422,7 +1337,7 @@ def build_stuff(
                 f"{sn_driver} -c '-B{sn_lib}\\' '-B{sn_eebin}\\' "
                 f"-I'{sn_inc}' -I'{sn_repo_inc}' "
                 f"-DBUILD_US_VERSION -DMATCHING_DECOMP -O2 -g2 $extra "
-                f"'$sn_work_win/cand.c' -o '$sn_work_win/cand.o' && "
+                f"'$sn_work/cand.c' -o '$sn_work/cand.o' && "
                 f"cp $sn_work/cand.o $out && {CROSS}strip $out -N dummy-symbol-name -R .mdebug"
             ),
         )
@@ -1439,40 +1354,18 @@ def build_stuff(
                 f"{sn_driver} -S '-B{sn_lib}\\' '-B{sn_eebin}\\' "
                 f"-I'{sn_inc}' -I'{sn_repo_inc}' "
                 f"-DBUILD_US_VERSION -DMATCHING_DECOMP -O2 -g2 $extra "
-                f"'$sn_work_win/cand.c' -o '$sn_work_win/cand.s' && "
+                f"'$sn_work/cand.c' -o '$sn_work/cand.s' && "
                 f"{sys.executable} padless-asm.py normalize $sn_work/cand.s $sn_work/cand-final.s $policy && "
-                f"{ee_assembler} -o '$sn_work_win/cand-padded.o' '$sn_work_win/cand-final.s' && "
+                f"{ee_assembler} -o '$sn_work/cand-padded.o' '$sn_work/cand-final.s' && "
                 f"{sys.executable} padless-asm.py finish $sn_work/cand-padded.o $out && "
                 f"{CROSS}strip $out -N dummy-symbol-name -R .mdebug"
             ),
         )
 
-        # Patched public 991111 cc1 (R5900 quad saves + classic mult/mflo) with
-        # the same alias normalization + Ps2EeAs + padless finish.  Native
-        # driver, so only the assembler step needs Windows paths.
-        if ee_gcc_patched_configured():
-            patched_root = Path(EE_GCC_PATCHED_ROOT)
-            patched_driver = str(patched_root / "xgcc")
-            patched_include = str(ROOT / "include")
-            ninja.rule(
-                "cc_ee_gcc_patched",
-                description="cc_ee_gcc_patched $in",
-                command=(
-                    f"mkdir -p $pat_work && cp $in $pat_work/cand.c && "
-                    f"'{patched_driver}' -S -B'{patched_root}/' -I'{patched_include}' "
-                    f"-DBUILD_US_VERSION -DMATCHING_DECOMP -O2 -g2 "
-                    f"$pat_work/cand.c -o $pat_work/cand.s && "
-                    f"{sys.executable} padless-asm.py normalize $pat_work/cand.s $pat_work/cand-final.s $policy && "
-                    f"{ee_assembler} -o '$pat_work_win/cand-padded.o' '$pat_work_win/cand-final.s' && "
-                    f"{sys.executable} padless-asm.py finish $pat_work/cand-padded.o $out && "
-                    f"{CROSS}strip $out -N dummy-symbol-name -R .mdebug"
-                ),
-            )
-
     ninja.rule(
         "ld",
         description="link $out",
-        command=f"{CROSS}ld {ld_args} -T oracle-aliases.txt",
+        command=f"{CROSS}ld {ld_args}",
     )
 
     ninja.rule(
@@ -1487,23 +1380,11 @@ def build_stuff(
         command="cmp -s $in && touch $out",
     )
 
-    # Fallback for patched-profile units when the profile is absent: build
-    # them from the retail oracle instead of their C.
-    ninja.rule(
-        "oracle_obj",
-        description="oracle $out",
-        command="cp $in $out",
-    )
-
     ninja.rule(
         "elf",
         description="elf $out",
         command=f"{CROSS}objcopy $in $out -O binary",
     )
-
-    # The patched route needs both the profile and the SN assembler.
-    patched_route = ee_gcc_patched_configured() and sn_compiler_configured()
-    oracle_fallback_units: list[str] = []
 
     for entry in linker_entries:
         seg = entry.segment
@@ -1525,7 +1406,7 @@ def build_stuff(
             elif rule == "game-compiler":
                 flags = GAME_COMPILER_FLAG_UNITS.get(unit, "")
                 gc_work = str(ROOT / "build/game-work/units" / unit)
-                variables = {"gc_work": gc_work, "gc_work_win": _win_path(gc_work)}
+                variables = {"gc_work": gc_work}
                 if flags:
                     variables["extra"] = f"{flags} "
                 build(entry.object_path, entry.src_paths, rule, variables=variables)
@@ -1535,34 +1416,16 @@ def build_stuff(
                 if flags:
                     variables["extra"] = f"{flags} "
                 build(entry.object_path, entry.src_paths, rule, variables=variables)
-            elif rule == "cc_ee_gcc_patched" and not patched_route:
-                # No patched profile: build from the retail oracle; the C is
-                # verified when the profile is available.
-                oracle_fallback_units.append(unit)
-                build(
-                    entry.object_path,
-                    [Path("expected/obj") / f"{unit}.c.o"],
-                    "oracle_obj",
-                )
-            elif rule == "cc_ee_gcc_patched":
-                pat_work = str(ROOT / "build/patched-work/units" / unit)
-                variables = {
-                    "pat_work": pat_work,
-                    "pat_work_win": _win_path(pat_work),
-                    "policy": PADLESS_POLICY_UNITS.get(unit, "none"),
-                }
-                build(entry.object_path, entry.src_paths, rule, variables=variables)
             elif rule in ("cc_sn", "cc_sn_padless"):
                 if not sn_compiler_configured():
                     raise SystemExit(
-                        f"{unit} still needs the SN toolchain ({rule}); set "
-                        "SN_TOOLCHAIN_ROOT (see ROUTE_EXCEPTIONS)"
+                        f"{unit} still needs the SN compiler ({rule}); run "
+                        "./setup.sh to install tools/compilers/sn-compiler"
                     )
                 sn_work = str(ROOT / "build/sn-work/units" / unit)
                 flags = SN_FLAG_UNITS.get(unit, "")
                 variables = {
                     "sn_work": sn_work,
-                    "sn_work_win": _win_path(sn_work),
                 }
                 if rule == "cc_sn_padless":
                     variables["policy"] = PADLESS_POLICY_UNITS.get(unit, "none")
@@ -1589,41 +1452,6 @@ def build_stuff(
         else:
             print(f"ERROR: Unsupported build segment type {seg.type}")
             sys.exit(1)
-
-    fallback_path = config_dir / "oracle-fallback-units.json"
-    alias_path = config_dir / "oracle-aliases.txt"
-    alias_entries: set[tuple[str, str]] = set()
-    if oracle_fallback_units:
-        fallback_path.write_text(
-            json.dumps(
-                {
-                    "schema": "rnc-oracle-fallback-v1",
-                    "reason": "EE_GCC_PATCHED_ROOT is not configured",
-                    "units": sorted(oracle_fallback_units),
-                },
-                indent=2,
-            )
-            + "\n"
-        )
-        for unit in oracle_fallback_units:
-            source = (config_dir / ".." / ".." / "src" / f"{unit}.c").resolve()
-            if source.is_file():
-                alias_entries.update(_alias_symbols(source))
-        print(
-            f"EE_GCC_PATCHED_ROOT not configured: {len(oracle_fallback_units)} "
-            "unit(s) will be built from the retail oracle "
-            "(see docs/patched-toolchain.md)"
-        )
-    else:
-        fallback_path.unlink(missing_ok=True)
-    alias_lines = [
-        "/* Generated by configure.py: aliases for oracle-built patched-profile",
-        " * units, provided only when nothing else defines them. */",
-    ]
-    alias_lines.extend(
-        f"PROVIDE({alias} = {target});" for alias, target in sorted(alias_entries)
-    )
-    alias_path.write_text("\n".join(alias_lines) + "\n")
 
     link_copies = []
     for obj, link, section in write_fast_linkerscript(config_dir):
@@ -2125,7 +1953,7 @@ def overlay_sn_functions(units: set[str]) -> set[str]:
     return names
 
 def build_overlays() -> Path:
-    """Write build/overlays/build.ninja for the level overlays (docs/overlays.md).
+    """Write build/overlays/build.ninja for the level overlays (docs/build/overlays.md).
 
     The objects are never linked; the executable's build does not see them.
     Each src/overlays file is built twice:
@@ -2145,7 +1973,7 @@ def build_overlays() -> Path:
     if not game_compiler_configured():
         raise SystemExit(
             "the reconstructed game compiler is required: "
-            f"{_game_compiler_root()} has no ee-gcc/cc1/sdk-as (see docs/building.md)"
+            f"{GAME_COMPILER} has no ee-gcc/cc1/sdk-as (see docs/build/building.md)"
         )
     asm_dir = Path("config/us/overlays/asm")
     if not asm_dir.is_dir():
@@ -2153,10 +1981,10 @@ def build_overlays() -> Path:
             f"{asm_dir} is missing: run `python3 scripts/overlay-extract.py --iso "
             "<your disc image>` (or ./setup.sh) first"
         )
-    sn_root = Path(SN_TOOLCHAIN_ROOT or ROOT / "tools/compilers/ee-gcc-2.95.2")
+    sn_root = SN_COMPILER
     OVERLAYS_BUILD.mkdir(parents=True, exist_ok=True)
     (OVERLAYS_BUILD / "padless-asm.py").write_text(PADLESS_ASM_HELPER)
-    game_root = _game_compiler_root()
+    game_root = GAME_COMPILER
     rel_root = os.path.relpath(ROOT, OVERLAYS_BUILD)
     includes = (f"-I{game_root}/include -I{rel_root}/src -I{rel_root}/include "
                 f"-Wa,-I{rel_root}/include -Wa,-I{rel_root}")
@@ -2189,7 +2017,7 @@ def build_overlays() -> Path:
             f"mkdir -p {work} && "
             f"{game_root}/ee-gcc -S {includes} {LANG_DEFINE} -DMATCHING_DECOMP -O2 $in -o {work}/cand.s && "
             f"{sys.executable} padless-asm.py normalize {work}/cand.s {work}/cand-final.s none && "
-            f"{ee_assembler} -o '$work_win/cand-padded.o' '$work_win/cand-final.s' && "
+            f"{ee_assembler} -o {work}/cand-padded.o {work}/cand-final.s && "
             f"{sys.executable} padless-asm.py reference {work}/cand-final.s {work}/cand-ref.s && "
             f"{game_root}/as -mabi=eabi -o {work}/cand-ref.o {work}/cand-ref.s && "
             f"{sys.executable} padless-asm.py finish {work}/cand-padded.o $out {work}/cand-ref.o"
@@ -2202,7 +2030,7 @@ def build_overlays() -> Path:
     sn_driver = _windows_exe(str(sn_root / "bin/ee-gcc295.exe"))
     # -B pins specs and cc1 to this toolchain (as in cc_sn): a GCC_EXEC_PREFIX
     # left in the shell would otherwise win over the driver's own lib/.
-    sn_lib = _win_path(str(sn_root / "lib/gcc-lib/ee/2.95.2"))
+    sn_lib = str(sn_root / "lib/gcc-lib/ee/2.95.2")
     ninja.rule(
         "overlay-sn",
         description="overlay-sn $in",
@@ -2212,7 +2040,7 @@ def build_overlays() -> Path:
             f"{LANG_DEFINE} -DMATCHING_DECOMP -O2 cand.c -o cand.s && cd - >/dev/null && "
             f"{sys.executable} padless-asm.py normalize {work}/cand.s {work}/cand-norm.s none && "
             f"{sys.executable} padless-asm.py externs {work}/cand-norm.s {work}/cand-final.s $in && "
-            f"{ee_assembler} -o '$work_win/cand-padded.o' '$work_win/cand-final.s' && "
+            f"{ee_assembler} -o {work}/cand-padded.o {work}/cand-final.s && "
             f"{sys.executable} padless-asm.py reference {work}/cand-final.s {work}/cand-ref.s && "
             f"{game_root}/as -mabi=eabi -o {work}/cand-ref.o {work}/cand-ref.s && "
             f"{sys.executable} padless-asm.py finish {work}/cand-padded.o $out {work}/cand-ref.o"
@@ -2221,9 +2049,7 @@ def build_overlays() -> Path:
     sn_units = overlay_sn_units()
 
     def game_edge(out: str, src: str, rule: str = "overlay-game") -> None:
-        path = str((OVERLAYS_BUILD / out).resolve()) + ".work"
-        ninja.build(outputs=[out], rule=rule, inputs=[src],
-                    implicit=["padless-asm.py"], variables={"work_win": _win_path(path)})
+        ninja.build(outputs=[out], rule=rule, inputs=[src], implicit=["padless-asm.py"])
 
     objects = []
     for src in sources:
@@ -2274,7 +2100,7 @@ def main():
     )
     parser.add_argument(
         "--overlays",
-        help="Only write build/overlays/build.ninja for the level overlay sources (docs/overlays.md)",
+        help="Only write build/overlays/build.ninja for the level overlay sources (docs/build/overlays.md)",
         action="store_true",
     )
     args = cast(ArgsProtocol, parser.parse_args())
