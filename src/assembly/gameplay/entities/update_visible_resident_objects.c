@@ -31,6 +31,8 @@ void update_visible_resident_objects(void) {
             if (!(((volatile struct Moby *)moby)->flags & MOBY_SKIP_ANIMATION)) {
                 advance_resident_object_animation(moby);
             }
+            /* Near miss, 6 rows: retail keeps the update in v1 and leaves the jalr delay
+               slot empty; the moby argument is set just before the jalr. */
             callback = moby->update;
             if (callback != 0) {
                 callback(moby);
