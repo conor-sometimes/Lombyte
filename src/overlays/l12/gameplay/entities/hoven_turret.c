@@ -273,7 +273,9 @@ extern Row_304310 *D_L12_001B0C30_304310[] __asm__("D_L12_001B0930");
 extern char D_L12_00167240[];
 extern float D_0013F4D0_304310[] __asm__("D_0013F3D0");
 
-void FUN_L12_00302f30(Moby *moby) {
+void update_oscillating_target_link(Moby *moby) __asm__("FUN_L12_00302f30");
+
+void update_oscillating_target_link(Moby *moby) {
     enum {
         TARGET_TRACKING_STATE_INITIALIZE = 0,
         TARGET_TRACKING_STATE_ACTIVE = 1
@@ -403,7 +405,9 @@ typedef struct {
 } Data_303370;
 
 /* Raises the timer while one of the ten targets is in the view cone, otherwise counts it down. */
-void FUN_L12_00303370(void *moby) {
+void update_hoven_turret_target_alignment_timer(void *moby) __asm__("FUN_L12_00303370");
+
+void update_hoven_turret_target_alignment_timer(void *moby) {
     Data_303370 *data = (Data_303370 *)((struct Moby *)moby)->pvars;
     int found = 0;
     int i;
@@ -546,7 +550,7 @@ extern void start_scene(int) __asm__("FUN_L00_00298840");
 extern void FUN_L00_00299460(int);
 extern void jet_mount(void *, void *, int, int, int) __asm__("FUN_L00_002eaaa0");
 extern void FUN_L08_002e7eb0(void *, void *, void *, int);
-extern void FUN_L12_00303370(void *);
+extern void update_hoven_turret_target_alignment_timer(void *) __asm__("FUN_L12_00303370");
 extern void FUN_L12_00304218_c() __asm__("FUN_L12_00304218");
 extern void FUN_L12_00304d98_c() __asm__("FUN_L12_00304d98");
 extern void allocate_voice_for_target_entry_alt(int, int, int) __asm__("FUN_0022da68");
@@ -652,7 +656,7 @@ void hoven_turret_update(struct Moby *moby) {
         if (D_L12_0015F5C4_macro != 2 && D_L12_001619A0 == 0) {
             enqueue_callback_list_1(FUN_L12_00304218_c, moby);
         }
-        FUN_L12_00303370(moby);
+        update_hoven_turret_target_alignment_timer(moby);
         if (fast_dec_timer(&data->f90)) {
             Hit_304920 *hit = (Hit_304920 *)FUN_L00_0025a420(moby, 0x10000, 0);
             if (hit != 0) {
@@ -714,8 +718,8 @@ void hoven_turret_update(struct Moby *moby) {
         {
             float joy[2];
             float y;
-            float tgt;
-            float tgt2;
+            float target_yaw_step;
+            float target_pitch_step;
 
             joy[0] = ((Hero *)(D_0013E533 + 0xE1D))->stick_x;
             y = ((Hero *)(D_0013E533 + 0xE1D))->stick_y;
@@ -723,18 +727,18 @@ void hoven_turret_update(struct Moby *moby) {
                 y = -y;
             }
             joy[1] = y;
-            tgt = D_L12_00161ED0 * 0.017453292f * D_0015ED6C_gp * -joy[0];
-            if ((data->f7C >= 0.0f && data->f7C < tgt) || (data->f7C <= 0.0f && tgt < data->f7C)) {
-                approach_value(&data->f7C, tgt, D_L12_00161ED8 * 0.017453292f * frame_time_sq_macro);
+            target_yaw_step = D_L12_00161ED0 * 0.017453292f * D_0015ED6C_gp * -joy[0];
+            if ((data->f7C >= 0.0f && data->f7C < target_yaw_step) || (data->f7C <= 0.0f && target_yaw_step < data->f7C)) {
+                approach_value(&data->f7C, target_yaw_step, D_L12_00161ED8 * 0.017453292f * frame_time_sq_macro);
             } else {
-                approach_value(&data->f7C, tgt, D_L12_00161EE0 * 0.017453292f * frame_time_sq_macro);
+                approach_value(&data->f7C, target_yaw_step, D_L12_00161EE0 * 0.017453292f * frame_time_sq_macro);
             }
             moby->rot.z = fast_add_rotations_c3(moby->rot.z, data->f7C);
-            tgt2 = -(D_L12_00161ED4 * 0.017453292f * D_0015ED6C_gp) * -joy[1];
-            if ((data->f78 >= 0.0f && data->f78 < tgt2) || (data->f78 <= 0.0f && tgt2 < data->f78)) {
-                approach_value(&data->f78, tgt2, D_L12_00161EDC * 0.017453292f * frame_time_sq_macro);
+            target_pitch_step = -(D_L12_00161ED4 * 0.017453292f * D_0015ED6C_gp) * -joy[1];
+            if ((data->f78 >= 0.0f && data->f78 < target_pitch_step) || (data->f78 <= 0.0f && target_pitch_step < data->f78)) {
+                approach_value(&data->f78, target_pitch_step, D_L12_00161EDC * 0.017453292f * frame_time_sq_macro);
             } else {
-                approach_value(&data->f78, tgt2, D_L12_00161EE4 * 0.017453292f * frame_time_sq_macro);
+                approach_value(&data->f78, target_pitch_step, D_L12_00161EE4 * 0.017453292f * frame_time_sq_macro);
             }
             data->f74 = fast_add_rotations_c3(data->f74, data->f78);
             if (data->f74 > D_L12_00161EAC) {
@@ -1097,7 +1101,9 @@ typedef struct {
 
 extern struct Moby *hit_moby __asm__("D_L12_001742D8") __attribute__((section(".data")));
 /* A homing mine: rises, then steers toward the point ahead and blows up near it or on contact. */
-void FUN_L12_00304e00(struct Moby *moby) {
+void update_homing_mine(struct Moby *moby) __asm__("FUN_L12_00304e00");
+
+void update_homing_mine(struct Moby *moby) {
     enum {
         HOMING_MINE_STATE_INITIALIZE = 0,
         HOMING_MINE_STATE_HOMING = 1,

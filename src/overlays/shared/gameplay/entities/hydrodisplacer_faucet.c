@@ -12,7 +12,9 @@
 extern struct Moby *create_moby(int) __asm__("FUN_0020c4f8");
 extern int scale_game_frames(int) __asm__("FUN_001f96f8");
 extern float D_0015EE6C_d4168 __asm__("D_0015ED6C");
-char *FUN_L05_002d4168(int owner, char *pos, int arg, float initial_rotation_z, float initial_rotation_y) {
+char *create_class_5c3_moby(int owner, char *initial_position, int arg, float initial_rotation_z, float initial_rotation_y) __asm__("FUN_L05_002d4168");
+
+char *create_class_5c3_moby(int owner, char *initial_position, int arg, float initial_rotation_z, float initial_rotation_y) {
     char *moby = (char *)create_moby(0x5C3);
     if (moby != 0) {
         char *moby_vars = *(char **)(moby + 0x78);
@@ -23,7 +25,7 @@ char *FUN_L05_002d4168(int owner, char *pos, int arg, float initial_rotation_z, 
         *(float *)(moby + 0x44) = initial_rotation_y;
         moby[0x20] = 0;
         *(int *)moby_vars = owner;
-        qcopy(moby + 0x10, pos);
+        qcopy(moby + 0x10, initial_position);
         *(float *)(moby_vars + 0x10) = D_0015EE6C_d4168 * 30.0f * 0.7f;
         *(int *)(moby_vars + 8) = arg;
         *(int *)(moby_vars + 0x14) = 0;
@@ -125,7 +127,9 @@ extern s32 is_point_inside_clip_volume(void *, s32) __asm__("FUN_00214720");
 extern void FUN_L05_002f5190_2f5200(struct Moby *, TriggerVars_2f5200 *, s32, s32) __asm__("FUN_L05_002f5190");
 extern void FUN_L05_002f4f60_2f5200(s32, TriggerVars_2f5200 *, s32) __asm__("FUN_L05_002f4f60");
 
-void FUN_L05_002f5200(struct Moby *trigger_moby) {
+void update_moby_spatial_trigger(struct Moby *trigger_moby) __asm__("FUN_L05_002f5200");
+
+void update_moby_spatial_trigger(struct Moby *trigger_moby) {
     TriggerVars_2f5200 *trigger_vars = (TriggerVars_2f5200 *)trigger_moby->pvars;
     Vec4 target;
     s32 inside;
@@ -297,14 +301,14 @@ void hoverboard_update(unsigned char *moby) {
     float delta[4], position[4], effect_position[4], offset[4], second_position[4];
     float angle, distance_scale, delta_length;
     int state = (u8)moby[0x20];
-    struct Hero *g;
+    struct Hero *player_hero;
 
     switch (state) {
     case HOVERBOARD_STATE_WAIT_FOR_PLAYER_APPROACH: {
-        char *pos = D_0013F3D0;
+        char *player_position = D_0013F3D0;
         struct Hero *player;
-        if (distance_xyz(pos, moby + 0x10) < 5.5f && frame_number_gp > 3 &&
-            (player = (struct Hero *)(pos - 0x80))->state.control_mode != 0x15 &&
+        if (distance_xyz(player_position, moby + 0x10) < 5.5f && frame_number_gp > 3 &&
+            (player = (struct Hero *)(player_position - 0x80))->state.control_mode != 0x15 &&
             player->state.control_mode != 0x16) {
             player->unk86C = moby;
             FUN_L05_0024cee8(0x6b, 1);
@@ -319,7 +323,7 @@ void hoverboard_update(unsigned char *moby) {
     case HOVERBOARD_STATE_WAIT_FOR_CONTROL_MODE_EXIT:
         if (*(int *)(data + 0x50) == 0 && alternate_item_available[0] != 0 &&
             D_00141938 == 0 && D_L05_0015F6A8 != 0 &&
-            (g = &hero, scale_game_frames(0x4b0) < g->unk19C) &&
+            (player_hero = &hero, scale_game_frames(0x4b0) < player_hero->unk19C) &&
             D_00141C60 == 0) {
             play_sound(0x138f, 0x5f);
         }
@@ -391,7 +395,9 @@ extern void set_identity_matrix(void *) __asm__("FUN_001f9fc8");
 extern void transpose_rotation_matrix(void *, void *) __asm__("FUN_001fa2d8");
 extern void subtract_vector_xyz(void *, void *, void *);
 
-void FUN_L05_00307010(char *moby) {
+void add_moby_frames_for_group_proximity(char *moby) __asm__("FUN_L05_00307010");
+
+void add_moby_frames_for_group_proximity(char *moby) {
     char *data = *(char **)(moby + 0x78);
     struct Hero *player_hero = &hero;
     float position_delta[4];
@@ -417,10 +423,10 @@ void FUN_L05_00307010(char *moby) {
             if (*(short *)(l1 + 0xA6) == 0x473) {
                 float offset_test_position[4];
                 float m[16];
-                char *pos = l1;
+                char *candidate_moby = l1;
                 qcopy(offset_test_position, data + 0x200);
                 offset_test_position[2] += 0.8f;
-                subtract_vector_xyz(position_delta, pos + 0x10, offset_test_position);
+                subtract_vector_xyz(position_delta, candidate_moby + 0x10, offset_test_position);
                 if (!(8.0f < vector_length_xyz(position_delta))) {
                     set_identity_matrix(m);
                     transpose_rotation_matrix(m, l1 + 0xC0);
@@ -464,12 +470,16 @@ extern float randf_sym(float lo, float hi) __asm__("FUN_L00_00257c48");
 extern float random_angle_radians(void) __asm__("FUN_00213308");
 extern void FUN_L00_001fff28(void *, int, float);
 extern void set_moby_color(void *, int, int, int) __asm__("FUN_L00_002502f0");
-extern void FUN_L05_0030c220(struct Moby *m);
+void draw_moby_wobble_quads(struct Moby *moby) __asm__("FUN_L05_0030c220");
+
+extern void draw_moby_wobble_quads(struct Moby *m) __asm__("FUN_L05_0030c220");
 void attach_manipulator(void *arg0, s32 arg1, void *arg2) __asm__("FUN_0020cb10");
 void enqueue_callback_list_1(s32 arg0, s32 arg1) __asm__("FUN_001f4600");
 
-void FUN_L05_0030c0a8(unsigned char *m);
-void FUN_L05_0030c0a8(unsigned char *moby) {
+void update_moby_wobble(unsigned char *moby) __asm__("FUN_L05_0030c0a8");
+
+void update_moby_wobble(unsigned char *m) __asm__("FUN_L05_0030c0a8");
+void update_moby_wobble(unsigned char *moby) {
     enum {
         MOBY_WOBBLE_STATE_INITIALIZE = 0,
         MOBY_WOBBLE_STATE_ANIMATE = 1
@@ -496,7 +506,7 @@ void FUN_L05_0030c0a8(unsigned char *moby) {
     case MOBY_WOBBLE_STATE_ANIMATE: {
         float k = 0.5235988f;
         float wobble_phase;
-        enqueue_callback_list_1((void *)FUN_L05_0030c220, moby);
+        enqueue_callback_list_1((void *)draw_moby_wobble_quads, moby);
         wobble_phase = fast_add_rotations(*(float *)(wobble_vars + 0x44), *(float *)(wobble_vars + 0x4C));
         *(float *)(wobble_vars + 0x44) = wobble_phase;
         *(float *)(moby + 0x48) = fast_add_rotations(*(float *)(wobble_vars + 0x40), fast_sin(wobble_phase) * k);
@@ -533,7 +543,7 @@ typedef struct {
     u64 control[4];
 } Quad_30c220;
 
-void FUN_L05_0030c220(struct Moby *moby) {
+void draw_moby_wobble_quads(struct Moby *moby) {
     Quad_30c220 quad_a, quad_b;
     float rotation[4];
     float position[4];
@@ -718,7 +728,9 @@ extern int D_L05_0015F5C4;
 extern unsigned char D_L05_0017C8A0[];
 extern short D_L05_00161EE8 __attribute__((sda));
 
-void FUN_L05_00317398(char *moby) {
+void attach_big_head_cheat_manipulator(char *moby) __asm__("FUN_L05_00317398");
+
+void attach_big_head_cheat_manipulator(char *moby) {
     int i;
 
     if (D_L05_0015F5C4 == 2 && big_head_cheat_enabled != 0) {
@@ -750,7 +762,9 @@ typedef struct {
 
 extern float random_float_between(float, float) __asm__("FUN_002132a8");
 
-void FUN_L05_00318648(char *moby, int unused_source_moby, void *initial_motion_step, void *local_rotation_offset, int lifetime_frames) {
+void initialize_moby_launch_motion(char *moby, int unused_source_moby, void *initial_motion_step, void *local_rotation_offset, int lifetime_frames) __asm__("FUN_L05_00318648");
+
+void initialize_moby_launch_motion(char *moby, int unused_source_moby, void *initial_motion_step, void *local_rotation_offset, int lifetime_frames) {
     Dat *moby_vars = *(Dat **)(moby + 0x78);
     moby[0x20] = 1;
     qcopy((char *)moby_vars + 0x30, initial_motion_step);
@@ -858,7 +872,9 @@ void blarg_gun_update(char *moby)
 extern char *func_L05_0031AAA8_19510(void *, int) __asm__("FUN_L05_00319598");
 extern void func_L16_002E5D68_19510(void *) __asm__("FUN_L05_00319208");
 extern char *D_L16_001601AC_m_19510 __asm__("D_L05_001600EC");
-void FUN_L05_00319510(void *moby_v) {
+void reset_selected_moby_to_current_placement(void *moby_v) __asm__("FUN_L05_00319510");
+
+void reset_selected_moby_to_current_placement(void *moby_v) {
     char *moby = moby_v;
     char *data = *(char **)(moby + 0x78);
     char *spawn = func_L05_0031AAA8_19510(moby, *(short *)(data + 0xB6));
@@ -906,7 +922,9 @@ extern float advance_accelerated_scalar(float, float, float, float, float *,
                                         float *) __asm__("FUN_00213f38");
 extern void sample_camera_path(int *, int, void *, float *, int, float) __asm__("FUN_00214e58");
 
-int FUN_L05_003195f8(char *moby) {
+int advance_moby_path(char *moby) __asm__("FUN_L05_003195f8");
+
+int advance_moby_path(char *moby) {
     char *moby_vars = *(char **)(moby + 0x78);
     int *path;
     advance_accelerated_scalar(1.0f, *(float *)(moby_vars + 0xD8), *(float *)(moby_vars + 0xD8),
@@ -921,7 +939,9 @@ int FUN_L05_003195f8(char *moby) {
 
 s32 try_set_help_message(s32 arg0, s32 arg1) __asm__("FUN_00215130");
 
-void FUN_L05_00319690(char *moby) {
+void request_moby_variant_help_message(char *moby) __asm__("FUN_L05_00319690");
+
+void request_moby_variant_help_message(char *moby) {
     switch (*(short *)(*(char **)(moby + 0x78) + 0xB6)) {
     case 0:
         try_set_help_message(8, 0x13A5);
@@ -950,7 +970,9 @@ void FUN_L05_00319690(char *moby) {
 
 extern float fast_sin(float) __asm__("FUN_001f9de0");
 
-void FUN_L05_00319740(char *moby) {
+void apply_moby_position_and_rotation_wobble(char *moby) __asm__("FUN_L05_00319740");
+
+void apply_moby_position_and_rotation_wobble(char *moby) {
     char *moby_vars = *(char **)(moby + 0x78);
     float wobble_phase, wobble_result, wobble_phase_step;
     qcopy(moby + 0x10, moby_vars + 0x60);
@@ -986,20 +1008,22 @@ extern char D_L05_00215C00[];
 extern void fast_vec_add(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void transform_vector_by_basis(void *, void *, void *) __asm__("FUN_001f9cf8");
 
-void FUN_L05_003198e8(char *moby) {
+void transform_moby_vector_table_to_world_space(char *moby) __asm__("FUN_L05_003198e8");
+
+void transform_moby_vector_table_to_world_space(char *moby) {
     char *data = *(char **)(moby + 0x78);
     int vector_table_index = *(int *)(data + 0xDC);
     if (vector_table_index != -1) {
         char *vector_table_entry = D_L05_001B0930[vector_table_index];
         if (*(int *)vector_table_entry == 7) {
             int i;
-            struct Hero *g;
+            struct Hero *player_hero;
             for (i = 0; i < 7; i++) {
                 transform_vector_by_basis(vector_table_entry + 0x10 + i * 16, D_L05_00215C00 + i * 16, moby + 0xC0);
                 fast_vec_add(vector_table_entry + 0x10 + i * 16, vector_table_entry + 0x10 + i * 16, moby + 0x10);
             }
-            g = &hero;
-            *(unsigned short *)&g->unk22DA = *(unsigned short *)(data + 0xDC);
+            player_hero = &hero;
+            *(unsigned short *)&player_hero->unk22DA = *(unsigned short *)(data + 0xDC);
         }
     }
 }

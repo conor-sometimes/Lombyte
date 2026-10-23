@@ -13,7 +13,9 @@ extern float fast_add_rotations(float, float) __asm__("FUN_001fa580");
 extern float fast_subtract_rotations(float, float) __asm__("FUN_001fa5c8");
 
 /* Cosine-eased rotation from x toward y at z. */
-float FUN_L00_00257ef0(float x, float y, float z) {
+float interpolate_wrapped_angle_cosine_eased(float x, float y, float z) __asm__("FUN_L00_00257ef0");
+
+float interpolate_wrapped_angle_cosine_eased(float x, float y, float z) {
     float wrapped_angle_delta = fast_subtract_rotations(y, x);
     float phase_cosine = fast_cos(z * 3.1415927f);
     return fast_add_rotations(x, wrapped_angle_delta * ((1.0f - phase_cosine) * 0.5f));
@@ -28,7 +30,9 @@ extern void subtract_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a28");
    Scalar analogue matched at src/game/mobyutil.c:func_00214220. */
 /* Ported from rac1-decomp (src/overlays/shared/mobyutil_00258BC8.c: func_L00_00258FA8), where it is exact; names translated to the US level program. */
 
-void FUN_L00_00257f70(void *interpolated_vector_output, void *start_vector, void *target_vector, float interpolation_fraction) {
+void interpolate_vector_xyz_cosine_eased(void *interpolated_vector_output, void *start_vector, void *target_vector, float interpolation_fraction) __asm__("FUN_L00_00257f70");
+
+void interpolate_vector_xyz_cosine_eased(void *interpolated_vector_output, void *start_vector, void *target_vector, float interpolation_fraction) {
     float interpolation_delta[4];
     float ease;
 
@@ -56,7 +60,9 @@ extern float fast_add_rotations(float, float) __asm__("FUN_001fa580");
 extern float fast_subtract_rotations(float, float) __asm__("FUN_001fa5c8");
 
 /* Blends three angles from a toward b with a cosine ease; ang 0 gives a, 1 gives b. */
-void FUN_L00_00258050(float *out, float *start_rotations, float *target_rotations, float interpolation_fraction) {
+void interpolate_wrapped_rotations_cosine_eased(float *out, float *start_rotations, float *target_rotations, float interpolation_fraction) __asm__("FUN_L00_00258050");
+
+void interpolate_wrapped_rotations_cosine_eased(float *out, float *start_rotations, float *target_rotations, float interpolation_fraction) {
     float cosine_ease_weight = (1.0f - fast_cos(interpolation_fraction * 3.1415927f)) * 0.5f;
     out[0] = fast_add_rotations(start_rotations[0], fast_subtract_rotations(target_rotations[0], start_rotations[0]) * cosine_ease_weight);
     out[1] = fast_add_rotations(start_rotations[1], fast_subtract_rotations(target_rotations[1], start_rotations[1]) * cosine_ease_weight);
@@ -406,34 +412,34 @@ extern f32 probe_ground_height(void *, s32, f32) __asm__("FUN_00213508");
 extern f32 frame_time_sq_gp __asm__("D_0015ED70") __attribute__((sda));
 extern f32 frame_scale __asm__("D_0015ED60") __attribute__((sda));
 s32 FUN_L00_00258b50(Obj *m, Ctl *c, void *v, Vec4 *out, f32 f);
-s32 FUN_L00_00258b50(Obj *moby, Ctl *movement_control, void *v, Vec4 *out, f32 f) {
+s32 FUN_L00_00258b50(Obj *moby, Ctl *movement_control, void *target_position, Vec4 *out, f32 f) {
     Vec4 save;
     Vec4 displacement;
     Vec4 probe_or_direction;
     Vec4 q;
-    Glob *g;
+    Glob *collision_probe_result;
     s32 mask = 0;
-    s32 r;
-    f32 len;
+    s32 movement_collision_flags;
+    f32 target_distance_xy;
     f32 sp;
     f32 lim;
     f32 speed_increment;
-    f32 h1;
-    f32 h2;
+    f32 displacement_probe_hit_height;
+    f32 lookahead_probe_hit_height;
     f32 ground_height;
     f32 normal_elevation_angle;
-    f32 l2;
+    f32 intended_displacement_length_xy;
 
     sp = movement_control->f1C * f;
     lim = movement_control->f24 * f;
-    fast_vec_sub(&displacement, v, &moby->pos);
-    len = vector_length_xy(&displacement);
+    fast_vec_sub(&displacement, target_position, &moby->pos);
+    target_distance_xy = vector_length_xy(&displacement);
     save.q = moby->pos.q;
-    speed_increment = sp * len;
+    speed_increment = sp * target_distance_xy;
     if (sp < speed_increment)
         speed_increment = sp;
     movement_control->f10 = movement_control->f10 + speed_increment;
-    if (len < movement_control->f10 * 10.0f)
+    if (target_distance_xy < movement_control->f10 * 10.0f)
         movement_control->f10 = movement_control->f10 - movement_control->f20 * movement_control->f10;
     if (lim < movement_control->f10)
         movement_control->f10 = lim;
@@ -456,29 +462,29 @@ s32 FUN_L00_00258b50(Obj *moby, Ctl *movement_control, void *v, Vec4 *out, f32 f
     fast_vec_add(&probe_or_direction, &moby->pos, &displacement);
     probe_or_direction.f[2] = moby->pos.f[2] - movement_control->f30;
     if (FUN_L00_002583f0_c(&probe_or_direction, moby, movement_control->i38 & 0x20, movement_control->f08, movement_control->f0C)) {
-        g = &D_L00_00173E40_c;
-        normal_elevation_angle = fast_arc_tan(g->v40.f[2], vector_length_xy(&g->v40));
-        h1 = g->f28;
+        collision_probe_result = &D_L00_00173E40_c;
+        normal_elevation_angle = fast_arc_tan(collision_probe_result->v40.f[2], vector_length_xy(&collision_probe_result->v40));
+        displacement_probe_hit_height = collision_probe_result->f28;
         if (0.5f < normal_elevation_angle && 0.1f < vector_length_xy(&displacement)) {
             {
                 fast_vec_normalize(&q, &displacement, 0.57f);
                 fast_vec_add(&q, &q, &moby->pos);
                 q.f[2] = moby->pos.f[2] - movement_control->f30;
                 if (FUN_L00_002583f0_c(&q, moby, movement_control->i38 & 0x20, movement_control->f08, movement_control->f0C)) {
-                    h2 = g->f28;
-                    if (!(0.5f <= fast_arc_tan(g->v40.f[2], vector_length_xy(&g->v40))))
+                    lookahead_probe_hit_height = collision_probe_result->f28;
+                    if (!(0.5f <= fast_arc_tan(collision_probe_result->v40.f[2], vector_length_xy(&collision_probe_result->v40))))
                         goto done;
                     mask = 0x22;
                     if (!(movement_control->i38 & 8))
                         goto done;
-                    if (!(h2 < lim))
+                    if (!(lookahead_probe_hit_height < lim))
                         goto done;
                 } else {
                     mask = 0x22;
                     if (!(movement_control->i38 & 8))
                         goto done;
                 }
-                if (h1 < lim)
+                if (displacement_probe_hit_height < lim)
                     mask = 8;
             }
         }
@@ -487,14 +493,14 @@ s32 FUN_L00_00258b50(Obj *moby, Ctl *movement_control, void *v, Vec4 *out, f32 f
     }
 done:
     if (!(mask & 2)) {
-        l2 = vector_length_xy(&displacement);
-        FUN_001f9a68_c(&probe_or_direction, &displacement, 1.0f / l2);
-        r = FUN_L00_00258ad0_c(moby, &displacement, movement_control->f04, movement_control->i00, movement_control->f30, movement_control->i38);
-        if (r & 2)
+        intended_displacement_length_xy = vector_length_xy(&displacement);
+        FUN_001f9a68_c(&probe_or_direction, &displacement, 1.0f / intended_displacement_length_xy);
+        movement_collision_flags = FUN_L00_00258ad0_c(moby, &displacement, movement_control->f04, movement_control->i00, movement_control->f30, movement_control->i38);
+        if (movement_collision_flags & 2)
             movement_control->f18 = frame_scale * -0.01f;
-        if (r & 1) {
+        if (movement_collision_flags & 1) {
             mask |= 1;
-            if (displacement.f[0] * probe_or_direction.f[0] + displacement.f[1] * probe_or_direction.f[1] < l2 * 0.2f)
+            if (displacement.f[0] * probe_or_direction.f[0] + displacement.f[1] * probe_or_direction.f[1] < intended_displacement_length_xy * 0.2f)
                 mask |= 2;
             ground_height = probe_ground_height(&moby->pos, 0, 0.5f);
             if (movement_control->f08 < save.f[2] - ground_height || movement_control->f0C < ground_height - save.f[2]) {
@@ -507,7 +513,7 @@ done:
         if ((movement_control->i38 ^ 1) & 1)
             movement_control->f18 = frame_scale * -0.01f;
     }
-    if (len < movement_control->f2C)
+    if (target_distance_xy < movement_control->f2C)
         mask |= 4;
     return mask;
 }
@@ -657,11 +663,11 @@ extern s32 truncate_float_to_s32(f32) __asm__("FUN_001fa6d0");
 float FUN_L00_00259468(float *base_values, float *b, int *out, float triangular_correction_coefficient) {
     int truncated_ratio = truncate_float_to_s32(b[2] / triangular_correction_coefficient);
     float truncated_ratio_float = convert_integer_to_float(truncated_ratio);
-    float r = base_values[2] + b[2] * truncated_ratio_float - convert_integer_to_float((truncated_ratio * truncated_ratio + truncated_ratio) >> 1) * triangular_correction_coefficient;
+    float corrected_scalar_value = base_values[2] + b[2] * truncated_ratio_float - convert_integer_to_float((truncated_ratio * truncated_ratio + truncated_ratio) >> 1) * triangular_correction_coefficient;
     if (out) {
         *out = truncated_ratio;
     }
-    return r;
+    return corrected_scalar_value;
 }
 #define NOT_SDA
 
@@ -681,25 +687,25 @@ void FUN_L00_00259508(void *destination, void *base_position, void *velocity, in
 }
 float FUN_001f99c0(float);
 float square_root(float) __asm__("FUN_001f9988");
-int FUN_L00_002595a0(float *larger_root_output, float *smaller_root_output, float quadratic_coefficient, float b, float constant_coefficient) {
-    float discriminant = b * b - quadratic_coefficient * 4.0f * constant_coefficient;
+int FUN_L00_002595a0(float *larger_root_output, float *smaller_root_output, float quadratic_coefficient, float linear_coefficient, float constant_coefficient) {
+    float discriminant = linear_coefficient * linear_coefficient - quadratic_coefficient * 4.0f * constant_coefficient;
     float sqrt_abs_discriminant, root_swap_temp;
     if (discriminant == 0.0f) {
-        *larger_root_output = -b / (quadratic_coefficient + quadratic_coefficient);
+        *larger_root_output = -linear_coefficient / (quadratic_coefficient + quadratic_coefficient);
         return 1;
     }
     sqrt_abs_discriminant = square_root(FUN_001f99c0(discriminant));
-    *larger_root_output = (-b + sqrt_abs_discriminant) / (quadratic_coefficient + quadratic_coefficient);
-    *smaller_root_output = (-b - sqrt_abs_discriminant) / (quadratic_coefficient + quadratic_coefficient);
+    *larger_root_output = (-linear_coefficient + sqrt_abs_discriminant) / (quadratic_coefficient + quadratic_coefficient);
+    *smaller_root_output = (-linear_coefficient - sqrt_abs_discriminant) / (quadratic_coefficient + quadratic_coefficient);
     if (*larger_root_output < *smaller_root_output) {
         root_swap_temp = *larger_root_output;
         *smaller_root_output = root_swap_temp;
-        *larger_root_output = (-b - sqrt_abs_discriminant) / (quadratic_coefficient + quadratic_coefficient);
+        *larger_root_output = (-linear_coefficient - sqrt_abs_discriminant) / (quadratic_coefficient + quadratic_coefficient);
     }
     {
-        int r = 0;
+        int real_root_count = 0;
         if (0.0f < discriminant)
-            r = 2;
-        return r;
+            real_root_count = 2;
+        return real_root_count;
     }
 }

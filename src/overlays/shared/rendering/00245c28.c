@@ -31,35 +31,35 @@ extern float D_L00_0015F5A8_e[] __asm__("D_L00_0015F5A8") MACRO_ADDR;
 extern void clear_blocks_16(void *, int) __asm__("FUN_001f9810");
 extern int debug_print(void *) __asm__("FUN_001e93b0");
 extern void init_stash(void) __asm__("FUN_00232d00");
-extern void FUN_L00_0023d028(void);
+extern void init_level_runtime_state(void) __asm__("FUN_L00_0023d028");
 extern int FUN_L00_00244110(int, int);
 extern void clear_dma_queue_entry(void) __asm__("FUN_001f0b88");
 extern void FUN_L00_002464a8_u(void) __asm__("FUN_L00_002464a8");
 extern void init_hud(void) __asm__("FUN_001fee88");
-extern void FUN_L00_00276078(void);
+extern void load_misc_animations_into_stash(void) __asm__("FUN_L00_00276078");
 extern void FUN_L00_0028eed0(void);
 extern int sce_gs_sync_v(int) __asm__("FUN_00122298");
 extern void put_disp_buffer(void) __asm__("FUN_001fb2a8");
 extern void music_start_track(int, int, int) __asm__("FUN_00215c40");
 extern void noop_main_callback() __asm__("FUN_001e93e8");
 extern void register_audio_stream_callback(void) __asm__("FUN_00215420");
-extern void FUN_L00_001f4598(void);
-extern void FUN_L00_001f58e0(void);
+extern void update_debug_menu(void) __asm__("FUN_L00_001f4598");
+extern void draw_debug_menu(void) __asm__("FUN_L00_001f58e0");
 extern void FUN_L00_00297f78(void);
-extern void FUN_L00_001f8e30(void);
-extern void FUN_L00_002999a8(void);
-extern void FUN_L00_00298f90(void);
+extern void draw_debug_profiler_if_enabled(void) __asm__("FUN_L00_001f8e30");
+extern void play_queued_movie(void) __asm__("FUN_L00_002999a8");
+extern void update_cutscene_playback(void) __asm__("FUN_L00_00298f90");
 extern void prepare_debug_profiler_render(void) __asm__("FUN_001f4248");
-extern void FUN_L00_00276bd0(void);
-extern void FUN_L00_001f8f50(void);
+extern void update_pause_menu(void) __asm__("FUN_L00_00276bd0");
+extern void draw_page_contents(void) __asm__("FUN_L00_001f8f50");
 extern void update_mode_freeze(void) __asm__("FUN_001fce28");
-extern void FUN_L00_001f8ec8(void);
-extern void FUN_L00_0029c648(void);
-extern void FUN_L00_002a02b0(void);
+extern void draw_dialog_background_and_text(void) __asm__("FUN_L00_001f8ec8");
+extern void update_vendor_menu(void) __asm__("FUN_L00_0029c648");
+extern void draw_vendor_screen(void) __asm__("FUN_L00_002a02b0");
 extern void update_resident_gameplay_state(void) __asm__("FUN_0022f778");
 extern void dispatch_game_state_update(void) __asm__("FUN_00230ee8");
-extern void FUN_L00_00299c48(void);
-extern void FUN_L00_001f8f78(void);
+extern void update_slideshow(void) __asm__("FUN_L00_00299c48");
+extern void draw_framebuffer_with_timed_text(void) __asm__("FUN_L00_001f8f78");
 extern void FUN_L00_001f6d70(void);
 extern void swap_render_buffer_chain(void) __asm__("FUN_00233630");
 extern void put_draw_buffer_small(void) __asm__("FUN_001fb3d0");
@@ -80,7 +80,7 @@ extern void draw_hud_sprite(int, int, int, int, int, int) __asm__("FUN_001ffc30"
 extern long get_frame_texture(int) __asm__("FUN_001ffa10");
 extern void draw_rotated_sprite(float, float, int, int, long, float, float, float) __asm__("FUN_00200600");
 extern void do_gif_paging(void) __asm__("FUN_001f4398");
-extern void FUN_L00_001f36f8(void);
+extern void flush_debug_text_queue(void) __asm__("FUN_L00_001f36f8");
 extern float convert_integer_to_float(int) __asm__("FUN_001fa6c0");
 extern int scale_game_frames(int) __asm__("FUN_001f96f8");
 extern void reset_gs_registers_pr(void) __asm__("FUN_001f3958");
@@ -93,7 +93,9 @@ extern void FUN_00226e08(void);
 
 extern char D_L00_00165FB0[];
 extern char D_L00_00161E00[];
-void FUN_L00_00245c28(void) {
+void run_level_main_loop(void) __asm__("FUN_L00_00245c28");
+
+void run_level_main_loop(void) {
     enum {
         LEVEL_MODE_DEBUG_FLAG_GATED_UPDATE = 0,
         LEVEL_MODE_MEMORY_CARD_DRAIN = 1,
@@ -123,7 +125,7 @@ void FUN_L00_00245c28(void) {
     level_timer = 0;
     D_L00_0015F5C4 = 6;
     one = 1;
-    FUN_L00_0023d028();
+    init_level_runtime_state();
     music_stream_state.primary.track = 0;
     FUN_L00_00244110(1, 0);
     g_debug_menu.update_flags = 15;
@@ -134,7 +136,7 @@ void FUN_L00_00245c28(void) {
     clear_dma_queue_entry();
     FUN_L00_002464a8_u();
     init_hud();
-    FUN_L00_00276078();
+    load_misc_animations_into_stash();
     FUN_L00_0028eed0();
     D_L00_0015F3F8 = 0;
     sce_gs_sync_v(0);
@@ -177,36 +179,36 @@ void FUN_L00_00245c28(void) {
         switch (saved_level_mode) {
         case -1:
             register_audio_stream_callback();
-            FUN_L00_001f4598();
-            FUN_L00_001f58e0();
+            update_debug_menu();
+            draw_debug_menu();
             break;
         case LEVEL_MODE_DEBUG_FLAG_GATED_UPDATE:
             register_audio_stream_callback();
             FUN_L00_00297f78();
-            FUN_L00_001f8e30();
+            draw_debug_profiler_if_enabled();
             break;
         case LEVEL_MODE_MEMORY_CARD_DRAIN:
-            FUN_L00_002999a8();
+            play_queued_movie();
             break;
         case LEVEL_MODE_DEBUG_PROFILER_RENDER:
             register_audio_stream_callback();
-            FUN_L00_00298f90();
+            update_cutscene_playback();
             prepare_debug_profiler_render();
             break;
         case LEVEL_MODE_CALLBACK_TABLE_UPDATE:
             register_audio_stream_callback();
-            FUN_L00_00276bd0();
-            FUN_L00_001f8f50();
+            update_pause_menu();
+            draw_page_contents();
             break;
         case LEVEL_MODE_FREEZE:
             register_audio_stream_callback();
             update_mode_freeze();
-            FUN_L00_001f8ec8();
+            draw_dialog_background_and_text();
             break;
         case LEVEL_MODE_STATEFUL_RENDER_PIPELINE:
             register_audio_stream_callback();
-            FUN_L00_0029c648();
-            FUN_L00_002a02b0();
+            update_vendor_menu();
+            draw_vendor_screen();
             break;
         case LEVEL_MODE_GAME_STATE_UPDATE:
             register_audio_stream_callback();
@@ -215,8 +217,8 @@ void FUN_L00_00245c28(void) {
             break;
         case LEVEL_MODE_TIMED_BUFFER_SEQUENCE:
             register_audio_stream_callback();
-            FUN_L00_00299c48();
-            FUN_L00_001f8f78();
+            update_slideshow();
+            draw_framebuffer_with_timed_text();
             break;
         }
         if (D_L00_0015F5C4 != saved_level_mode) {
@@ -250,7 +252,7 @@ void FUN_L00_00245c28(void) {
             }
         }
         D_L00_001B9CF0.unk13C = 0;
-        FUN_L00_001f36f8();
+        flush_debug_text_queue();
         noop_main_callback(level_frame_callback_args, 0x10);
         noop_main_callback(level_frame_callback_args, 0x10);
         vu1_sync_chain(1);
@@ -273,7 +275,7 @@ void FUN_L00_00245c28(void) {
                         FUN_L00_00297f78();
                     } else if (mode == 2 && D_L00_0016C8B0 == 0) {
                         register_audio_stream_callback();
-                        FUN_L00_00298f90();
+                        update_cutscene_playback();
                     }
                 }
                 sce_gs_sync_v(0);
@@ -485,10 +487,12 @@ void noop_main_callback(void) __asm__("FUN_001e93e8");
 void update_map_icons(s32, s32) __asm__("FUN_0020bf90");
 void start_audio_stream_read(s32, s32, s32) __asm__("FUN_00216788");
 void update_audio_stream_until_idle(s32) __asm__("FUN_002168a8");
-void FUN_L00_00293d38(s32, s32, s32, s32);
+void send_dma_to_stash_slot(s32, s32, s32, s32) __asm__("FUN_L00_00293d38");
 void stash_receive_data(s32, s32, s32, s32, s32) __asm__("FUN_00232f20");
 
-void FUN_L00_002468b8(void) {
+void initialize_render_archive_transfer(void) __asm__("FUN_L00_002468b8");
+
+void initialize_render_archive_transfer(void) {
     s32 first_base;
     s32 second_base;
     s32 buffer;
@@ -524,7 +528,7 @@ void FUN_L00_002468b8(void) {
             update_audio_stream_until_idle(1);
             state->loaded = 1;
             state->transfer_bytes = bytes;
-            FUN_L00_00293d38(state->buffer, state->file_handle, 0, bytes);
+            send_dma_to_stash_slot(state->buffer, state->file_handle, 0, bytes);
             state->level_slot = current_level_index + 0x100;
             state->last_transfer_bytes = bytes;
             state->active = 1;

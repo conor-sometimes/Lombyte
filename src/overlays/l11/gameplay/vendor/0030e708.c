@@ -10,10 +10,10 @@
 
 /* Register this level's vendor data set. */
 
-extern void FUN_L01_002b91c8(char *, int);
+extern void render_water_grids(char *, int) __asm__("FUN_L01_002b91c8");
 
 void FUN_L11_0030e708(void) {
-    FUN_L01_002b91c8(D_L11_001DA880, 0x14);
+    render_water_grids(D_L11_001DA880, 0x14);
 }
 /* Update for a moby that waits for a float flag on a nearby object then runs a delete sequence. */
 
@@ -21,7 +21,7 @@ extern char *find_moby_hit(void *, int, int) __asm__("FUN_L00_0025a420");
 extern void allocate_voice_for_target_entry(int, int, int) __asm__("FUN_0022da68");
 extern void FUN_L00_00263e30(void *, int, int, int, int, int, int);
 extern void FUN_L01_002787a0(void *);
-extern void FUN_L01_00278e20(void *, int);
+extern void spawn_moby_from_placement(void *, int) __asm__("FUN_L01_00278e20");
 void mark_moby_for_removal(struct Moby *moby) __asm__("FUN_0020c828");
 
 void lamp_update(struct Moby *m) __asm__("FUN_L11_0031d7d8");
@@ -47,7 +47,7 @@ void lamp_update(struct Moby *lamp_moby) {
         allocate_voice_for_target_entry(0, 0, (int)lamp_moby);
         FUN_L01_002787a0(lamp_moby);
         FUN_L00_00263e30(lamp_moby, 0x745, 1, 0x745, 1, 0xb, 2);
-        FUN_L01_00278e20(lamp_moby, 0x744);
+        spawn_moby_from_placement(lamp_moby, 0x744);
         mark_moby_for_removal(lamp_moby);
         break;
     }
@@ -60,7 +60,9 @@ extern int D_L11_00215190[];
 extern void FUN_L00_001fde98(int, int, int, void *, int);
 extern void FUN_L08_00258090(void *, int, int, void *);
 
-void FUN_L11_0031e6a8(int pair_index) {
+void emit_render_batches_with_pair_offset(int pair_index) __asm__("FUN_L11_0031e6a8");
+
+void emit_render_batches_with_pair_offset(int pair_index) {
     int i;
     for (i = 0; i < 0x11; i++) {
         FUN_L08_00258090(D_L11_00217770, D_L11_00215190[i], D_L11_00207900[i], &D_L11_00217758[pair_index]);
@@ -71,7 +73,9 @@ void FUN_L11_0031e6a8(int pair_index) {
 extern Pair D_L11_00162618[] __attribute__((section(".sdata")));
 extern int D_L11_00207888[];
 extern int D_L11_00207860[];
-void FUN_L11_0031e780(int pair_index) {
+void emit_oil_tanker_render_batches_with_pair_offset(int pair_index) __asm__("FUN_L11_0031e780");
+
+void emit_oil_tanker_render_batches_with_pair_offset(int pair_index) {
     int i;
     for (i = 0; i < 0x9; i++) {
         FUN_L08_00258090(D_L11_00217770, D_L11_00207888[i], D_L11_00200728[i], &D_L11_00162618[pair_index]);

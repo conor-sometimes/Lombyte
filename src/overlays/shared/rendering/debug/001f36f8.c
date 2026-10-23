@@ -31,13 +31,17 @@ u8 D_L15_0016A640[0x800] = {0};
 u8 D_L16_0016A440[0x800] = {0};
 u8 D_L17_0016A940[0x800] = {0};
 u8 D_L18_0016AA40[0x800] = {0};
-void FUN_L00_001f3770(s32, s32, s32, s32);
+void draw_debug_text(s32 x, s32 y, s32 color, s32 text_address) __asm__("FUN_L00_001f3770");
+
+void draw_debug_text(s32, s32, s32, s32) __asm__("FUN_L00_001f3770");
 /* Calls FUN_L00_001f3770 for each queued D_L00_0016A840 entry and resets the queue. */
-void FUN_L00_001f36f8(void) {
+void flush_debug_text_queue(void) __asm__("FUN_L00_001f36f8");
+
+void flush_debug_text_queue(void) {
     s32 i;
     E001f36f8 *unused_text_entry;
     for (i = 0; i < D_L00_0015EFC4; i++)
-        FUN_L00_001f3770(D_L00_0016A840[i].a, D_L00_0016A840[i].b, D_L00_0016A840[i].c,
+        draw_debug_text(D_L00_0016A840[i].a, D_L00_0016A840[i].b, D_L00_0016A840[i].c,
                          D_L00_0016A840[i].d);
     D_L00_0015EFC4 = 0;
     D_L00_0015EFC0 = D_L00_0016A040;
@@ -67,7 +71,7 @@ extern s32 D_L00_00169B00[];
 #define debug_font_texture (*(DebugFontTexture *)&debug_font_pif_header)
 extern void vu1_add_g_sregister(s32, u64) __asm__("FUN_00233980");
 
-void FUN_L00_001f3770(s32 x, s32 y, s32 color, s32 text_address) {
+void draw_debug_text(s32 x, s32 y, s32 color, s32 text_address) {
     const u8 *text = (const u8 *)text_address;
     s32 glyph_count = 0;
     u32 quadwords;
@@ -407,16 +411,18 @@ f32 fast_sin(f32) __asm__("FUN_001f9de0");
 void euler_rotation_matrix(void *, void *) __asm__("FUN_001fa050");
 void copy_memory_aligned(void *, void *, s32) __asm__("FUN_001f9838");
 void FUN_L00_00250df8(void *);
-void FUN_L00_001f4490(void) {
+void update_hero_from_debug_camera(void) __asm__("FUN_L00_001f4490");
+
+void update_hero_from_debug_camera(void) {
     DebugCameraBlock *debug_camera_block = &D_L00_00166C80;
     B001f4490 *hero_camera_offsets = &D_L00_0016C058;
     struct Hero *hero_state;
     u8 *hero_moby;
-    f32 ang = fast_add_rotations(debug_camera_block->camera.angles[2], hero_camera_offsets->x88);
-    f32 angle_cosine = fast_cos(ang);
+    f32 camera_to_hero_angle = fast_add_rotations(debug_camera_block->camera.angles[2], hero_camera_offsets->x88);
+    f32 angle_cosine = fast_cos(camera_to_hero_angle);
     hero_state = &hero;
     hero_state->motion.pos.f[0] = debug_camera_block->camera.position[0] + angle_cosine * hero_camera_offsets->x8c;
-    hero_state->motion.pos.f[1] = debug_camera_block->camera.position[1] + fast_sin(ang) * hero_camera_offsets->x8c;
+    hero_state->motion.pos.f[1] = debug_camera_block->camera.position[1] + fast_sin(camera_to_hero_angle) * hero_camera_offsets->x8c;
     hero_state->motion.pos.f[2] = debug_camera_block->camera.position[2] + hero_camera_offsets->x90;
     hero_state->motion.rot.f[2] = fast_add_rotations(debug_camera_block->camera.angles[2], hero_camera_offsets->x84);
     euler_rotation_matrix(hero_state, hero_state->motion.rot.f);
@@ -493,7 +499,9 @@ extern u32 strlen(const char *);
 
 /* Debug menu input: moves between the columns and rows and changes the selected toggle, mode, item
    count or fog value; the last column records occlusion sample points to files. */
-void FUN_L00_001f4598(void) {
+void update_debug_menu(void) __asm__("FUN_L00_001f4598");
+
+void update_debug_menu(void) {
     enum {
         DEBUG_COLUMN_UPDATE_FLAGS = 0,
         DEBUG_COLUMN_OPTIONS = 1,
@@ -518,7 +526,8 @@ void FUN_L00_001f4598(void) {
     enum {
         DEBUG_CONTROL_MODE_ENABLE_LOW_FOUR_UPDATE_FLAGS = 0,
         DEBUG_CONTROL_MODE_CLEAR_UPDATE_FLAGS = 1,
-        DEBUG_CONTROL_MODE_CAPTURE_HERO_CAMERA_OFFSET = 2
+        DEBUG_CONTROL_MODE_CAPTURE_HERO_CAMERA_OFFSET = 2,
+        DEBUG_CONTROL_MODE_ENABLE_SECOND_AND_THIRD_UPDATE_FLAGS = 3
     };
     DebugRowCounts row_counts;
     union {
@@ -613,7 +622,7 @@ void FUN_L00_001f4598(void) {
                     g_debug_menu.target_yaw =
                         fast_subtract_rotations(hero.motion.rot.f[2], D_L00_00166C80.camera.angles[2]);
                     break;
-                case 3:
+                case DEBUG_CONTROL_MODE_ENABLE_SECOND_AND_THIRD_UPDATE_FLAGS:
                     g_debug_menu.update_flags = 6;
                     break;
                 }
@@ -1045,7 +1054,7 @@ extern s32 sprintf(char *, const char *, ...);
 extern u8 D_L00_0015F444;
 extern u8 D_L00_0015F445;
 extern u8 D_L00_0015F446;
-extern void FUN_L00_001f36f8(void);
+extern void flush_debug_text_queue(void) __asm__("FUN_L00_001f36f8");
 extern void append_gif_transfer_packet() __asm__("func_001FB368");
 void print_debug_text(s32 x, s32 y, s32 color, char *text) __asm__("FUN_001f0bd0");
 extern double promote_float60(float) __asm__("FUN_00120478");
@@ -1055,7 +1064,9 @@ static __inline__ int flag_offset60(int flags) {
     return sizeof(char *);
 }
 
-void FUN_L00_001f58e0(void) {
+void draw_debug_menu(void) __asm__("FUN_L00_001f58e0");
+
+void draw_debug_menu(void) {
     char menu_value_text[16];
     int stride;
     char *fmt;
@@ -1247,7 +1258,7 @@ void FUN_L00_001f58e0(void) {
         menu_value_text[1] = 0;
         menu_value_text[0] = g_debug_menu.start_capture_status;
         print_debug_text(0x1CA, 0x141, 0x80F0F0F0, menu_value_text);
-        FUN_L00_001f36f8();
+        flush_debug_text_queue();
         while (D_L00_001611A0 & 1) {}
     }
 }

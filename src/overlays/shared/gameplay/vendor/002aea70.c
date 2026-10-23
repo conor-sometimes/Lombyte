@@ -28,11 +28,11 @@ extern s32 continue_audio_stream_if_ready(void) __asm__("FUN_00215b10");
 extern void select_world_object_resource_tables(int, int) __asm__("FUN_00204a40");
 extern void sound_update(void) __asm__("FUN_0022ca50");
 extern void FUN_L00_002039a0(void);
-extern void FUN_L00_00207330(int, int);
-extern void FUN_L00_0020fca8(int, int);
+extern void update_item_tint_from_hero(int, int) __asm__("FUN_L00_00207330");
+extern void clear_hero_item_slot(int, int) __asm__("FUN_L00_0020fca8");
 extern void FUN_L00_00232fe8(void);
 extern void FUN_L00_0023aef8(void);
-extern void FUN_L00_002454c8(int);
+extern void load_scene_chunks_with_fade(int) __asm__("FUN_L00_002454c8");
 extern int hero_set_state(int, int) __asm__("FUN_L01_0023cf98");
 extern void fill_transfer_words_alt() __asm__("FUN_001f97e8");
 extern void music_pause(s32);
@@ -92,10 +92,10 @@ void FUN_L01_002aea70(char *vendor_moby, int lvl) {
     D_L01_0015F3FC = 1.0f;
     D_L01_001611CC = adjusted_address_base;
     *(int *)&D_L01_0015F400 = 0;
-    FUN_L00_0020fca8(0, 0);
+    clear_hero_item_slot(0, 0);
     hero_state->pending_item[0] = lvl;
     select_world_object_resource_tables(D_L01_00179F40[lvl].f10, -1);
-    FUN_L00_002454c8(level_table_pair_index);
+    load_scene_chunks_with_fade(level_table_pair_index);
     music_state = &music_stream_state;
     music_state->queued_secondary_track = 0x2734;
     parse_space_scene_chunk(0);
@@ -105,6 +105,6 @@ void FUN_L01_002aea70(char *vendor_moby, int lvl) {
     }
     relocated_address_source_block = D_L01_0016CCE0;
     hero_moby_owner = &hero;
-    FUN_L00_00207330(*(int *)(relocated_address_source_block + 0x17C), ((int)hero_moby_owner->moby));
+    update_item_tint_from_hero(*(int *)(relocated_address_source_block + 0x17C), ((int)hero_moby_owner->moby));
     continue_audio_stream_if_ready();
 }

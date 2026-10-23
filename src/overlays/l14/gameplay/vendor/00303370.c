@@ -10,7 +10,9 @@ extern void add_draw_callback(void *, void *) __asm__("FUN_001f4600");
 extern unsigned char D_L14_001E9C60[];
 extern void register_audio_stream_callback(void) __asm__("FUN_00215420");
 
-void FUN_L14_00303370(struct Moby *moby) {
+void update_moby_draw_registration(struct Moby *moby) __asm__("FUN_L14_00303370");
+
+void update_moby_draw_registration(struct Moby *moby) {
     enum {
         MOBY_STATE_INITIALIZE = 0,
         MOBY_STATE_REGISTER_DRAW_CALLBACK = 1
@@ -40,7 +42,9 @@ typedef struct {
 } O_FUN_L14_00305a38;
 s32 random_integer_below(s32) __asm__("FUN_00213260");
 s32 scale_game_frames(s32) __asm__("FUN_001f96f8");
-void FUN_L14_00305a38(O_FUN_L14_00305a38 *moby) {
+void initialize_morphoray_private_state(O_FUN_L14_00305a38 *moby) __asm__("FUN_L14_00305a38");
+
+void initialize_morphoray_private_state(O_FUN_L14_00305a38 *moby) {
     M_FUN_L14_00305a38 *m = moby->m;
     s32 i;
     for (i = 0; i < 4; i++)

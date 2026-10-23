@@ -27,7 +27,9 @@ extern char D_L00_001C6F00[] __attribute__((section(".data")));
 extern char D_L00_001BD3B0[] __attribute__((section(".data")));
 extern char D_L00_001BCDB0[] __attribute__((section(".data")));
 extern char D_L00_00173EC0[] __attribute__((section(".data")));
-void FUN_L00_0023d028(void) {
+void init_level_runtime_state(void) __asm__("FUN_L00_0023d028");
+
+void init_level_runtime_state(void) {
     int texture_allocation_base;
     FUN_00215420_23d028();
     FUN_002335a0_23d028();
@@ -60,7 +62,7 @@ extern int D_L00_001C3E98[];
 extern unsigned char D_0015EDD0[] __attribute__((sda));
 extern int D_00141660_23d028[] __asm__("D_00141660");
 void FUN_L00_00260860_23d028(int, int) __asm__("FUN_L00_00260860");
-void FUN_L00_0023d3d8(int i) __asm__("FUN_L00_0023d3d8");
+void append_level_item_if_absent(int i) __asm__("FUN_L00_0023d3d8");
 void FUN_L00_0023d198(void) {
     int j;
     int item;
@@ -124,11 +126,11 @@ void FUN_L00_0023d198(void) {
                 }
             }
         }
-        FUN_L00_0023d3d8(current_level_index);
+        append_level_item_if_absent(current_level_index);
     }
 }
 /* Appends D_L00_001C3E98[i] to the 0xFF-terminated D_0015EDD0 list unless already present. */
-void FUN_L00_0023d3d8(int i) {
+void append_level_item_if_absent(int i) {
     int item_id = D_L00_001C3E98[i];
     int j;
     if (item_id == 0)

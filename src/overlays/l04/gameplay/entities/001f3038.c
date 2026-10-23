@@ -108,7 +108,9 @@ extern int func_001FA898_1F3010(float) __asm__("FUN_001fa6d0");
 extern int func_L04_001F2F68_1F3010(Moby *, void *, int) __asm__("FUN_L04_001f3038");
 extern int func_L04_0024D790_1F3010(void *, void *, void *, int) __asm__("FUN_L04_0024c7d8");
 
-void FUN_L04_001f30e0(Moby **others, int other_count, Moby *moby, Steer_1F3010 *steer, float *params) {
+void steer_child_moby(Moby **others, int other_count, Moby *moby, Steer_1F3010 *steer, float *params) __asm__("FUN_L04_001f30e0");
+
+void steer_child_moby(Moby **others, int other_count, Moby *moby, Steer_1F3010 *steer, float *params) {
     Vec_1F3010 path_hit;
     Vec_1F3010 force;
     Vec_1F3010 uninitialized_point;
@@ -337,14 +339,16 @@ extern int coll_sphere(float, void *, int, void *) __asm__("FUN_L00_001f0d60");
 extern void add_vector_xyz(void *, void *, void *);
 extern void normalize_vector_xyz(void *, void *, float);
 
-void FUN_L04_001f3a80(char *a, char *b, char *c, float f);
-void FUN_L04_001f3a80(char *moby, char *b, char *movement_params, float collision_z_offset) {
+void update_moby_movement_with_sphere_collision(char *moby, char *movement_state, char *movement_params, float collision_z_offset) __asm__("FUN_L04_001f3a80");
+
+void update_moby_movement_with_sphere_collision(char *a, char *b, char *c, float f) __asm__("FUN_L04_001f3a80");
+void update_moby_movement_with_sphere_collision(char *moby, char *movement_state, char *movement_params, float collision_z_offset) {
     int i;
     float collision_probe_position[4];
-    char *movement_delta = b + 0x10;
-    add_vector_xyz(movement_delta, movement_delta, b);
+    char *movement_delta = movement_state + 0x10;
+    add_vector_xyz(movement_delta, movement_delta, movement_state);
     normalize_vector_xyz(movement_delta, movement_delta, *(float *)(movement_params + 0x1C));
-    *(float *)(b + 0x18) = *(float *)(b + 0x18) / *(float *)(b + 0x48);
+    *(float *)(movement_state + 0x18) = *(float *)(movement_state + 0x18) / *(float *)(movement_state + 0x48);
     add_vector_xyz(moby + 0x10, moby + 0x10, movement_delta);
     for (i = 0; i < 6; i++) {
         qcopy(collision_probe_position, moby + 0x10);
@@ -357,5 +361,5 @@ void FUN_L04_001f3a80(char *moby, char *b, char *movement_params, float collisio
         }
     }
     *(float *)(moby + 0x48) =
-        fast_add_rotations(fast_arc_tan(*(float *)(b + 0x10), *(float *)(b + 0x14)), 3.14159265f);
+        fast_add_rotations(fast_arc_tan(*(float *)(movement_state + 0x10), *(float *)(movement_state + 0x14)), 3.14159265f);
 }

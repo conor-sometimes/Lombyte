@@ -157,15 +157,15 @@ extern void register_object_render_class(char *, void *, void *, s32) __asm__("F
 extern void noop_main_callback(void *, s32) __asm__("FUN_001e93e8");
 extern void register_shrub_render_class(char *, void *, void *, void *, s32) __asm__("FUN_00203b08");
 extern void unpack_point_records(void *, s32) __asm__("FUN_00202800");
-extern void FUN_L00_0023f120(char *);
+extern void relocate_counted_pointer_table(char *) __asm__("FUN_L00_0023f120");
 extern void FUN_L00_0023f0d8(char *);
 extern void parse_particle_textures(void *, char *, void *, s32) __asm__("FUN_002026c8");
 extern void printf_1e93b0(const char *, ...) __asm__("FUN_001e93b0");
 extern void fill_transfer_words(void *, s32, s32) __asm__("FUN_001f97e8");
-extern char *FUN_L00_0023fa00(char *, s32 *);
+extern char *load_level_texture_bank(char *, s32 *) __asm__("FUN_L00_0023fa00");
 extern char *FUN_L00_00241940_26b768(s32) __asm__("FUN_L00_00241940");
 extern f32 int_to_float(s32) __asm__("FUN_001fa6c0");
-extern void FUN_L00_00285008(void);
+extern void restore_or_clear_level_state(void) __asm__("FUN_L00_00285008");
 extern void clear_scene_state_buffers(void) __asm__("FUN_00226f50");
 extern void FUN_L00_00264740(void);
 
@@ -186,7 +186,9 @@ extern u8 D_L07_0015FC88_macro[] __asm__("D_L07_0015FC88") __attribute__((sectio
  * mobies at 0x24 of their data); a stored coordinate times scale / 1024 gives
  * world units. Index 0x10 gives where the sky data starts and 0x14 where the
  * collision data starts. */
-s32 FUN_L07_0026b768(s32 full, s32 keep) {
+s32 load_level_assets(s32 full, s32 keep) __asm__("FUN_L07_0026b768");
+
+s32 load_level_assets(s32 full, s32 keep) {
     Load26b768 *ld = &D_L18_00174800_26b768;
     s32 *level_header = ld->f4;
     s32 *level_file_base = D_0015EE48.file;
@@ -301,7 +303,7 @@ s32 FUN_L07_0026b768(s32 full, s32 keep) {
         D_L07_0015F420 = base + level_header[0x1A];
         unpack_point_records((char *)level_header + level_header[0x17], level_header[0x16]);
         if (level_header[0x28]) {
-            FUN_L00_0023f120(base + level_header[0x28]);
+            relocate_counted_pointer_table(base + level_header[0x28]);
         } else {
             D_L07_0015F438 = 0;
             D_L07_0015F43C = 0;
@@ -369,7 +371,7 @@ s32 FUN_L07_0026b768(s32 full, s32 keep) {
                 }
             }
         }
-        D_L18_00174800_26b768.f18 = FUN_L00_0023fa00((char *)((u32)end & ~0x3F), level_header);
+        D_L18_00174800_26b768.f18 = load_level_texture_bank((char *)((u32)end & ~0x3F), level_header);
     }
     D_L18_00174800_26b768.f1C = FUN_L00_00241940_26b768(full);
     if (full) {
@@ -424,7 +426,7 @@ s32 FUN_L07_0026b768(s32 full, s32 keep) {
         printf_1e93b0(D_L07_0015FC80);
     }
     if (keep) {
-        FUN_L00_00285008();
+        restore_or_clear_level_state();
     } else {
         clear_scene_state_buffers();
         for (z = 15; z >= 0; z--)

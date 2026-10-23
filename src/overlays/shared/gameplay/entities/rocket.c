@@ -63,7 +63,7 @@ extern float func_001F9D10_cc1b8(void *, void *) __asm__("FUN_001f9b48");
 extern float func_L00_001FF860_cc1b8(float, float) __asm__("FUN_001f9e90");
 extern float func_001F9CE8_cc1b8(void *) __asm__("FUN_001f9b20");
 extern void func_L00_00251E30_cc1b8(void *) __asm__("FUN_L00_00250df8");
-char *FUN_L10_002cc1b8(float scale, void *vel, void *pos, int owner, int target, int timer_duration) {
+char *FUN_L10_002cc1b8(float scale, void *initial_velocity, void *pos, int owner, int target, int timer_duration) {
     char *rocket = (char *)func_0020D348_m_cc1b8(0x333);
     char *shot_data;
     if (rocket) {
@@ -74,7 +74,7 @@ char *FUN_L10_002cc1b8(float scale, void *vel, void *pos, int owner, int target,
         rocket[0x31] = 1;
         rocket[0x20] = 1;
         qcopy(rocket + 0x10, pos);
-        qcopy(shot_data, vel);
+        qcopy(shot_data, initial_velocity);
         *(int *)(shot_data + 0x18) = func_001F9850_cc1b8(timer_duration);
         *(int *)(shot_data + 0x10) = owner;
         *(int *)(shot_data + 0x14) = target;
@@ -154,7 +154,7 @@ void rocket_update(char *rocket) {
     float hv[4] __attribute__((aligned(16)));
     float tp[4] __attribute__((aligned(16)));
     float aim[4] __attribute__((aligned(16)));
-    float speed, intercept_time_squared_coefficient, b, discriminant_sqrt, intercept_time_plus_root, intercept_time_minus_root, intercept_time, yaw, pitch, dist;
+    float speed, intercept_time_squared_coefficient, intercept_time_linear_coefficient, discriminant_sqrt, intercept_time_plus_root, intercept_time_minus_root, intercept_time, yaw, pitch, dist;
     char *rocket_position;
     unsigned char *g;
     char *tg;
@@ -180,10 +180,10 @@ void rocket_update(char *rocket) {
                 tp[2] = ground_aim_height + 2.0f;
             vsub_cc2e8(diff, tp, rocket_position);
             intercept_time_squared_coefficient = speed * speed - lensq_cc2e8(hv);
-            b = (hv[0] * diff[0] + hv[1] * diff[1] + hv[2] * diff[2]) * -2.0f;
-            discriminant_sqrt = sqrt_cc2e8(b * b - intercept_time_squared_coefficient * 4.0f * -lensq_cc2e8(diff));
-            intercept_time_plus_root = (-b + discriminant_sqrt) / (intercept_time_squared_coefficient + intercept_time_squared_coefficient);
-            intercept_time_minus_root = (-b - discriminant_sqrt) / (intercept_time_squared_coefficient + intercept_time_squared_coefficient);
+            intercept_time_linear_coefficient = (hv[0] * diff[0] + hv[1] * diff[1] + hv[2] * diff[2]) * -2.0f;
+            discriminant_sqrt = sqrt_cc2e8(intercept_time_linear_coefficient * intercept_time_linear_coefficient - intercept_time_squared_coefficient * 4.0f * -lensq_cc2e8(diff));
+            intercept_time_plus_root = (-intercept_time_linear_coefficient + discriminant_sqrt) / (intercept_time_squared_coefficient + intercept_time_squared_coefficient);
+            intercept_time_minus_root = (-intercept_time_linear_coefficient - discriminant_sqrt) / (intercept_time_squared_coefficient + intercept_time_squared_coefficient);
             if (intercept_time_plus_root > 0.0f && intercept_time_minus_root > 0.0f) {
                 if (intercept_time_plus_root > intercept_time_minus_root)
                     intercept_time = intercept_time_plus_root;

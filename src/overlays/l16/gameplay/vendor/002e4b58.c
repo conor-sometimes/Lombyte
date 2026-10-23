@@ -15,7 +15,9 @@
 extern char *func_L05_0031AAA8_19510(void *, int) __asm__("FUN_L16_002e4be0");
 extern void func_L16_002E5D68_19510(void *) __asm__("FUN_L16_002e4900");
 extern char *D_L16_001601AC_m_19510 __asm__("D_L16_001600EC");
-void FUN_L16_002e4b58(void *moby_v) {
+void transfer_moby_placement_to_linked_moby(void *moby_v) __asm__("FUN_L16_002e4b58");
+
+void transfer_moby_placement_to_linked_moby(void *moby_v) {
     char *moby = moby_v;
     char *data = *(char **)(moby + 0x78);
     char *spawn = func_L05_0031AAA8_19510(moby, *(short *)(data + 0xae));
@@ -67,7 +69,9 @@ extern float advance_accelerated_scalar(float, float, float, float, float *,
                                         float *) __asm__("FUN_00213f38");
 extern void sample_camera_path(int *, int, void *, float *, int, float) __asm__("FUN_00214e58");
 
-int FUN_L16_002e4c40(struct Moby *moby) {
+int advance_moby_path(struct Moby *moby) __asm__("FUN_L16_002e4c40");
+
+int advance_moby_path(struct Moby *moby) {
     char *moby_data = (char *)moby->pvars;
     int *path;
     advance_accelerated_scalar(1.0f, *(float *)(moby_data + 0xC8), *(float *)(moby_data + 0xC8),
@@ -83,7 +87,9 @@ int FUN_L16_002e4c40(struct Moby *moby) {
 
 s32 try_set_help_message(s32 arg0, s32 arg1) __asm__("FUN_00215130");
 
-void FUN_L16_002e4cd8(struct Moby *moby) {
+void request_moby_help_message(struct Moby *moby) __asm__("FUN_L16_002e4cd8");
+
+void request_moby_help_message(struct Moby *moby) {
     switch (*(short *)((char *)moby->pvars + 0xae)) {
     case 0:
         try_set_help_message(8, 0x3e89);
@@ -110,7 +116,9 @@ void FUN_L16_002e4cd8(struct Moby *moby) {
 extern float fast_sin(float) __asm__("FUN_001f9de0");
 extern float fast_add_rotations(float, float) __asm__("FUN_001fa580");
 
-void FUN_L16_002e4d88(struct Moby *moby) {
+void apply_moby_wobble(struct Moby *moby) __asm__("FUN_L16_002e4d88");
+
+void apply_moby_wobble(struct Moby *moby) {
     char *moby_data = (char *)moby->pvars;
     float wobble_phase, wobble_value, wobble_phase_step;
     qcopy(&moby->pos, moby_data + 0x60);
@@ -144,20 +152,22 @@ extern char D_L16_001D96E0[];
 extern void add_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void transform_vector_by_basis(void *, void *, void *) __asm__("FUN_001f9cf8");
 
-void FUN_L16_002e4f30(struct Moby *moby) {
+void transform_moby_table_entry_vectors(struct Moby *moby) __asm__("FUN_L16_002e4f30");
+
+void transform_moby_table_entry_vectors(struct Moby *moby) {
     char *data = (char *)moby->pvars;
     int table_entry_index = *(int *)(data + 0xa0);
     if (table_entry_index != -1) {
         char *table_entry = D_L16_001B0930[table_entry_index];
         if (*(int *)table_entry == 7) {
             int i;
-            struct Hero *g;
+            struct Hero *hero_state;
             for (i = 0; i < 7; i++) {
                 transform_vector_by_basis(table_entry + 0x10 + i * 16, D_L16_001D96E0 + i * 16, &moby->rot_row0);
                 add_vector_xyz(table_entry + 0x10 + i * 16, table_entry + 0x10 + i * 16, &moby->pos);
             }
-            g = &hero;
-            *(unsigned short *)&g->unk22DA = *(unsigned short *)(data + 0xa0);
+            hero_state = &hero;
+            *(unsigned short *)&hero_state->unk22DA = *(unsigned short *)(data + 0xa0);
         }
     }
 }
@@ -180,9 +190,11 @@ extern void FUN_L00_001fde98(int, int, int, char *, int);
 extern void FUN_L16_002e8b98_i(int, int, int, int, char *) __asm__("FUN_L16_002e8b98");
 extern void vu1_add_g_sregister_l16(int, long) __asm__("FUN_00233980");
 
-void FUN_L16_002e97a0(void) {
+void draw_level16_visible_textured_batches(void) __asm__("FUN_L16_002e97a0");
+
+void draw_level16_visible_textured_batches(void) {
     int *element_counts = (int *)&D_L16_00161F90;
-    int *b = (int *)&D_L16_00161F98;
+    int *packet_vector_tables = (int *)&D_L16_00161F98;
     int *c = (int *)D_L16_00161FA0;
     int *input_vector_tables = (int *)D_L16_00161FA8;
     int *packet_word_tables = (int *)D_L16_00161FB0;
@@ -195,8 +207,8 @@ void FUN_L16_002e97a0(void) {
     font_queue_vu_state();
     for (i = 0; i < 0x2; i++) {
         if (fast_bsphere_check(D_L16_001DF2B0[i], 512.0f) != -1) {
-            FUN_L16_002e8b98_i(element_counts[i], input_vector_tables[i], b[i], c[i], D_L16_001DF2D0);
-            FUN_L00_001fde98(element_counts[i], b[i], packet_word_tables[i], D_L16_001DF2D0, 1);
+            FUN_L16_002e8b98_i(element_counts[i], input_vector_tables[i], packet_vector_tables[i], c[i], D_L16_001DF2D0);
+            FUN_L00_001fde98(element_counts[i], packet_vector_tables[i], packet_word_tables[i], D_L16_001DF2D0, 1);
         }
     }
 }

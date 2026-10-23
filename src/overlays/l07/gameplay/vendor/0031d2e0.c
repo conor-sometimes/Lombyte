@@ -34,7 +34,9 @@ extern L07ScaleRow D_L07_001C4130[];
 /* Ported from rac1-decomp nonmatching/l07_umbris/func_L07_0031E6B0.c (func_L07_0031E6B0) */
 /* Umbris item spawner: measures its path once, then for each listed item whose stock ratio is in
  * range spawns batches of pickups along the path, away from the target moby. */
-void FUN_L07_0031d2e0(char *moby) {
+void update_equalizer_ammo_spawner(char *moby) __asm__("FUN_L07_0031d2e0");
+
+void update_equalizer_ammo_spawner(char *moby) {
     int *data = *(int **)(moby + 0x78);
     int state = *(unsigned char *)(moby + 0x20);
     if (state == 1) goto state_one;
@@ -160,7 +162,9 @@ extern char *func_L00_0026DEA0_c(void *, int, void *, int, float, float, float,
                                  float) __asm__("FUN_L00_0026d000");
 extern char D_L07_0016C960_c[] __asm__("D_L07_0016C8E0");
 
-void FUN_L07_0031eba8(char *moby) {
+void update_scene_moby_effect_bursts(char *moby) __asm__("FUN_L07_0031eba8");
+
+void update_scene_moby_effect_bursts(char *moby) {
     enum {
         MOBY_STATE_INITIALIZE = 0,
         MOBY_STATE_UPDATE = 1
@@ -235,7 +239,9 @@ extern void subtract_vector_xyz(void *out, void *a, void *b) __asm__("FUN_001f9a
 extern short D_L07_00161CD8 __attribute__((sda));
 extern short D_L07_00161CDC __attribute__((sda));
 extern short D_L07_00161CE0 __attribute__((sda));
-void FUN_L07_0031f900(unsigned char *moby) {
+void update_scene_moby_trails(unsigned char *moby) __asm__("FUN_L07_0031f900");
+
+void update_scene_moby_trails(unsigned char *moby) {
     enum {
         TRAIL_STATE_INITIALIZE = 0,
         TRAIL_STATE_UPDATE = 1

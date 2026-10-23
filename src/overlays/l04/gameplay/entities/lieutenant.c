@@ -180,7 +180,9 @@ extern Moby *D_L04_00160058_2E57F8 __asm__("D_L04_0015FFD8");
 extern s32 current_level_index_macro __asm__("D_0015ED84") MACRO_ADDR;
 extern int D_0015EEA4_macro __asm__("D_0015EEA4") MACRO_ADDR;
 extern s32 D_0015EEAC_macro __asm__("D_0015EEAC") MACRO_ADDR;
-void FUN_L04_002e4418(Moby *moby) {
+void update_eudora_tutorial_hints_and_stats(Moby *moby) __asm__("FUN_L04_002e4418");
+
+void update_eudora_tutorial_hints_and_stats(Moby *moby) {
     enum {
         TUTORIAL_TRIGGER_STATE_INITIALIZE = 0,
         TUTORIAL_TRIGGER_STATE_UPDATE_HINTS_AND_STATS = 1
@@ -450,7 +452,9 @@ extern void refl_2e5178(void *, void *, void *) __asm__("FUN_L00_001ff660");
 extern void fast_vec_scale(void *, void *, f32) __asm__("FUN_001f9a68");
 extern f32 rnd_2e5178(f32, f32) __asm__("FUN_L00_00257c48");
 extern void kill_2e5178(void *) __asm__("FUN_0020c828");
-void FUN_L04_002e5178(M2e5178 *entity) {
+void update_entity_bounce_and_decay(M2e5178 *entity) __asm__("FUN_L04_002e5178");
+
+void update_entity_bounce_and_decay(M2e5178 *entity) {
     enum {
         ENTITY_MOTION_STATE_BOUNCE = 0,
         ENTITY_MOTION_STATE_DECAY_AND_REMOVE = 1
@@ -503,7 +507,9 @@ extern int D_L04_0015F5C4;
 extern struct L04MissionState D_L04_0016C9E0;
 extern void cutscene_set_camera_target(int) __asm__("FUN_L00_002637f8");
 
-void FUN_L04_002e53a0(struct Moby *moby) {
+void dispatch_mode_selected_slot(struct Moby *moby) __asm__("FUN_L04_002e53a0");
+
+void dispatch_mode_selected_slot(struct Moby *moby) {
     enum {
         MODE_SLOT_STATE_INITIALIZE = 0,
         MODE_SLOT_STATE_DISPATCH_SELECTED_SLOT = 1

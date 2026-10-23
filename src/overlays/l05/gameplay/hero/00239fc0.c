@@ -13,7 +13,9 @@ int FUN_001f0b58_239fc0(void) __asm__("FUN_001f0b58");
 f32 FUN_001f99c0_239fc0(f32) __asm__("FUN_001f99c0");
 void FUN_L00_0020b930_239fc0(void) __asm__("FUN_L00_0020b930");
 extern int hero_set_state(int, int) __asm__("FUN_L05_0024cee8");
-void FUN_L05_00239fc0(void) {
+void apply_hero_ground_material_effects(void) __asm__("FUN_L05_00239fc0");
+
+void apply_hero_ground_material_effects(void) {
     u8 save = hero.unk12ED;
     s16 saved_ground_type = hero.ground_type;
     f32 water_depth;
@@ -135,7 +137,7 @@ void fast_vec_sub(void *, void *, void *) __asm__("FUN_001f9a28");
 f32 FUN_001f9ab0_c(void *, void *) __asm__("FUN_001f9ab0");
 void FUN_001f9a68_c(void *, void *, f32) __asm__("FUN_001f9a68");
 void FUN_001f9bf8_c(void *, void *, f32) __asm__("FUN_001f9bf8");
-void FUN_L00_00216078(void *, void *);
+void compute_rotated_vector_angles(void *, void *) __asm__("FUN_L00_00216078");
 void FUN_L00_002335c8(void *, f32, f32, f32);
 void FUN_L00_002334d0(void *, void *, f32);
 f32 FUN_001f99c0(f32);
@@ -144,10 +146,12 @@ extern CollisionHit HH __asm__("D_L05_00174240") __attribute__((section(".data")
 #define HI(o) (*(s32 *)(D_L05_00174240 + (o)))
 #define HF(o) (*(f32 *)(D_L05_00174240 + (o)))
 
-void FUN_L05_002402a8(void) {
+void update_hero_ground_contact(void) __asm__("FUN_L05_002402a8");
+
+void update_hero_ground_contact(void) {
     V shared_probe_endpoint, ground_probe_endpoint, ground_vector_scratch, side_probe_endpoint, unused_probe_vector, hit_normal_angles, normalized_hit_normal;
     f32 f;
-    s32 r;
+    s32 ground_sound_class;
     s32 i;
     f32 side_probe_angle;
     u8 *hit_moby_record;
@@ -180,11 +184,11 @@ void FUN_L05_002402a8(void) {
     if (collision_line(&ground_probe_endpoint, &shared_probe_endpoint, 2, (s32)hero.moby, 0) == 0) {
         goto tail;
     }
-    r = coll_sound_class();
-    if (r == -1) {
-        r = 3;
+    ground_sound_class = coll_sound_class();
+    if (ground_sound_class == -1) {
+        ground_sound_class = 3;
     }
-    hero.unk12ED = r;
+    hero.unk12ED = ground_sound_class;
     hero.ground_type = collision_hit_material();
     if (hero.ground_type == 0) {
         hero.water_surface_z = resolve_camera_surface_height(D_L05_00174260, (u8 *)&hero.unk280);
@@ -194,11 +198,11 @@ void FUN_L05_002402a8(void) {
         if (collision_line(&ground_probe_endpoint, &shared_probe_endpoint, 0x24, (s32)hero.moby, 0) == 0) {
             goto d1;
         }
-        r = coll_sound_class();
+        ground_sound_class = coll_sound_class();
         if (current_level_index == 1 || current_level_index == 0x12) {
-            r = 3;
+            ground_sound_class = 3;
         }
-        hero.unk12ED = r;
+        hero.unk12ED = ground_sound_class;
     }
     if (hero.ground_type == 0xD) {
         hero.water_surface_z = D_L05_00174268;
@@ -293,7 +297,7 @@ d1:
     if (!(hero.ground_distance < 0.25f)) {
         return;
     }
-    FUN_L00_00216078((u8 *)&hero.unk270, &ground_vector_scratch);
+    compute_rotated_vector_angles((u8 *)&hero.unk270, &ground_vector_scratch);
     if (-0.78539819f < ground_vector_scratch.f[1] && ground_vector_scratch.f[1] < 0.78539819f) {
         hero.ground_pitch.f = ground_vector_scratch.f[1];
     }
@@ -314,7 +318,7 @@ d1:
                 hero.unk2C0.f[i] = 0.0f;
             }
             sceVu0Normalize(&normalized_hit_normal, (u8 *)&HH.normal_x);
-            FUN_L00_00216078(&normalized_hit_normal, &hit_normal_angles);
+            compute_rotated_vector_angles(&normalized_hit_normal, &hit_normal_angles);
             if (-0.78539819f < hit_normal_angles.f[1] && hit_normal_angles.f[1] < 0.78539819f) {
                 hero.unk2C8.f[i] = hit_normal_angles.f[1];
             }
@@ -353,7 +357,9 @@ extern s32 coll2_2133a8(void *, s32, f32, s32, f32) __asm__("FUN_L00_001f19a0");
 extern s32 FUN_L00_001f3170(void *, f32);
 extern void vscl_2133a8(void *, void *, f32) __asm__("FUN_001f9bf8");
 extern u128_2133a8 D_L05_00174270[] __attribute__((section(".data")));
-s32 FUN_L05_00240ed0(s32 mode) {
+s32 resolve_hero_position_collisions(s32 mode) __asm__("FUN_L05_00240ed0");
+
+s32 resolve_hero_position_collisions(s32 mode) {
     V_2133a8 old;
     V_2133a8 collision_query_offset;
     V_2133a8 resolved_displacement;
@@ -491,21 +497,23 @@ extern float forward_component(void *) __asm__("FUN_L00_00213350");
 extern float gravity_length_xy(float *v) __asm__("FUN_L00_002339d0");
 extern float gravity_z(float *) __asm__("FUN_L00_00233a78");
 extern void set_vector_length_xy(void *, void *, float) __asm__("FUN_001f9c48");
-extern void FUN_L00_00212ff0(void);
-extern void FUN_L00_002137a8(void);
+extern void correct_hero_ground_penetration(void) __asm__("FUN_L00_00212ff0");
+extern void resolve_hero_collisions_with_history(void) __asm__("FUN_L00_002137a8");
 extern void gravity_flatten(float *, float *) __asm__("FUN_L00_002338d0");
 extern void gravity_set_z(float *, float *, float) __asm__("FUN_L00_00233b20");
 extern void FUN_L00_00233ba0(float *, float *, float);
-extern void FUN_L00_00233f80(int, void *, void *);
+extern void update_hero_attachment(int, void *, void *) __asm__("FUN_L00_00233f80");
 extern void add_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void clear_u64_value(void *) __asm__("func_001F99F8");
 extern void normalize_vector_xyz(void *, void *, f32) __asm__("FUN_001f9bf8");
 extern void scale_vector_xyz(void *, void *, float) __asm__("FUN_001f9a68");
 extern void subtract_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a28");
-void FUN_L05_002402a8(void);
+void update_hero_ground_contact(void) __asm__("FUN_L05_002402a8");
 
 /* Same routine as FUN_L16_00211098, without the mode 15 and 21 cases. */
-void FUN_L05_002413e0(void) {
+void integrate_hero_motion_with_collisions(void) __asm__("FUN_L05_002413e0");
+
+void integrate_hero_motion_with_collisions(void) {
     V_c413e0 previous;
     V_c413e0 work;
     V_c413e0 plane;
@@ -526,7 +534,7 @@ void FUN_L05_002413e0(void) {
 
     qcopy(previous.f, position);
     player = (L16MovementPlayer *)((char *)position - 0x80);
-    FUN_L00_00233f80(player->physics_mode, (char *)position + 0x70, (char *)position + 0x10);
+    update_hero_attachment(player->physics_mode, (char *)position + 0x70, (char *)position + 0x10);
     /* Limit the velocity by state and mode. Inside an arm `position` moves on to the velocity; it is formed again below. */
     if (player->state == 34 || player->state == 20) {
         float limit;
@@ -589,12 +597,12 @@ void FUN_L05_002413e0(void) {
     contact_player->contact_flag = 0;
     contact_player->contact_state = 0;
     if (vector_length_xyz((char *)position + 0x70) <= 0.0001f) {
-        FUN_L00_002137a8();
-        FUN_L05_002402a8();
+        resolve_hero_collisions_with_history();
+        update_hero_ground_contact();
         subtract_vector_xyz((char *)position + 0x80, position, previous.f);
-        FUN_L00_00212ff0();
+        correct_hero_ground_penetration();
     } else {
-        FUN_L05_002402a8();
+        update_hero_ground_contact();
     }
     delta = (float *)(&hero.motion.unk110);
     new_position = (float *)((char *)delta - 0x90);
@@ -638,10 +646,10 @@ void FUN_L05_002413e0(void) {
         saved = motion_player->contact[3];
         clear_u64_value(contact);
         motion_player->contact[3] = saved;
-        FUN_L00_002137a8();
-        FUN_L05_002402a8();
+        resolve_hero_collisions_with_history();
+        update_hero_ground_contact();
         subtract_vector_xyz(external, new_position, previous.f);
-        FUN_L00_00212ff0();
+        correct_hero_ground_penetration();
     }
     subtract_vector_xyz((char *)delta + 0x30, new_position, work.f);
     motion_player->frame_delta[3] = motion_player->contact[3];

@@ -16,14 +16,14 @@
 extern int coll_line_fix(void *, void *, int, int, int) __asm__("FUN_001efa68");
 
 extern float D_L04_00173FE8 __attribute__((section(".data")));
-float FUN_L04_002922d0(float *pos) {
+float FUN_L04_002922d0(float *probe_origin) {
     float clamped_probe_point[4];
     float raised_probe_point[4];
-    qcopy(clamped_probe_point, pos);
+    qcopy(clamped_probe_point, probe_origin);
     clamped_probe_point[2] = clamped_probe_point[2] - 2.5f;
     if (clamped_probe_point[2] < 0.1f)
         clamped_probe_point[2] = 0.1f;
-    qcopy(raised_probe_point, pos);
+    qcopy(raised_probe_point, probe_origin);
     raised_probe_point[2] = raised_probe_point[2] + 0.75f;
     if (coll_line_fix(raised_probe_point, clamped_probe_point, 2, 0, 0) != 0)
         return D_L04_00173FE8;
@@ -35,7 +35,9 @@ float FUN_L04_002922d0(float *pos) {
 
 /* Ported from rac1-decomp (src/overlays/l04_eudora/vuchain_00293490.c: func_L04_00293530), where it is exact; names translated to the US level program. */
 
-void FUN_L04_00292370(void *unused, char *movement_data) {
+void initialize_leg_rig_angle_defaults(void *unused, char *movement_data) __asm__("FUN_L04_00292370");
+
+void initialize_leg_rig_angle_defaults(void *unused, char *movement_data) {
     *(float *)(movement_data + 0x10C) = -0.19634955f;
     *(float *)(movement_data + 0x110) = 1.5707964f;
     *(float *)(movement_data + 0x1BC) = -1.5707964f;
@@ -53,7 +55,9 @@ extern void get_joint_matrix(struct Moby *m, int joint, float *mtx) __asm__("FUN
 extern float fast_arc_tan(float, float) __asm__("FUN_001f9e90");
 extern void attach_manipulator(struct Moby *m, int slot, LegRigManip *manip) __asm__("FUN_0020cb10");
 
-void FUN_L04_002923b8(struct Moby *moby, LegRig *rig) {
+void initialize_leg_rig(struct Moby *moby, LegRig *rig) __asm__("FUN_L04_002923b8");
+
+void initialize_leg_rig(struct Moby *moby, LegRig *rig) {
     int joints[6];
     float matrix[4][4];
     int i;

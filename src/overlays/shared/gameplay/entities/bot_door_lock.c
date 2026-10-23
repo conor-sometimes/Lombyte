@@ -137,7 +137,9 @@ extern int trooper_play_sound(int i, int a1, int v, int k) __asm__("FUN_L00_0028
 extern void allocate_voice_for_target_entry(int, int, int) __asm__("FUN_0022da68");
 extern void jet_clear_persistent(int idx) __asm__("FUN_L00_002502a0");
 
-void FUN_L06_00307c48(unsigned char *lock_moby, unsigned char *target_moby) {
+void activate_bot_door_lock_target(unsigned char *lock_moby, unsigned char *target_moby) __asm__("FUN_L06_00307c48");
+
+void activate_bot_door_lock_target(unsigned char *lock_moby, unsigned char *target_moby) {
     switch (*(short *)(target_moby + 0xA6)) {
     case 0x3F7:
     case 0x502:
@@ -266,7 +268,7 @@ void bot_door_lock_update(char *moby) {
         }
         if (idata[5] < 1 || D_0014C050[(unsigned char)moby[0xb0] + current_level_index * 16] == 0xff) {
             for (i = 0; i < 4; i++) {
-                if (idata[i] != -1) FUN_L06_00307c48((unsigned char *)moby, (unsigned char *)(D_L06_0015FFD8_gp + idata[i] * 0x100));
+                if (idata[i] != -1) activate_bot_door_lock_target((unsigned char *)moby, (unsigned char *)(D_L06_0015FFD8_gp + idata[i] * 0x100));
             }
             moby[0x20] = 2;
         }
@@ -317,7 +319,9 @@ void mark_moby_for_removal_c(struct Obj *obj) __asm__("FUN_0020c828");
 extern char *mk_a(int) __asm__("FUN_0020c4f8");
 extern void upd_a(void *) __asm__("FUN_L00_00250df8");
 
-void FUN_L06_00309860(char *self) {
+void update_hit_triggered_moby_breakup(char *self) __asm__("FUN_L06_00309860");
+
+void update_hit_triggered_moby_breakup(char *self) {
     enum {
         MOBY_STATE_INITIALIZE = 0,
         MOBY_STATE_WAIT_FOR_HIT = 1,
@@ -364,11 +368,15 @@ void FUN_L06_00309860(char *self) {
 /* UpdateMoby: state 0 deletes, state 1 draws and times out */
 /* Ported from rac1-decomp (src/overlays/shared/vendor_002FF000.c: func_L06_0030D2A0), where it is exact; names translated to the US level program. */
 
-void FUN_L06_0030bfa8(char *moby);
+void draw_projected_fading_quad(char *moby) __asm__("FUN_L06_0030bfa8");
+
+void draw_projected_fading_quad(char *moby) __asm__("FUN_L06_0030bfa8");
 void enqueue_callback_list_1(s32 arg0, s32 arg1) __asm__("FUN_001f4600");
 void mark_moby_for_removal(struct Obj *obj) __asm__("FUN_0020c828");
 
-void FUN_L06_0030be60(char *moby) {
+void update_timed_sprite_effect(char *moby) __asm__("FUN_L06_0030be60");
+
+void update_timed_sprite_effect(char *moby) {
     enum {
         SPRITE_EFFECT_STATE_REMOVE = 0,
         SPRITE_EFFECT_STATE_ANIMATE = 1
@@ -379,7 +387,7 @@ void FUN_L06_0030be60(char *moby) {
         mark_moby_for_removal(moby);
         break;
     case SPRITE_EFFECT_STATE_ANIMATE:
-        enqueue_callback_list_1(FUN_L06_0030bfa8, moby);
+        enqueue_callback_list_1(draw_projected_fading_quad, moby);
         effect_data[0] = effect_data[0] + effect_data[1];
         if (2.0f < effect_data[0]) {
             mark_moby_for_removal(moby);
@@ -424,7 +432,7 @@ extern s32 D_L06_00162424 __attribute__((sda));
 extern s32 D_L06_00162428 __attribute__((sda));
 
 /* Draws a screen-space sprite at the moby, grown and faded in by the first data float. */
-void FUN_L06_0030bfa8(char *moby) {
+void draw_projected_fading_quad(char *moby) {
     float *effect_data = *(float **)(moby + 0x78);
     OvlVec4 world_position;
     s64 corners[4];

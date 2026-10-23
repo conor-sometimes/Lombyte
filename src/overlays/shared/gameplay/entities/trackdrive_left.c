@@ -38,7 +38,9 @@ void FUN_L02_002a4058(char *value_target, int val, float scale) {
 
 extern void FUN_L02_002a4058_u(char *arg, int val) __asm__("FUN_L02_002a4058");
 
-void FUN_L02_002a40d0(char *value_target) {
+void prepare_scaled_table_with_byte_128(char *value_target) __asm__("FUN_L02_002a40d0");
+
+void prepare_scaled_table_with_byte_128(char *value_target) {
     FUN_L02_002a4058_u(value_target, 0x80);
 }
 #include "qcopy.h"
@@ -114,7 +116,9 @@ struct QuadTextureState {
 extern struct QuadTextureState quad_texture_state __asm__("D_L02_001612F0") __attribute__((section(".sdata")));
 #define TEXTURE_REGISTER (quad_texture_state.tex0)
 
-void FUN_L02_002a40f0(QuadDrawArgs *draw_parameters) {
+void build_interpolated_dma_packet(QuadDrawArgs *draw_parameters) __asm__("FUN_L02_002a40f0");
+
+void build_interpolated_dma_packet(QuadDrawArgs *draw_parameters) {
     float view_matrix[16];
     int *base;
     int *cursor;
@@ -267,7 +271,9 @@ extern void update_view_context(void) __asm__("FUN_001f2d98");
 void aa_blur_pass(void) __asm__("FUN_001fb680");
 extern void aa_blur_pass_00233b68(void) __asm__("FUN_00233b68");
 
-void FUN_L02_002a46e0(void) {
+void restore_view_after_textured_grid(void) __asm__("FUN_L02_002a46e0");
+
+void restore_view_after_textured_grid(void) {
     char *camera_state;
     long *gs_register_packet;
     int *packet_base;
@@ -325,18 +331,18 @@ extern void fast_vec_add(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void fast_vec_scale(void *, void *, float) __asm__("FUN_001f9a68");
 
 /* Spawn point for the moby: its slot's stored position and rotation, or, with no slot, a point beside it on the side facing the hero. */
-void FUN_L02_002d8910(float *pos, float *rot, char *moby) {
+void FUN_L02_002d8910(float *pos, float *camera_rotation_output, char *moby) {
     V2d8910 midpoint_position;
     float left;
     float right;
     float pick;
     float to;
     float dl;
-    int idx;
+    int camera_transform_index;
     char *base;
 
-    idx = *(int *)(*(char **)(moby + 0x78) + 0xE8);
-    if (idx == -1) {
+    camera_transform_index = *(int *)(*(char **)(moby + 0x78) + 0xE8);
+    if (camera_transform_index == -1) {
         left = addrot_2d8910(*(float *)(moby + 0x48), 1.57079637f);
         right = addrot_2d8910(*(float *)(moby + 0x48), -1.57079637f);
         to = atan2_2d8910(D_L02_00167280_2d8910.x - *(float *)(moby + 0x10),
@@ -349,13 +355,13 @@ void FUN_L02_002d8910(float *pos, float *rot, char *moby) {
         pos[0] += cos_2d8910(pick) * 2.0f;
         pos[1] += sin_2d8910(pick) * 2.0f;
         pos[2] += 1.0f;
-        rot[0] = 0;
-        rot[1] = 0;
-        rot[2] = addrot_2d8910(pick, 3.14159274f);
+        camera_rotation_output[0] = 0;
+        camera_rotation_output[1] = 0;
+        camera_rotation_output[2] = addrot_2d8910(pick, 3.14159274f);
     } else {
         base = D_L02_001600EC_2d8910;
-        qcopy(pos, base + idx * 128 + 0x30);
-        qcopy(rot, base + idx * 128 + 0x70);
+        qcopy(pos, base + camera_transform_index * 128 + 0x30);
+        qcopy(camera_rotation_output, base + camera_transform_index * 128 + 0x70);
     }
 }
 
@@ -679,22 +685,22 @@ extern float func_001FA790_d92f0(float, float) __asm__("FUN_001fa5c8");
 extern float D_0015EE6C_d92f0 __asm__("D_0015ED6C");
 void FUN_L02_002d92f0(char *moby) {
     float position_delta[4];
-    char *g;
+    char *hero_position;
     float f;
-    float lim;
+    float max_yaw_step;
     struct Hero *hero_ptr;
     func_L00_00250800_d92f0(moby, 0, position_delta);
-    g = (char *)&hero.motion.pos;
-    fast_vec_sub(position_delta, position_delta, g);
+    hero_position = (char *)&hero.motion.pos;
+    fast_vec_sub(position_delta, position_delta, hero_position);
     func_L00_002607A8_d92f0(position_delta, D_0015EE6C_d92f0 * 4.0f);
-    func_001F9BD8_d92f0(g, g, position_delta);
+    func_001F9BD8_d92f0(hero_position, hero_position, position_delta);
     f = func_001FA748_d92f0(*(float *)(moby + 0x48), 3.14159f);
-    f = func_001FA790_d92f0(f, *(float *)(g + 0x18));
-    lim = D_0015EE6C_d92f0 * 6.2831855f;
-    if (lim < f) {
-        f = lim;
-    } else if (f < -lim) {
-        f = -lim;
+    f = func_001FA790_d92f0(f, *(float *)(hero_position + 0x18));
+    max_yaw_step = D_0015EE6C_d92f0 * 6.2831855f;
+    if (max_yaw_step < f) {
+        f = max_yaw_step;
+    } else if (f < -max_yaw_step) {
+        f = -max_yaw_step;
     }
     hero_ptr = &hero;
     hero_ptr->motion.rot.f[2] = func_001FA748_d92f0(f, hero_ptr->motion.rot.f[2]);
@@ -791,10 +797,10 @@ void FUN_L02_002da6c0(int unused_texture, int unused_parameter, int sel, float a
     u32 col[4];
     int uv[4];
     float M[4][4];
-    float ang[4];
+    float arrow_rotation_angles[4];
     int x, y;
-    long v;
-    s64 tex;
+    long packed_arrow_center;
+    s64 texture_tex0;
     switch (sel) {
     case ARROW_STYLE_NEWLY_REACHED:
         uv[0] = D_L02_00161ABC;
@@ -822,16 +828,16 @@ void FUN_L02_002da6c0(int unused_texture, int unused_parameter, int sel, float a
     col[0] = D_L02_00161B9C;
     y = func_001FA898_r(fast_sin(angle) * radial_distance * 16.0f);
     x = func_001FA898_r(fast_cos(angle) * radial_distance * 16.0f);
-    v = (long)y + 0xFFFFF080000000L;
-    v -= x << 16;
-    v += 0x8000;
-    xy[3] = v;
-    xy[2] = v;
-    xy[1] = v;
-    xy[0] = v;
-    clear_vector(ang);
-    ang[2] = -angle;
-    euler_rotation_matrix(M, ang);
+    packed_arrow_center = (long)y + 0xFFFFF080000000L;
+    packed_arrow_center -= x << 16;
+    packed_arrow_center += 0x8000;
+    xy[3] = packed_arrow_center;
+    xy[2] = packed_arrow_center;
+    xy[1] = packed_arrow_center;
+    xy[0] = packed_arrow_center;
+    clear_vector(arrow_rotation_angles);
+    arrow_rotation_angles[2] = -angle;
+    euler_rotation_matrix(M, arrow_rotation_angles);
     multiply_matrix(M, M, D_L02_001D33B0);
     xy[0] += func_001FA898_r(M[0][0] * 16.0f) << 16;
     xy[0] += func_001FA898_r(M[0][1] * 16.0f);
@@ -841,9 +847,9 @@ void FUN_L02_002da6c0(int unused_texture, int unused_parameter, int sel, float a
     xy[2] += func_001FA898_r(M[2][1] * 16.0f);
     xy[3] += func_001FA898_r(M[3][0] * 16.0f) << 16;
     xy[3] += func_001FA898_r(M[3][1] * 16.0f);
-    tex = get_effect_texture(D_L02_00161B1C_gp + 0x29);
-    FUN_L02_0020bc88(xy, uv, col, tex, 1);
-    FUN_L02_0020bc88(xy, uv, col, tex, 1);
+    texture_tex0 = get_effect_texture(D_L02_00161B1C_gp + 0x29);
+    FUN_L02_0020bc88(xy, uv, col, texture_tex0, 1);
+    FUN_L02_0020bc88(xy, uv, col, texture_tex0, 1);
 }
 extern s32 D_L02_0015F5CC;
 extern f32 D_L02_00161B60 __attribute__((sda));
@@ -883,21 +889,21 @@ void FUN_L02_002da938(void *unused, f32 angle, f32 start_distance, f32 end_dista
     s32 vertex_colors[4];
     s32 vertex_uvs[4];
     s32 unwrapped_uv_scroll;
-    s32 off;
+    s32 wrapped_uv_scroll_offset;
     s32 tex;
     f32 f24, f25, f26, f27, f28, f29, f30, f31;
     f32 trig_value;
 
     unwrapped_uv_scroll = truncate_float_to_s32((f32)D_L02_0015F5CC * D_L02_00161B60);
-    off = (unwrapped_uv_scroll % 512) << 16;
+    wrapped_uv_scroll_offset = (unwrapped_uv_scroll % 512) << 16;
     vertex_colors[3] = color;
     vertex_colors[2] = color;
     vertex_colors[1] = color;
     vertex_colors[0] = color;
-    vertex_uvs[0] = (s32)(D_L02_00161AEC + off);
-    vertex_uvs[1] = (s32)(D_L02_00161AF0 + off);
-    vertex_uvs[2] = (s32)(D_L02_00161AF4 + off);
-    vertex_uvs[3] = (s32)(D_L02_00161AF8 + off);
+    vertex_uvs[0] = (s32)(D_L02_00161AEC + wrapped_uv_scroll_offset);
+    vertex_uvs[1] = (s32)(D_L02_00161AF0 + wrapped_uv_scroll_offset);
+    vertex_uvs[2] = (s32)(D_L02_00161AF4 + wrapped_uv_scroll_offset);
+    vertex_uvs[3] = (s32)(D_L02_00161AF8 + wrapped_uv_scroll_offset);
 
     f25 = fast_sin(angle) * start_distance;
     f24 = fast_cos(angle) * start_distance;

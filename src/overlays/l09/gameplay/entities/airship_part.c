@@ -1,3 +1,7 @@
+int find_nearest_moby_by_class() __asm__("FUN_L09_002c2610");
+
+int spawn_airship_part() __asm__("FUN_L09_002c2500");
+
 /* Airship parts update. Its own unit: it reads the spawn counter D_L09_001613C8 through gp, where FUN_L09_00300888 in asteroid.c reads it through lui. */
 #include "types.h"
 #include "rnc/gameplay/entities/moby.h"
@@ -94,8 +98,8 @@ extern f32 frame_time __asm__("D_0015ED6C") __attribute__((section(".sdata")));
 extern f32 frame_time_sq_macro __asm__("D_0015ED70") __attribute__((section(".sdata")));
 extern int D_L09_001613C8 __attribute__((sda));
 /* Update for the airship parts (classes 0x49E-0x4A5): attach to the hull, ride it, then break off, tumble away and fall with smoke and sparks. */
-void FUN_L09_002c26c8(struct Moby *moby);
-void FUN_L09_002c26c8(struct Moby *moby) {
+void update_airship_part(struct Moby *moby) __asm__("FUN_L09_002c26c8");
+void update_airship_part(struct Moby *moby) {
     enum {
         AIRSHIP_PART_STATE_INITIALIZE = 0,
         AIRSHIP_PART_STATE_WAIT_FOR_BREAKUP_COMMAND = 1,
@@ -104,7 +108,7 @@ void FUN_L09_002c26c8(struct Moby *moby) {
         AIRSHIP_PART_STATE_FALLING_WITH_EFFECTS = 4,
         AIRSHIP_PART_STATE_FALLING_AFTER_DAMPING = 5
     };
-    float vec[4];
+    float point_offset_and_effect_scratch[4];
     Buf_2c26c8 transform_and_effect_scratch;
     float rotm[4][4];
     float nearest_parent_distance;
@@ -116,7 +120,7 @@ void FUN_L09_002c26c8(struct Moby *moby) {
     case AIRSHIP_PART_STATE_INITIALIZE: {
         float joint_offset_scale;
 
-        FUN_L00_0024f7c8_2c26c8(moby, 0, vec);
+        FUN_L00_0024f7c8_2c26c8(moby, 0, point_offset_and_effect_scratch);
         if (part_vars->f68 != -1 && ((Flags_2c26c8 *)(D_0013D388_2c26c8 + part_vars->f68))->b39 != 0) {
             FUN_0020c828_2c26c8(moby);
             return;
@@ -129,14 +133,14 @@ void FUN_L09_002c26c8(struct Moby *moby) {
                 part_vars->parent = 0;
                 for (i = 0x49E; i < 0x4A6; i++) {
                     if (i != 0x4A0) {
-                        FUN_L09_002c2500((char *)moby, (char *)vec, i);
+                        spawn_airship_part((char *)moby, (char *)point_offset_and_effect_scratch, i);
                     }
                 }
             }
         } else {
             struct Moby *p;
             nearest_parent_distance = 100000.0f;
-            p = (struct Moby *)FUN_L09_002c2610(((f32 *)&moby->pos), 0x4A0, &nearest_parent_distance);
+            p = (struct Moby *)find_nearest_moby_by_class(((f32 *)&moby->pos), 0x4A0, &nearest_parent_distance);
             if (nearest_parent_distance < 20.0f) {
                 part_vars->parent = p;
                 (*(Data_2c26c8 **)&p->pvars)->parts[moby->oclass - 0x49E] = moby;
@@ -161,9 +165,9 @@ void FUN_L09_002c26c8(struct Moby *moby) {
             struct Moby *p = part_vars->parent;
             qcopy(((f32 *)&moby->rot), ((f32 *)&p->rot));
             FUN_001fa050_2c26c8(rotm, ((f32 *)&p->rot));
-            FUN_001f9d20_2c26c8(vec, part_vars->off, rotm);
+            FUN_001f9d20_2c26c8(point_offset_and_effect_scratch, part_vars->off, rotm);
             FUN_L00_0024f7c8_2c26c8(part_vars->parent, 0, transform_and_effect_scratch.m[0]);
-            FUN_001f9a28_2c26c8(((f32 *)&moby->pos), transform_and_effect_scratch.m[0], vec);
+            FUN_001f9a28_2c26c8(((f32 *)&moby->pos), transform_and_effect_scratch.m[0], point_offset_and_effect_scratch);
         }
         if (part_vars->parent != 0) {
             moby->flags &= ~1;
@@ -201,10 +205,10 @@ void FUN_L09_002c26c8(struct Moby *moby) {
         if (moby->oclass == 0x4A0) {
             FUN_0022da68_2c26c8(2, 0, (int)moby);
         }
-        FUN_L00_0024f7c8_2c26c8(moby, 0, vec);
-        FUN_001f9a28_2c26c8(part_vars->vel, ((f32 *)&moby->pos), vec);
+        FUN_L00_0024f7c8_2c26c8(moby, 0, point_offset_and_effect_scratch);
+        FUN_001f9a28_2c26c8(part_vars->vel, ((f32 *)&moby->pos), point_offset_and_effect_scratch);
         FUN_001f9a68_2c26c8(part_vars->vel, part_vars->vel, D_L09_001613A8 * frame_time / 20.0f);
-        FUN_001f9a28_2c26c8(transform_and_effect_scratch.m[0], vec, &hero.motion.pos);
+        FUN_001f9a28_2c26c8(transform_and_effect_scratch.m[0], point_offset_and_effect_scratch, &hero.motion.pos);
         if (moby->oclass >= 0x4A1 && moby->oclass <= 0x4A2) {
             FUN_001f9bf8_2c26c8(transform_and_effect_scratch.m[0], transform_and_effect_scratch.m[0], D_L09_001613B8 * frame_time);
         } else {
@@ -234,9 +238,9 @@ void FUN_L09_002c26c8(struct Moby *moby) {
             return;
         }
         if (FUN_00213260_2c26c8(3) == 0) {
-            FUN_001f99f8_2c26c8(vec);
+            FUN_001f99f8_2c26c8(point_offset_and_effect_scratch);
             transform_and_effect_scratch.pair = D_L09_001613D0;
-            FUN_L00_0026a9f0_2c26c8(((f32 *)&moby->pos), vec, 0x2F3F3F7F, transform_and_effect_scratch.pair.v[FUN_00213260_2c26c8(2)], FUN_L00_00257b90_2c26c8(FUN_001f96f8_2c26c8(0xF), FUN_001f96f8_2c26c8(0x14)), FUN_L00_00257b90_2c26c8(FUN_001f96f8_2c26c8(0x19), FUN_001f96f8_2c26c8(0x1E)), 0, 0, 400000.0f, FUN_002132a8_2c26c8(8.0f, 16.0f) * frame_time);
+            FUN_L00_0026a9f0_2c26c8(((f32 *)&moby->pos), point_offset_and_effect_scratch, 0x2F3F3F7F, transform_and_effect_scratch.pair.v[FUN_00213260_2c26c8(2)], FUN_L00_00257b90_2c26c8(FUN_001f96f8_2c26c8(0xF), FUN_001f96f8_2c26c8(0x14)), FUN_L00_00257b90_2c26c8(FUN_001f96f8_2c26c8(0x19), FUN_001f96f8_2c26c8(0x1E)), 0, 0, 400000.0f, FUN_002132a8_2c26c8(8.0f, 16.0f) * frame_time);
         }
         if (moby->pos.z < 25.0f) {
             int i;
@@ -245,15 +249,15 @@ void FUN_L09_002c26c8(struct Moby *moby) {
                 qcopy(transform_and_effect_scratch.m[1], ((f32 *)&moby->pos));
                 transform_and_effect_scratch.m[1][0] += FUN_002132a8_2c26c8(-3.0f, 3.0f);
                 transform_and_effect_scratch.m[1][1] += FUN_002132a8_2c26c8(-3.0f, 3.0f);
-                vec[2] = D_L09_00161374 * frame_time;
-                vec[0] += FUN_001f9dc8_2c26c8(effect_direction_angle) * D_L09_0016137C;
-                vec[1] += FUN_001f9de0_2c26c8(effect_direction_angle) * D_L09_0016137C;
+                point_offset_and_effect_scratch[2] = D_L09_00161374 * frame_time;
+                point_offset_and_effect_scratch[0] += FUN_001f9dc8_2c26c8(effect_direction_angle) * D_L09_0016137C;
+                point_offset_and_effect_scratch[1] += FUN_001f9de0_2c26c8(effect_direction_angle) * D_L09_0016137C;
                 transform_and_effect_scratch.m[0][2] = D_L09_00161378 * frame_time;
                 transform_and_effect_scratch.m[0][0] += FUN_001f9dc8_2c26c8(effect_direction_angle) * D_L09_00161380;
                 transform_and_effect_scratch.m[0][1] += FUN_001f9de0_2c26c8(effect_direction_angle) * D_L09_00161380;
-                vec[3] = D_L09_00161390;
+                point_offset_and_effect_scratch[3] = D_L09_00161390;
                 transform_and_effect_scratch.m[0][3] = D_L09_00161394;
-                FUN_00218888_2c26c8(transform_and_effect_scratch.m[1], vec, transform_and_effect_scratch.m[0], D_L09_0016136C, D_L09_00161370,
+                FUN_00218888_2c26c8(transform_and_effect_scratch.m[1], point_offset_and_effect_scratch, transform_and_effect_scratch.m[0], D_L09_0016136C, D_L09_00161370,
                     truncate_float_to_s32_r(FUN_001f96b0_2c26c8(FUN_002132a8_2c26c8(D_L09_00161384, D_L09_00161384 * 2))),
                     truncate_float_to_s32_r(FUN_001f96b0_2c26c8(FUN_002132a8_2c26c8(D_L09_00161388, D_L09_00161388 * 2))),
                     truncate_float_to_s32_r(FUN_001f96b0_2c26c8(FUN_002132a8_2c26c8(D_L09_0016138C, D_L09_0016138C * 2))),

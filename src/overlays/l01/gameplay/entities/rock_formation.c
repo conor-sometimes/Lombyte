@@ -357,7 +357,9 @@ extern s32 spawn_glow_particle(void *, void *, void *, f32, s32, s32, s32, s32, 
 extern s32 FUN_0022da68(s32, s32, void *);
 extern void mine_camera_blast(void *, void *, s32, s32) __asm__("FUN_L00_002d3838");
 
-void FUN_L01_002fa1b0(struct Moby *moby, u128 *where, s32 sound, f32 scale, f32 light)
+void spawn_explosion_effects(struct Moby *moby, u128 *where, s32 sound, f32 scale, f32 light) __asm__("FUN_L01_002fa1b0");
+
+void spawn_explosion_effects(struct Moby *moby, u128 *where, s32 sound, f32 scale, f32 light)
 {
     BurstVec burst_position;
     BurstVec particle_base_velocity;
@@ -444,7 +446,7 @@ extern void fast_vec_add(void *, void *, void *) __asm__("FUN_001f9a10");
 extern f32 vector_distance(void *, void *) __asm__("FUN_001f9b80");
 extern s32 collision_line(void *, void *, s32, void *, void *) __asm__("FUN_001efa68");
 extern s32 probe_world_sphere(f32, void *, s32, void *, void *) __asm__("FUN_L00_001f2868");
-void FUN_L01_002fa1b0(struct Moby *moby, u128 *where, s32 sound, f32 scale, f32 light);
+void spawn_explosion_effects(struct Moby *moby, u128 *where, s32 sound, f32 scale, f32 light) __asm__("FUN_L01_002fa1b0");
 void mark_moby_for_removal(void *) __asm__("FUN_0020c828");
 extern u8 D_L01_00167240[];
 extern u128 D_L01_001742E0;
@@ -491,18 +493,18 @@ void update_birdbot_projectile(DropMoby *projectile) {
     probe.id = projectile->hA6;
     if (fast_dec_timer(projectile_vars->sound) != 0) {
         burst_position = projectile->pos.q;
-        FUN_L01_002fa1b0(projectile, &burst_position, 0, 0.5f, zero);
+        spawn_explosion_effects(projectile, &burst_position, 0, 0.5f, zero);
         mark_moby_for_removal(projectile);
     } else if (collision_line(&previous_position, pos, 0, projectile_vars->coll, &probe) != 0) {
         qcopy(pos, &D_L01_001742E0);
         burst_position = projectile->pos.q;
-        FUN_L01_002fa1b0(projectile, &burst_position, 0, 0.5f, zero);
+        spawn_explosion_effects(projectile, &burst_position, 0, 0.5f, zero);
         mark_moby_for_removal(projectile);
     } else {
         half = 0.5f;
         if (probe_world_sphere(half, pos, 0x10, projectile_vars->coll, &probe) != 0) {
             burst_position = projectile->pos.q;
-            FUN_L01_002fa1b0(projectile, &burst_position, 0, half, zero);
+            spawn_explosion_effects(projectile, &burst_position, 0, half, zero);
             mark_moby_for_removal(projectile);
         }
     }
@@ -1086,7 +1088,9 @@ extern f32 D_L01_00161208 __attribute__((section(".sdata")));
 extern f32 D_L01_0016120C __attribute__((section(".sdata")));
 extern f32 D_L01_00161210 __attribute__((section(".sdata")));
 extern f32 D_L01_00161214 __attribute__((section(".sdata")));
-void FUN_L01_002fd0e8(struct Moby *moby) {
+void update_pool_tiles_and_effects(struct Moby *moby) __asm__("FUN_L01_002fd0e8");
+
+void update_pool_tiles_and_effects(struct Moby *moby) {
     enum {
         POOL_INITIALIZE = 0,
         POOL_UPDATE_TILES_AND_EFFECTS = 1
@@ -1273,7 +1277,7 @@ void *trooper_find_hit(void *, s32, s32) __asm__("FUN_L00_0025a420");
 extern s32 FUN_0022da68(s32, s32, void *);
 extern void FUN_L01_002787a0();
 extern void *FUN_L00_00263fd8(void *, s32, void *, void *, s32, s32, void *, void *, f32, void *);
-extern void FUN_L01_00278e20();
+extern void spawn_moby_from_placement() __asm__("FUN_L01_00278e20");
 void mark_moby_for_removal(void *) __asm__("FUN_0020c828");
 extern float fast_cos(float) __asm__("FUN_001f9dc8");
 extern float fast_sin(float) __asm__("FUN_001f9de0");
@@ -1324,7 +1328,7 @@ void green_mushroom_update(SparkMoby *mushroom_moby) {
             FUN_L00_00263fd8(mushroom_moby, 0x719, &fragment_spawn_position, &fragment_rotation, 0, 0, &D_L01_0015F580, &D_L01_0015F580, 0.0f,
                              &D_L01_0015F580);
         }
-        FUN_L01_00278e20(mushroom_moby, 0x718);
+        spawn_moby_from_placement(mushroom_moby, 0x718);
         mark_moby_for_removal(mushroom_moby);
         break;
     }
@@ -1343,13 +1347,15 @@ s32 D_L01_00161CE0 = 0;
 extern s32 level_frame_count __asm__("D_L01_0015F5CC");
 extern f32 convert_integer_to_float(s32) __asm__("FUN_001fa6c0");
 extern f32 fast_sin(f32) __asm__("FUN_001f9de0");
-extern void FUN_L01_002feb28(void);
+extern void draw_four_scroll_layers(void) __asm__("FUN_L01_002feb28");
 extern int enqueue_callback_list_1(void (*)(void), void *) __asm__("FUN_001f4600");
 
 /* On first use, lowers and ripples the layers' vertices; every frame, pulses their glow and queues FUN_L01_002feb28. */
-void FUN_L01_002feb58(void *callback_argument) {
+void update_scroll_layers_and_queue_draw(void *callback_argument) __asm__("FUN_L01_002feb58");
+
+void update_scroll_layers_and_queue_draw(void *callback_argument) {
     s32 i;
-    s32 g;
+    s32 glow_layer_index;
     s32 j;
     s32 k;
     s32 ripple_layer_index;
@@ -1390,10 +1396,10 @@ void FUN_L01_002feb58(void *callback_argument) {
     }
     glow_factor = fast_sin((convert_integer_to_float(level_frame_count & 0x3F) - 32.0f) * 0.09817477f);
     glow_factor = glow_factor * 0.5f + 0.5f;
-    for (g = 3; g >= 0; g--) {
-        D_L01_001FBC80[g].glow = glow_factor;
+    for (glow_layer_index = 3; glow_layer_index >= 0; glow_layer_index--) {
+        D_L01_001FBC80[glow_layer_index].glow = glow_factor;
     }
-    enqueue_callback_list_1(FUN_L01_002feb28, callback_argument);
+    enqueue_callback_list_1(draw_four_scroll_layers, callback_argument);
 }
 typedef struct {
     Vec4 home;
@@ -1426,7 +1432,7 @@ void door_left_update(HoverMoby *door_moby) {
     };
     HoverVars *door_vars;
     Vec4 *player;
-    Vec4 off;
+    Vec4 door_translation_offset;
     f32 k;
 
     door_vars = door_moby->vars;
@@ -1477,11 +1483,11 @@ void door_left_update(HoverMoby *door_moby) {
         }
         break;
     }
-    off.f[0] = fast_cos(door_moby->rot_z) * door_vars->t * (door_moby->oclass == 0x300 ? 2.0f : -2.0f);
-    off.f[1] = fast_sin(door_moby->rot_z) * door_vars->t * (door_moby->oclass == 0x300 ? 2.0f : -2.0f);
-    off.f[2] = 0.0f;
-    door_moby->pos.f[0] = door_vars->home.f[0] + off.f[0];
-    door_moby->pos.f[1] = door_vars->home.f[1] + off.f[1];
+    door_translation_offset.f[0] = fast_cos(door_moby->rot_z) * door_vars->t * (door_moby->oclass == 0x300 ? 2.0f : -2.0f);
+    door_translation_offset.f[1] = fast_sin(door_moby->rot_z) * door_vars->t * (door_moby->oclass == 0x300 ? 2.0f : -2.0f);
+    door_translation_offset.f[2] = 0.0f;
+    door_moby->pos.f[0] = door_vars->home.f[0] + door_translation_offset.f[0];
+    door_moby->pos.f[1] = door_vars->home.f[1] + door_translation_offset.f[1];
 }
 
 #define NOT_SDA
@@ -1563,7 +1569,7 @@ typedef struct {
 extern void *create_moby(s32 oclass) __asm__("FUN_0020c4f8");
 extern void FUN_L00_00250df8();
 
-SpawnedMoby *FUN_L01_002ffa90(SpawnedMoby *src) {
+SpawnedMoby *FUN_L01_002ffa90(SpawnedMoby *transform_source_moby) {
     SpawnedMoby *spawned_moby;
     s32 *spawned_moby_vars;
 
@@ -1574,9 +1580,9 @@ SpawnedMoby *FUN_L01_002ffa90(SpawnedMoby *src) {
         spawned_moby->b31 = 1;
         spawned_moby->state = 0;
         spawned_moby_vars = spawned_moby->pvars;
-        spawned_moby->d38 = src->d38;
-        qcopy(&spawned_moby->pos, &src->pos);
-        qcopy(&spawned_moby->rot, &src->rot);
+        spawned_moby->d38 = transform_source_moby->d38;
+        qcopy(&spawned_moby->pos, &transform_source_moby->pos);
+        qcopy(&spawned_moby->rot, &transform_source_moby->rot);
         *spawned_moby_vars = -1;
         FUN_L00_00250df8(spawned_moby, -1);
     }
@@ -1603,7 +1609,9 @@ extern void fast_vec_add(void *, void *, void *) __asm__("FUN_001f9a10");
 extern int FUN_L00_00257b90(int lo, int hi);
 extern void FUN_L00_0026ced0_u(void *, void *, u32, u32, f32, s32) __asm__("FUN_L00_0026ced0");
 
-void FUN_L01_002ffb28(SmokeMoby *self) {
+void update_smoke_emitter(SmokeMoby *self) __asm__("FUN_L01_002ffb28");
+
+void update_smoke_emitter(SmokeMoby *self) {
     SmokeVars *smoke_vars;
     Vec4 pos;
     Vec4 particle_velocity;
@@ -1708,7 +1716,9 @@ extern void add_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void mark_moby_for_removal(void *) __asm__("func_0020C828");
 
 /* Per-frame update of a falling debris moby: moves it, bursts into particles when it hits the ground, and removes it when its timer runs out. */
-void FUN_L01_002ffdc0(struct Moby *moby) {
+void update_falling_splash_moby(struct Moby *moby) __asm__("FUN_L01_002ffdc0");
+
+void update_falling_splash_moby(struct Moby *moby) {
     float next_pos[4];
     float effect_pos[4];
     float particle_vel[4];
@@ -1835,7 +1845,7 @@ typedef struct {
     f32 y;
 } PlayerPosView;
 extern s32 FUN_L01_0026e008(s32, s32);
-extern ClonedMoby *FUN_L01_00302328(ClonedMoby *);
+extern ClonedMoby *initialize_beehive_spawn_moby(ClonedMoby *) __asm__("FUN_L01_00302328");
 extern f32 fast_arc_tan(f32, f32) __asm__("FUN_001f9e90");
 extern f32 fast_add_rotations(f32, f32) __asm__("FUN_001fa580");
 extern void trooper_start_knockback(void *, void *, s32, s32, s32, f32) __asm__("FUN_L00_0025c558");
@@ -1867,7 +1877,7 @@ void beehive_update(SpawnerMoby *beehive_moby) {
             break;
         }
         beehive_vars->count++;
-        spawned_clone = (SpawnerMoby *)FUN_L01_00302328((ClonedMoby *)beehive_moby);
+        spawned_clone = (SpawnerMoby *)initialize_beehive_spawn_moby((ClonedMoby *)beehive_moby);
         if (spawned_clone != 0) {
             nv = spawned_clone->pvars;
             k = 0.8f;
@@ -1888,7 +1898,9 @@ void beehive_update(SpawnerMoby *beehive_moby) {
     }
 }
 
-ClonedMoby *FUN_L01_00302328(ClonedMoby *clone_spawner_moby) {
+ClonedMoby *initialize_beehive_spawn_moby(ClonedMoby *clone_spawner_moby) __asm__("FUN_L01_00302328");
+
+ClonedMoby *initialize_beehive_spawn_moby(ClonedMoby *clone_spawner_moby) {
     ClonedMoby *destination_moby;
     ClonedVars *destination_moby_vars;
 

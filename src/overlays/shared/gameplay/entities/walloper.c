@@ -415,8 +415,12 @@ extern s16 D_L00_00161666;
 extern u8 D_L00_001DB5C0[];
 extern u8 D_L00_001DBA20[];
 void FUN_L00_002baae0(void *, s32, s32, s32, f32, f32, f32);
-void FUN_L00_002bb0b0(void *);
-void FUN_L00_002ba970(u8 *moby) {
+void draw_beam_anchor_camera_facing_quads(void *mv) __asm__("FUN_L00_002bb0b0");
+
+void draw_beam_anchor_camera_facing_quads(void *) __asm__("FUN_L00_002bb0b0");
+void draw_beam_and_arc_effects(u8 *moby) __asm__("FUN_L00_002ba970");
+
+void draw_beam_and_arc_effects(u8 *moby) {
     S2ba970 *moby_vars = *(S2ba970 **)(moby + 0x78);
     D_L00_001615EC -= D_L00_001615F0 * frame_scale;
     if (D_L00_001615EC <= -8.0f) {
@@ -434,7 +438,7 @@ void FUN_L00_002ba970(u8 *moby) {
                      D_L00_00161610, 0.2f);
     FUN_L00_002baae0(D_L00_001DBA20 + 0xF0, D_L00_00161666, D_L00_00161666, 5, D_L00_0016160C,
                      D_L00_00161610, 0.2f);
-    FUN_L00_002bb0b0(moby);
+    draw_beam_anchor_camera_facing_quads(moby);
 }
 
 #include "qcopy.h"
@@ -471,7 +475,7 @@ void FUN_L00_002baae0(void *mv, int first_pass_alpha, int second_pass_alpha, int
     RT_2baae0 u;
     RW_2baae0 w120, second_pass_width_offset, first_pass_point_camera_offset, segment_delta, adjusted_segment_start, adjusted_segment_end, segment_start_camera_offset, segment_end_camera_offset, s1A0, s1B0;
     int i, col0, col1;
-    float len, len0, l0, l1, l2;
+    float len, len0, segment_start_camera_distance, segment_end_camera_distance, l2;
     first_pass_render_attributes.q0 = tex_2baae0(D_L00_00161638);
     col0 = D_L00_001615F4 | (first_pass_alpha << 24);
     first_pass_render_attributes.q2 = 0x8000000048L;
@@ -542,18 +546,18 @@ void FUN_L00_002baae0(void *mv, int first_pass_alpha, int second_pass_alpha, int
     for (i = 0; i < point_count - 1; i++) {
         fast_vec_sub(segment_start_camera_offset, point_bytes + i * 16, g_debug_camera);
         fast_vec_sub(segment_end_camera_offset, point_bytes + i * 16 + 16, g_debug_camera);
-        l0 = fast_vec_length(segment_start_camera_offset);
-        l1 = fast_vec_length(segment_end_camera_offset);
-        if (l1 < l0) {
-            if (l1 == 0)
+        segment_start_camera_distance = fast_vec_length(segment_start_camera_offset);
+        segment_end_camera_distance = fast_vec_length(segment_end_camera_offset);
+        if (segment_end_camera_distance < segment_start_camera_distance) {
+            if (segment_end_camera_distance == 0)
                 qcopy(segment_end_camera_offset, segment_start_camera_offset);
             else
-                fast_vec_scale(l0 / l1, segment_end_camera_offset, segment_end_camera_offset);
+                fast_vec_scale(segment_start_camera_distance / segment_end_camera_distance, segment_end_camera_offset, segment_end_camera_offset);
         } else {
-            if (l0 == 0)
+            if (segment_start_camera_distance == 0)
                 qcopy(segment_start_camera_offset, segment_end_camera_offset);
             else
-                fast_vec_scale(l1 / l0, segment_start_camera_offset, segment_start_camera_offset);
+                fast_vec_scale(segment_end_camera_distance / segment_start_camera_distance, segment_start_camera_offset, segment_start_camera_offset);
         }
         fast_vec_add(adjusted_segment_start, g_debug_camera, segment_start_camera_offset);
         fast_vec_add(adjusted_segment_end, g_debug_camera, segment_end_camera_offset);
@@ -615,7 +619,7 @@ extern float D_L00_00161648 __attribute__((sda));
 extern float D_L00_0016164C __attribute__((sda));
 extern V_2bb0b0 D_L00_001DB560[] __attribute__((section(".data")));
 extern UV_2bb0b0 D_L00_001DB5A0[] __attribute__((section(".data")));
-void FUN_L00_002bb0b0(void *mv) {
+void draw_beam_anchor_camera_facing_quads(void *mv) {
     Q_2bb0b0 quad;
     V_2bb0b0 camera_facing_transform[4];
     V_2bb0b0 *quad_anchor_position = *(V_2bb0b0 **)((char *)mv + 0x78);
@@ -666,7 +670,7 @@ u8 *create_moby(s32) __asm__("FUN_0020c4f8");
 void clear_u64_value() __asm__("FUN_001f99f8");
 void refresh_moby_spatial_bounds_from_basis() __asm__("FUN_0020e098");
 void FUN_L00_00250df8();
-u8 *FUN_L00_002bb360(u8 *src) {
+u8 *FUN_L00_002bb360(u8 *basis_source_moby) {
     u8 *spawned_moby = create_moby(0xB3);
     if (spawned_moby) {
         u8 *spawned_moby_vars = *(u8 **)(spawned_moby + 0x78);
@@ -676,11 +680,11 @@ u8 *FUN_L00_002bb360(u8 *src) {
         *(s16 *)(spawned_moby + 0x34) = 0x204;
         spawned_moby[0x23] = 0x50;
         spawned_moby[0x20] = 0;
-        *(u8 **)(spawned_moby_vars + 8) = src;
+        *(u8 **)(spawned_moby_vars + 8) = basis_source_moby;
         clear_u64_value(spawned_moby + 0x40);
-        *(OvlQuad *)(spawned_moby + 0xC0) = *(OvlQuad *)(src + 0xC0);
-        *(OvlQuad *)(spawned_moby + 0xD0) = *(OvlQuad *)(src + 0xD0);
-        *(OvlQuad *)(spawned_moby + 0xE0) = *(OvlQuad *)(src + 0xE0);
+        *(OvlQuad *)(spawned_moby + 0xC0) = *(OvlQuad *)(basis_source_moby + 0xC0);
+        *(OvlQuad *)(spawned_moby + 0xD0) = *(OvlQuad *)(basis_source_moby + 0xD0);
+        *(OvlQuad *)(spawned_moby + 0xE0) = *(OvlQuad *)(basis_source_moby + 0xE0);
         refresh_moby_spatial_bounds_from_basis(spawned_moby);
         FUN_L00_00250df8(spawned_moby);
     }
@@ -705,7 +709,9 @@ typedef struct {
     float fC;
 } V_2bb400;
 
-void FUN_L00_002bb400(unsigned char *moby) {
+void update_linked_moby_scale_and_rotation(unsigned char *moby) __asm__("FUN_L00_002bb400");
+
+void update_linked_moby_scale_and_rotation(unsigned char *moby) {
     V_2bb400 *moby_vars = *(V_2bb400 **)(moby + 0x78);
     unsigned char *o = moby_vars->o;
     int old, unwrapped_angle, angle_delta;
@@ -965,18 +971,20 @@ extern f32 D_L00_00161690 __attribute__((sda));
 extern f32 D_L00_00161694 __attribute__((sda));
 f32 convert_integer_to_float(s32) __asm__("FUN_001fa6c0");
 s32 truncate_float_to_s32(f32) __asm__("FUN_001fa6d0");
-void FUN_L00_002bbbc8(void *, s32, s32, s32, f32, f32, f32);
-void FUN_L00_002bc1a0(void *);
+void draw_walloper_arc_two_pass_quads(void *, s32, s32, s32, f32, f32, f32) __asm__("FUN_L00_002bbbc8");
+void draw_walloper_camera_facing_quad(void *mv) __asm__("FUN_L00_002bc1a0");
+
+void draw_walloper_camera_facing_quad(void *) __asm__("FUN_L00_002bc1a0");
 void FUN_L00_002bbb00(void *moby) {
     s32 i;
     s32 arc_alpha;
     for (i = 0; i < 10; i++) {
         if (D_L00_001DBEC0[i] != 0) {
             arc_alpha = truncate_float_to_s32(convert_integer_to_float(D_L00_001DBED8[i]) * D_L00_00161660_f[29]);
-            FUN_L00_002bbbc8(&D_L00_001DBBA0[i], arc_alpha, arc_alpha, 5, D_L00_00161690, D_L00_00161694, 0.2f);
+            draw_walloper_arc_two_pass_quads(&D_L00_001DBBA0[i], arc_alpha, arc_alpha, 5, D_L00_00161690, D_L00_00161694, 0.2f);
         }
     }
-    FUN_L00_002bc1a0(moby);
+    draw_walloper_camera_facing_quad(moby);
 }
 
 #define NOT_SDA
@@ -1009,15 +1017,15 @@ extern void scale_vector_xyz(void *, void *, float);
 extern void subtract_vector_xyz(void *, void *, void *);
 extern void vu1_add_g_sregister(int, long) __asm__("FUN_00233980");
 
-void FUN_L00_002bbbc8(void *mv, int first_pass_alpha, int second_pass_alpha, int point_count, float sx, float sy, float sz) {
+void draw_walloper_arc_two_pass_quads(void *mv, int first_pass_alpha, int second_pass_alpha, int point_count, float sx, float sy, float sz) {
     char *point_bytes = mv;
     RW first_pass_corners[4];
     RT first_pass_render_attributes;
     RW q2[4];
     RT second_pass_render_attributes;
-    RW w120, second_pass_width_offset, first_pass_point_camera_offset, w150, adjusted_segment_start, adjusted_segment_end, segment_start_camera_offset, segment_end_camera_offset, s1A0, s1B0;
+    RW w120, second_pass_width_offset, first_pass_point_camera_offset, segment_delta, adjusted_segment_start, adjusted_segment_end, segment_start_camera_offset, segment_end_camera_offset, s1A0, s1B0;
     int i, col0, col1;
-    float len, len0, l0, l1;
+    float len, len0, segment_start_camera_distance, segment_end_camera_distance;
     first_pass_render_attributes.q0 = get_effect_texture(*(int *)&D_L00_001616B0);
     col0 = *(int *)&D_L00_00161680 | (first_pass_alpha << 24);
     first_pass_render_attributes.q2 = 0x8000000048L;
@@ -1053,8 +1061,8 @@ void FUN_L00_002bbbc8(void *mv, int first_pass_alpha, int second_pass_alpha, int
     first_pass_render_attributes.f[6] = 1.0f;
     first_pass_render_attributes.f[7] = 1.0f;
     subtract_vector_xyz(first_pass_point_camera_offset, point_bytes, D_L00_00166DC0);
-    subtract_vector_xyz(w150, point_bytes + 0x10, point_bytes);
-    cross_vectors_xyz(w120, w150, first_pass_point_camera_offset);
+    subtract_vector_xyz(segment_delta, point_bytes + 0x10, point_bytes);
+    cross_vectors_xyz(w120, segment_delta, first_pass_point_camera_offset);
     len0 = vector_length_xyz(w120);
     if (len0 != 0)
         len0 = 1.0f / len0;
@@ -1063,8 +1071,8 @@ void FUN_L00_002bbbc8(void *mv, int first_pass_alpha, int second_pass_alpha, int
     subtract_vector_xyz(first_pass_corners[1], point_bytes, w120);
     for (i = 1; i < point_count - 1; i++) {
         subtract_vector_xyz(first_pass_point_camera_offset, point_bytes + i * 16, D_L00_00166DC0);
-        subtract_vector_xyz(w150, point_bytes + i * 16 + 16, point_bytes + i * 16);
-        cross_vectors_xyz(w120, w150, first_pass_point_camera_offset);
+        subtract_vector_xyz(segment_delta, point_bytes + i * 16 + 16, point_bytes + i * 16);
+        cross_vectors_xyz(w120, segment_delta, first_pass_point_camera_offset);
         len = vector_length_xyz(w120);
         if (len != 0)
             len = 1.0f / len;
@@ -1088,27 +1096,27 @@ void FUN_L00_002bbbc8(void *mv, int first_pass_alpha, int second_pass_alpha, int
     for (i = 0; i < point_count - 1; i++) {
         subtract_vector_xyz(segment_start_camera_offset, point_bytes + i * 16, D_L00_00166DC0);
         subtract_vector_xyz(segment_end_camera_offset, point_bytes + i * 16 + 16, D_L00_00166DC0);
-        l0 = vector_length_xyz(segment_start_camera_offset);
-        l1 = vector_length_xyz(segment_end_camera_offset);
-        if (l1 < l0) {
-            if (l1 == 0)
+        segment_start_camera_distance = vector_length_xyz(segment_start_camera_offset);
+        segment_end_camera_distance = vector_length_xyz(segment_end_camera_offset);
+        if (segment_end_camera_distance < segment_start_camera_distance) {
+            if (segment_end_camera_distance == 0)
                 qcopy(segment_end_camera_offset, segment_start_camera_offset);
             else
-                scale_vector_xyz(segment_end_camera_offset, segment_end_camera_offset, l0 / l1);
+                scale_vector_xyz(segment_end_camera_offset, segment_end_camera_offset, segment_start_camera_distance / segment_end_camera_distance);
         } else {
-            if (l0 == 0)
+            if (segment_start_camera_distance == 0)
                 qcopy(segment_start_camera_offset, segment_end_camera_offset);
             else
-                scale_vector_xyz(segment_start_camera_offset, segment_start_camera_offset, l1 / l0);
+                scale_vector_xyz(segment_start_camera_offset, segment_start_camera_offset, segment_end_camera_distance / segment_start_camera_distance);
         }
         add_vector_xyz(adjusted_segment_start, D_L00_00166DC0, segment_start_camera_offset);
         add_vector_xyz(adjusted_segment_end, D_L00_00166DC0, segment_end_camera_offset);
-        subtract_vector_xyz(w150, adjusted_segment_end, adjusted_segment_start);
-        scale_vector_xyz(s1B0, w150, sz);
+        subtract_vector_xyz(segment_delta, adjusted_segment_end, adjusted_segment_start);
+        scale_vector_xyz(s1B0, segment_delta, sz);
         subtract_vector_xyz(adjusted_segment_start, adjusted_segment_start, s1B0);
         add_vector_xyz(adjusted_segment_end, adjusted_segment_end, s1B0);
         subtract_vector_xyz(s1A0, D_L00_00166DC0, adjusted_segment_start);
-        cross_vectors_xyz(w120, s1A0, w150);
+        cross_vectors_xyz(w120, s1A0, segment_delta);
         len = vector_length_xyz(w120);
         if (len != 0)
             len = 1.0f / len;
@@ -1162,17 +1170,17 @@ extern int D_L00_001616C8 __attribute__((sda));
 extern unsigned int D_L00_001616C0 __attribute__((sda));
 extern unsigned int D_L00_001616C4 __attribute__((sda));
 extern V_2bc1a0 D_L00_001DBB60[] __attribute__((section(".data")));
-void FUN_L00_002bc1a0(void *mv) {
+void draw_walloper_camera_facing_quad(void *mv) {
     char *moby_bytes = mv;
     Q_2bc1a0 quad;
-    V_2bc1a0 mat[4];
+    V_2bc1a0 camera_facing_transform[4];
     V_2bc1a0 scaled_corner;
     V_2bc1a0 scaled_basis_offset;
     V_2bc1a0 camera_facing_offset;
     unsigned int c;
     int i;
     FUN_001f9a68_2bc1a0(D_L00_001616BC, &scaled_basis_offset, moby_bytes + 0xD0);
-    FUN_001f9a10_2bc1a0(&mat[3], &scaled_basis_offset, moby_bytes + 0x10);
+    FUN_001f9a10_2bc1a0(&camera_facing_transform[3], &scaled_basis_offset, moby_bytes + 0x10);
     quad.tex = FUN_001f44b8_2bc1a0(D_L00_001616C8);
     quad.unk88 = 0x8000000048L;
     quad.unk80 = 0xFF9000000260L;
@@ -1195,16 +1203,16 @@ void FUN_L00_002bc1a0(void *mv) {
     quad.color[2] = c;
     quad.color[1] = c;
     quad.color[0] = c;
-    FUN_001f9a28_2bc1a0(&camera_facing_offset, &(*(V_2bc1a0 *)g_debug_camera), &mat[3]);
-    FUN_001f9bf8_2bc1a0(&mat[0], &camera_facing_offset, 1.0f);
-    FUN_001f9ad8_2bc1a0(&mat[1], &mat[0], &(*(V_2bc1a0 *)D_0013F5E0));
-    FUN_001f9bf8_2bc1a0(&mat[1], &mat[1], -1.0f);
-    FUN_001f9ad8_2bc1a0(&mat[2], &mat[1], &mat[0]);
-    FUN_001f9a68_2bc1a0(0.2f, &camera_facing_offset, &mat[0]);
-    FUN_001f9a10_2bc1a0(&mat[3], &mat[3], &camera_facing_offset);
+    FUN_001f9a28_2bc1a0(&camera_facing_offset, &(*(V_2bc1a0 *)g_debug_camera), &camera_facing_transform[3]);
+    FUN_001f9bf8_2bc1a0(&camera_facing_transform[0], &camera_facing_offset, 1.0f);
+    FUN_001f9ad8_2bc1a0(&camera_facing_transform[1], &camera_facing_transform[0], &(*(V_2bc1a0 *)D_0013F5E0));
+    FUN_001f9bf8_2bc1a0(&camera_facing_transform[1], &camera_facing_transform[1], -1.0f);
+    FUN_001f9ad8_2bc1a0(&camera_facing_transform[2], &camera_facing_transform[1], &camera_facing_transform[0]);
+    FUN_001f9a68_2bc1a0(0.2f, &camera_facing_offset, &camera_facing_transform[0]);
+    FUN_001f9a10_2bc1a0(&camera_facing_transform[3], &camera_facing_transform[3], &camera_facing_offset);
     for (i = 3; i >= 0; i--) {
         FUN_001f9a68_2bc1a0(D_L00_001616B8, &scaled_corner, &D_L00_001DBB60[3 - i]);
-        FUN_001f9d20_2bc1a0(&quad.corner[3 - i], &scaled_corner, &mat[0]);
+        FUN_001f9d20_2bc1a0(&quad.corner[3 - i], &scaled_corner, &camera_facing_transform[0]);
     }
     FUN_001f7d30_2bc1a0(&quad, 0, 0);
 }
@@ -1282,13 +1290,13 @@ char *FUN_L00_002bc3b0(char *self, float *position, float *heading, float *pitch
         distance = fast_vec_dist(position, target);
         if (distance < 2.5f) {
             float toward;
-            char *g1 = ((char *)&hero);
-            moby = *(char **)(g1 + 0x2080);
-            toward = fast_arc_tan_c(*(float *)(candidate + 0x10) - *(float *)(g1 + 0x80),
-                                   *(float *)(candidate + 0x14) - *(float *)(g1 + 0x84));
+            char *close_range_hero_base = ((char *)&hero);
+            moby = *(char **)(close_range_hero_base + 0x2080);
+            toward = fast_arc_tan_c(*(float *)(candidate + 0x10) - *(float *)(close_range_hero_base + 0x80),
+                                   *(float *)(candidate + 0x14) - *(float *)(close_range_hero_base + 0x84));
             if (fast_difference_between_rotations_c(*(float *)(moby + 0x48), toward) < 1.0471976f &&
                 absolute_float(position[2] - target[2]) < 2.0f &&
-                !collision_line((Vec4f *)position, (Vec4f *)target, 6, *(char **)(g1 + 0x2080), 0)) {
+                !collision_line((Vec4f *)position, (Vec4f *)target, 6, *(char **)(close_range_hero_base + 0x2080), 0)) {
                 selected_target[0] = (int)candidate;
                 *pitch = -elevation;
                 *heading = angle;
@@ -1298,8 +1306,8 @@ char *FUN_L00_002bc3b0(char *self, float *position, float *heading, float *pitch
         if (distance > limit)
             continue;
         {
-            char *g2 = ((char *)&hero);
-            build_spherical_offset(offset, distance, *heading, *pitch + *(float *)(g2 + 0x2E4) * 0.5f);
+            char *aim_offset_hero_base = ((char *)&hero);
+            build_spherical_offset(offset, distance, *heading, *pitch + *(float *)(aim_offset_hero_base + 0x2E4) * 0.5f);
         }
         add_vector_xyz_c4(offset, offset, position);
         apparentAngle = fast_arc_sin(fast_vec_dist(offset, target) / (distance + distance));
@@ -2077,8 +2085,12 @@ extern OvlVec4 D_L00_001DC0E0[] __attribute__((section(".data")));
 extern OvlQuad D_L00_001DC060[][20] __attribute__((section(".data")));
 extern OvlQuad D_L00_001DC1A0[][20] __attribute__((section(".data")));
 void FUN_L00_002be078(void *, int, int, int, float, float, float, int);
-void FUN_L00_002be650(void *);
-void FUN_L00_002be890(void *);
+void draw_beam_pulse_quads(void *unused) __asm__("FUN_L00_002be650");
+
+void draw_beam_pulse_quads(void *) __asm__("FUN_L00_002be650");
+void draw_beam_origin_camera_facing_quads(void *mv) __asm__("FUN_L00_002be890");
+
+void draw_beam_origin_camera_facing_quads(void *) __asm__("FUN_L00_002be890");
 long FUN_001f44b8(int);
 void fast_vec_sub(void *, void *, void *) __asm__("FUN_001f9a28");
 void fast_vec_cross(void *, void *, void *) __asm__("FUN_001f9ad8");
@@ -2090,15 +2102,15 @@ void fast_draw_quad_real(void *, void *, int) __asm__("FUN_001f7d30");
 void FUN_L00_002bdc50(void *moby) {
     Quad quad;
     OvlVec4 edge_to_corner0, edge_to_corner2, face_normal, camera_to_corner1;
-    float y, first_pass_v, b, texture_scroll_step;
+    float y, first_pass_v, second_pass_v, texture_scroll_step;
     int c, i, j, k, off, jo;
 
     D_L00_0016178C = D_L00_0016178C - D_L00_00161790 * frame_scale;
     if (D_L00_0016178C <= -8.0f) D_L00_0016178C += 8.0f;
     FUN_L00_002be078(D_L00_001DC020, D_L00_0016176C, D_L00_00161770, 12, D_L00_00161774, D_L00_00161778, D_L00_0016177C, D_L00_00161784);
     FUN_L00_002be078(D_L00_001DC0E0, D_L00_0016176C, D_L00_00161770, 12, D_L00_00161774, D_L00_00161778, D_L00_0016177C, D_L00_00161788);
-    FUN_L00_002be650(moby);
-    FUN_L00_002be890(moby);
+    draw_beam_pulse_quads(moby);
+    draw_beam_origin_camera_facing_quads(moby);
     k = D_0013E535;
     c = k ? D_L00_00161798 : D_L00_00161794;
     quad.tex = FUN_001f44b8(D_L00_0016179C);
@@ -2119,7 +2131,7 @@ void FUN_L00_002bdc50(void *moby) {
     if (D_L00_00161724 >= 5.0f) D_L00_00161724 -= 5.0f;
     for (i = 2; i < 12; i++) {
         first_pass_v = D_L00_00161720;
-        b = D_L00_00161724;
+        second_pass_v = D_L00_00161724;
         for (j = 0; j < 20; j++) {
             qcopy(&quad.corner[0], &D_L00_001DC1A0[i][j]);
             qcopy(&quad.corner[1], &D_L00_001DC1A0[i][(j + 1) % 20]);
@@ -2131,7 +2143,7 @@ void FUN_L00_002bdc50(void *moby) {
             fast_vec_sub(&camera_to_corner1, &quad.corner[1], &(*(OvlVec4 *)g_debug_camera));
             if (fast_vec_dot(&face_normal, &camera_to_corner1) >= 0.0f) {
                 first_pass_v += D_L00_00161714;
-                b += D_L00_00161714;
+                second_pass_v += D_L00_00161714;
             } else {
                 if (i == 11) {
                     quad.color[0] = quad.color[1] = D_L00_00161794 & 0xFFFFFF;
@@ -2147,14 +2159,14 @@ void FUN_L00_002bdc50(void *moby) {
                 first_pass_v = first_pass_v + D_L00_00161714;
                 fast_draw_quad_real(&quad, 0, 0);
                 quad.uv[0] = y;
-                quad.uv[1] = b;
+                quad.uv[1] = second_pass_v;
                 quad.uv[2] = y;
-                quad.uv[3] = b + D_L00_00161714;
-                quad.uv[5] = b;
+                quad.uv[3] = second_pass_v + D_L00_00161714;
+                quad.uv[5] = second_pass_v;
                 quad.uv[4] = y - D_L00_00161710;
                 quad.uv[6] = y - D_L00_00161710;
-                quad.uv[7] = b + D_L00_00161714;
-                b = b + D_L00_00161714;
+                quad.uv[7] = second_pass_v + D_L00_00161714;
+                second_pass_v = second_pass_v + D_L00_00161714;
                 fast_draw_quad_real(&quad, 0, 0);
             }
         }
@@ -2290,7 +2302,7 @@ extern float D_L00_00161808_macro[3] __asm__("D_L00_00161808") __attribute__((se
 extern int D_L00_00161818_macro[3] __asm__("D_L00_00161818") __attribute__((section(".sdata")));
 extern OvlVec4 D_L00_001DBF20[] __attribute__((section(".data")));
 
-void FUN_L00_002be650(void *unused) {
+void draw_beam_pulse_quads(void *unused) {
     struct GeometryQuad quad;
     Vec4 basis[3], position, corner;
     int color;
@@ -2364,10 +2376,10 @@ extern float D_L00_001617B4 __attribute__((sda));
 extern float D_L00_001617AC __attribute__((sda));
 extern float D_L00_001617B0 __attribute__((sda));
 extern int D_L00_001617B8 __attribute__((sda));
-void FUN_L00_002be890(void *mv) {
+void draw_beam_origin_camera_facing_quads(void *mv) {
     char *moby_bytes = mv;
     Q_2be890 quad;
-    V_2be890 mat[4];
+    V_2be890 camera_facing_transform[4];
     V_2be890 scaled_corner;
     V_2be890 offset_vector;
     int c;
@@ -2390,15 +2402,15 @@ void FUN_L00_002be890(void *mv) {
     quad.unk68 = 1.0f;
     quad.unk6C = 1.0f;
     FUN_001f9bf8_2be890(&offset_vector, moby_bytes + 0xD0, D_L00_001617B4);
-    FUN_001f9a10_2be890(&mat[3], &D_L00_001DBF60_2be890, &offset_vector);
-    FUN_001f9a28_2be890(&offset_vector, &(*(V_2be890 *)g_debug_camera), &mat[3]);
-    FUN_001f9bf8_2be890(&mat[0], &offset_vector, 1.0f);
-    FUN_001f9ad8_2be890(&mat[1], &mat[0], &(*(V_2be890 *)D_0013F5E0));
-    FUN_001f9bf8_2be890(&mat[1], &mat[1], -1.0f);
-    FUN_001f9ad8_2be890(&mat[2], &mat[1], &mat[0]);
+    FUN_001f9a10_2be890(&camera_facing_transform[3], &D_L00_001DBF60_2be890, &offset_vector);
+    FUN_001f9a28_2be890(&offset_vector, &(*(V_2be890 *)g_debug_camera), &camera_facing_transform[3]);
+    FUN_001f9bf8_2be890(&camera_facing_transform[0], &offset_vector, 1.0f);
+    FUN_001f9ad8_2be890(&camera_facing_transform[1], &camera_facing_transform[0], &(*(V_2be890 *)D_0013F5E0));
+    FUN_001f9bf8_2be890(&camera_facing_transform[1], &camera_facing_transform[1], -1.0f);
+    FUN_001f9ad8_2be890(&camera_facing_transform[2], &camera_facing_transform[1], &camera_facing_transform[0]);
     for (i = 3; i >= 0; i--) {
         FUN_001f9a68_2be890(D_L00_001617AC, &scaled_corner, &D_L00_001DBF20[3 - i]);
-        FUN_001f9d20_2be890(&quad.corner[3 - i], &scaled_corner, &mat[0]);
+        FUN_001f9d20_2be890(&quad.corner[3 - i], &scaled_corner, &camera_facing_transform[0]);
     }
     FUN_001f7d30_2be890(&quad, 0, 0);
     quad.color[3] = -1;
@@ -2407,7 +2419,7 @@ void FUN_L00_002be890(void *mv) {
     quad.color[0] = -1;
     for (j = 3; j >= 0; j--) {
         FUN_001f9a68_2be890(D_L00_001617B0, &scaled_corner, &D_L00_001DBF20[3 - j]);
-        FUN_001f9d20_2be890(&quad.corner[3 - j], &scaled_corner, &mat[0]);
+        FUN_001f9d20_2be890(&quad.corner[3 - j], &scaled_corner, &camera_facing_transform[0]);
     }
     FUN_001f7d30_2be890(&quad, 0, 0);
 }
@@ -2457,7 +2469,9 @@ int FUN_L00_002beab0(char *moby, int b, Vx *position_override) {
 
 
 /* Saves the moby's position, word 0x4C and float 0x5C into ((char *)&hero) at 0x1ED0. */
-void FUN_L00_002beb90(char *source_state) {
+void save_state_fields_to_hero(char *source_state) __asm__("FUN_L00_002beb90");
+
+void save_state_fields_to_hero(char *source_state) {
     struct Hero *hero_state = &hero;
     hero_state->unk1ED0 = *(float *)(source_state + 0x40);
     hero_state->unk1ED4 = *(float *)(source_state + 0x44);
@@ -2473,7 +2487,9 @@ void FUN_L00_002beb90(char *source_state) {
 
 
 /* Restores the moby's position, word 0x4C and float 0x5C from ((char *)&hero) at 0x1ED0. */
-void FUN_L00_002bebc8(char *destination_state) {
+void restore_state_fields_from_hero(char *destination_state) __asm__("FUN_L00_002bebc8");
+
+void restore_state_fields_from_hero(char *destination_state) {
     struct Hero *hero_state = &hero;
     *(float *)(destination_state + 0x40) = hero_state->unk1ED0;
     *(float *)(destination_state + 0x44) = hero_state->unk1ED4;
@@ -2530,18 +2546,18 @@ float FUN_L00_002bec80(Vec4_2bec80 *probe_position, void *probing_moby) {
     enum {
         COLLISION_MATERIAL_WATER = 0
     };
-    Vec4_2bec80 lower_probe_point, b;
+    Vec4_2bec80 lower_probe_point, upper_probe_point;
     float f, unclamped_lower_z;
     qcopy(&lower_probe_point, probe_position);
-    qcopy(&b, probe_position);
+    qcopy(&upper_probe_point, probe_position);
     unclamped_lower_z = lower_probe_point.f[2] - 5.0f;
     if (unclamped_lower_z < 0.1f)
         f = 0.1f;
     else
         f = unclamped_lower_z;
     lower_probe_point.f[2] = f;
-    b.f[2] = f + 6.0f;
-    if (FUN_001efa68_002bec80(&b, &lower_probe_point, 6, probing_moby, 0)) {
+    upper_probe_point.f[2] = f + 6.0f;
+    if (FUN_001efa68_002bec80(&upper_probe_point, &lower_probe_point, 6, probing_moby, 0)) {
         char *hit_moby = (*(S173E40_2bec80 *)D_L00_00173E40).o18;
         if (hit_moby && *(char **)(hit_moby + 0x24) && *(short *)(*(char **)(hit_moby + 0x24) + 0x46) == 5) {
             return (*(S173E40_2bec80 *)D_L00_00173E40).f28;
@@ -2570,7 +2586,9 @@ extern float fast_difference_between_rotations(float, float) __asm__("FUN_001fa6
 extern float FUN_001f99c0(float);
 extern int FUN_001efa68_2bed90(void *, void *, int, void *, int) __asm__("FUN_001efa68");
 
-char *FUN_L00_002bed90(char *self, float *position, float *angles, int unused, int mode) {
+char *select_class5_target_or_hero(char *self, float *position, float *angles, int unused, int mode) __asm__("FUN_L00_002bed90");
+
+char *select_class5_target_or_hero(char *self, float *position, float *angles, int unused, int mode) {
     char *candidate;
     char *best = 0;
     float target[4] __attribute__((aligned(16)));
@@ -2676,7 +2694,10 @@ extern f32 fast_vec_dist(void *, void *) __asm__("FUN_001f9b48");
 extern s32 FUN_001efa68_c(void *, void *, s32, void *, s32) __asm__("FUN_001efa68");
 extern f32 FUN_L00_002bec80_c(void *, void *) __asm__("FUN_L00_002bec80");
 
-f32 FUN_L00_002bf050(Mob *moby, VU *pos, f32 *tgt, f32 *out, f32 ang, f32 arc, f32 step, f32 probe_height_offset, f32 horizontal_probe_distance,
+f32 select_moby_heading_by_collision_probes(Mob *moby, VU *probe_origin, f32 *target_position, f32 *out, f32 ang, f32 arc, f32 step, f32 probe_height_offset, f32 horizontal_probe_distance,
+                     f32 probe_start_horizontal_offset) __asm__("FUN_L00_002bf050");
+
+f32 select_moby_heading_by_collision_probes(Mob *moby, VU *probe_origin, f32 *target_position, f32 *out, f32 ang, f32 arc, f32 step, f32 probe_height_offset, f32 horizontal_probe_distance,
                      f32 probe_start_horizontal_offset) {
     VU probe_start;
     VU probe_end;
@@ -2686,11 +2707,11 @@ f32 FUN_L00_002bf050(Mob *moby, VU *pos, f32 *tgt, f32 *out, f32 ang, f32 arc, f
     f32 best;
     f32 bestDist;
     f32 bestDiff;
-    f32 cur;
+    f32 preferred_heading;
     f32 a;
     f32 h2;
     f32 hit_distance;
-    f32 diff;
+    f32 sweep_heading_error;
     Ext *x;
     Hit *t;
 
@@ -2701,26 +2722,26 @@ f32 FUN_L00_002bf050(Mob *moby, VU *pos, f32 *tgt, f32 *out, f32 ang, f32 arc, f
     x = moby->p78;
     bestDiff = 6.2831855f;
     *out = bestDist;
-    if (tgt != 0) {
-        cur = FUN_001f9e90_c(tgt[0] - moby->f10, tgt[1] - moby->f14);
+    if (target_position != 0) {
+        preferred_heading = FUN_001f9e90_c(target_position[0] - moby->f10, target_position[1] - moby->f14);
     } else {
-        cur = ang;
+        preferred_heading = ang;
     }
     arc *= 0.5f;
     fast_add_rotations(ang, arc);
     arc = fast_subtract_rotations(ang, arc);
 
-    qcopy(&probe_start, pos);
-    probe_start.f[1] += fast_sin(cur) * probe_start_horizontal_offset;
-    probe_start.f[0] += fast_cos(cur) * probe_start_horizontal_offset;
+    qcopy(&probe_start, probe_origin);
+    probe_start.f[1] += fast_sin(preferred_heading) * probe_start_horizontal_offset;
+    probe_start.f[0] += fast_cos(preferred_heading) * probe_start_horizontal_offset;
     probe_start.f[2] += probe_height_offset;
-    qcopy(&probe_end, pos);
-    probe_end.f[1] += fast_sin(cur) * horizontal_probe_distance;
-    probe_end.f[0] += fast_cos(cur) * horizontal_probe_distance;
+    qcopy(&probe_end, probe_origin);
+    probe_end.f[1] += fast_sin(preferred_heading) * horizontal_probe_distance;
+    probe_end.f[0] += fast_cos(preferred_heading) * horizontal_probe_distance;
     probe_end.f[2] += probe_height_offset + probe_height_offset;
     if (FUN_001efa68_c(&probe_start, &probe_end, 4, moby, 0) == 0) {
         if (FUN_L00_002bec80_c(&probe_end, moby) != 0.0f) {
-            best = cur;
+            best = preferred_heading;
             bestDist = horizontal_probe_distance;
             *out = horizontal_probe_distance;
         }
@@ -2728,9 +2749,9 @@ f32 FUN_L00_002bf050(Mob *moby, VU *pos, f32 *tgt, f32 *out, f32 ang, f32 arc, f
         if (D_L00_00173E58_bf == x->p38 || (D_L00_00173E58_bf != 0 && D_L00_00173E58_bf->p24 != 0 &&
                                             D_L00_00173E58_bf->p24->h46 == 5)) {
             *out = 100.0f;
-            return cur;
+            return preferred_heading;
         }
-        best = cur;
+        best = preferred_heading;
         bestDist = fast_vec_dist(&probe_start, &D_L00_00173E60);
         bestDiff = 0.0f;
         if (*out < bestDist) {
@@ -2739,19 +2760,19 @@ f32 FUN_L00_002bf050(Mob *moby, VU *pos, f32 *tgt, f32 *out, f32 ang, f32 arc, f
     }
 
     for (i = 0; i < sweep_probe_count; i++) {
-        qcopy(&probe_start, pos);
+        qcopy(&probe_start, probe_origin);
         probe_start.f[1] += fast_sin(arc) * probe_start_horizontal_offset;
         probe_start.f[0] += fast_cos(arc) * probe_start_horizontal_offset;
         probe_start.f[2] += probe_height_offset;
-        qcopy(&probe_end, pos);
+        qcopy(&probe_end, probe_origin);
         probe_end.f[1] += fast_sin(arc) * horizontal_probe_distance;
         probe_end.f[0] += fast_cos(arc) * horizontal_probe_distance;
         probe_end.f[2] += probe_height_offset + probe_height_offset;
         if (FUN_001efa68_c(&probe_start, &probe_end, 4, moby, 0) == 0) {
             if (FUN_L00_002bec80_c(&probe_end, moby) != 0.0f) {
-                diff = fast_difference_between_rotations(arc, cur);
-                if (diff < bestDiff || bestDist < horizontal_probe_distance) {
-                    bestDiff = diff;
+                sweep_heading_error = fast_difference_between_rotations(arc, preferred_heading);
+                if (sweep_heading_error < bestDiff || bestDist < horizontal_probe_distance) {
+                    bestDiff = sweep_heading_error;
                     best = arc;
                     bestDist = horizontal_probe_distance;
                     if (*out < horizontal_probe_distance) {
@@ -2770,14 +2791,14 @@ f32 FUN_L00_002bf050(Mob *moby, VU *pos, f32 *tgt, f32 *out, f32 ang, f32 arc, f
             if (bestDist < hit_distance) {
                 best = arc;
                 bestDist = hit_distance;
-                bestDiff = fast_difference_between_rotations(best, cur);
+                bestDiff = fast_difference_between_rotations(best, preferred_heading);
                 if (*out < hit_distance) {
                     *out = hit_distance;
                 }
             } else if (hit_distance == bestDist) {
-                diff = fast_difference_between_rotations(arc, cur);
-                if (diff < bestDiff) {
-                    bestDiff = diff;
+                sweep_heading_error = fast_difference_between_rotations(arc, preferred_heading);
+                if (sweep_heading_error < bestDiff) {
+                    bestDiff = sweep_heading_error;
                     best = arc;
                     bestDist = hit_distance;
                     if (*out < hit_distance) {
@@ -2790,7 +2811,7 @@ f32 FUN_L00_002bf050(Mob *moby, VU *pos, f32 *tgt, f32 *out, f32 ang, f32 arc, f
     }
 
     ang = fast_subtract_rotations(best, 1.5707964f);
-    qcopy(&probe_start, pos);
+    qcopy(&probe_start, probe_origin);
     probe_start.f[1] += fast_sin(ang) * probe_start_horizontal_offset;
     probe_start.f[0] += fast_cos(ang) * probe_start_horizontal_offset;
     probe_start.f[2] += probe_height_offset * 0.125f;
@@ -2807,7 +2828,7 @@ f32 FUN_L00_002bf050(Mob *moby, VU *pos, f32 *tgt, f32 *out, f32 ang, f32 arc, f
         }
     }
     ang = fast_add_rotations(ang, 3.1415927f);
-    qcopy(&probe_start, pos);
+    qcopy(&probe_start, probe_origin);
     probe_start.f[1] += fast_sin(ang) * probe_start_horizontal_offset;
     probe_start.f[0] += fast_cos(ang) * probe_start_horizontal_offset;
     probe_start.f[2] += probe_height_offset * 0.125f;
@@ -2945,7 +2966,9 @@ extern char D_L00_00173F80_2C0CF8[] __asm__("D_L00_00173E80");
 extern void *D_L00_00173F58_2C0CF8[] __asm__("D_L00_00173E58");
 extern char D_0013E633_2C0CF8[] __asm__("D_00141260");
 
-int FUN_L00_002bf9f0(Mob_2C0CF8 *moby, Blk_2C0CF8 *block, void *target, int check_line) {
+int try_start_moby_hop(Mob_2C0CF8 *moby, Blk_2C0CF8 *block, void *target, int check_line) __asm__("FUN_L00_002bf9f0");
+
+int try_start_moby_hop(Mob_2C0CF8 *moby, Blk_2C0CF8 *block, void *target, int check_line) {
     float jump[4];
     float land[4];
     float from[4];
@@ -2971,13 +2994,13 @@ int FUN_L00_002bf9f0(Mob_2C0CF8 *moby, Blk_2C0CF8 *block, void *target, int chec
     jump[2] = land[2] - moby->pos[2];
     if (land[2] == 0.0f) {
         if (can_halve) {
-            return FUN_L00_002bf9f0(moby, block, half, 1);
+            return try_start_moby_hop(moby, block, half, 1);
         }
         return 0;
     }
     if (moby->f2C * 3.0f / moby->p24->unk24 < jump[2]) {
         if (can_halve) {
-            return FUN_L00_002bf9f0(moby, block, half, 1);
+            return try_start_moby_hop(moby, block, half, 1);
         }
         return 0;
     }
@@ -2987,14 +3010,14 @@ int FUN_L00_002bf9f0(Mob_2C0CF8 *moby, Blk_2C0CF8 *block, void *target, int chec
     sum = sum + func_001F9B88_2C0CF8(mid[1]);
     if (func_001F9B88_2C0CF8(mid[2]) < sum) {
         if (can_halve) {
-            return FUN_L00_002bf9f0(moby, block, half, 1);
+            return try_start_moby_hop(moby, block, half, 1);
         }
         return 0;
     }
     land[2] = land[2] + moby->f2C * 0.025f / moby->p24->unk24;
     if (func_L00_002BFDB8_2C0CF8(moby, 6, land)) {
         if (can_halve) {
-            return FUN_L00_002bf9f0(moby, block, half, 1);
+            return try_start_moby_hop(moby, block, half, 1);
         }
         return 0;
     }
@@ -3006,7 +3029,7 @@ int FUN_L00_002bf9f0(Mob_2C0CF8 *moby, Blk_2C0CF8 *block, void *target, int chec
     if (check_line) {
         if (func_L00_001EFFF0_2C0CF8(from, to, 6, moby, 0) == 0) {
             if (can_halve) {
-                return FUN_L00_002bf9f0(moby, block, half, 1);
+                return try_start_moby_hop(moby, block, half, 1);
             }
             return 0;
         }
@@ -3023,13 +3046,13 @@ int FUN_L00_002bf9f0(Mob_2C0CF8 *moby, Blk_2C0CF8 *block, void *target, int chec
     func_L00_002C0B18_2C0CF8(to, mid, 10, 0, 32, 32, 40000.0f, 60);
     if (func_L00_001EFFF0_2C0CF8(from, mid, 6, moby, 0) != 0 && D_L00_00173F58_2C0CF8[0] != block->p38) {
         if (can_halve) {
-            return FUN_L00_002bf9f0(moby, block, half, 1);
+            return try_start_moby_hop(moby, block, half, 1);
         }
         return 0;
     }
     if (func_L00_001EFFF0_2C0CF8(mid, to, 6, moby, 0) != 0 && D_L00_00173F58_2C0CF8[0] != block->p38) {
         if (can_halve) {
-            return FUN_L00_002bf9f0(moby, block, half, 1);
+            return try_start_moby_hop(moby, block, half, 1);
         }
         return 0;
     }
@@ -3041,7 +3064,9 @@ int FUN_L00_002bf9f0(Mob_2C0CF8 *moby, Blk_2C0CF8 *block, void *target, int chec
 unsigned char *create_moby(int) __asm__("FUN_0020c4f8");
 void FUN_L00_00250df8(unsigned char *);
 void FUN_L00_0025d1b8(unsigned char *);
-unsigned char *FUN_L00_002bfe08(int a, u128 *b, u128 *initial_vector) {
+unsigned char *spawn_doom_bot(int a, u128 *spawn_position, u128 *initial_vector) __asm__("FUN_L00_002bfe08");
+
+unsigned char *spawn_doom_bot(int a, u128 *spawn_position, u128 *initial_vector) {
     unsigned char *spawned_moby = create_moby(0xba);
     if (spawned_moby) {
         char *moby_vars;
@@ -3051,7 +3076,7 @@ unsigned char *FUN_L00_002bfe08(int a, u128 *b, u128 *initial_vector) {
         moby_vars = *(char **)(spawned_moby + 0x78);
         spawned_moby[0x20] = 0;
         spawned_moby[0xbc] = 0;
-        qcopy(spawned_moby + 0x10, b);
+        qcopy(spawned_moby + 0x10, spawn_position);
         qcopy(moby_vars + 0x10, initial_vector);
         *(int *)(moby_vars + 0x60) = a;
         FUN_L00_00250df8(spawned_moby);
@@ -3064,20 +3089,22 @@ unsigned char *FUN_L00_002bfe08(int a, u128 *b, u128 *initial_vector) {
 extern char *D_L00_00173E58 __attribute__((section(".data")));
 int FUN_001efa68(Vec4 *, Vec4 *, int, void *, int);
 unsigned int collision_hit_material(void) __asm__("FUN_001f0b58");
-int FUN_L00_002bfec8(unsigned char *moby) {
+int compute_moby_state_from_vertical_probe(unsigned char *moby) __asm__("FUN_L00_002bfec8");
+
+int compute_moby_state_from_vertical_probe(unsigned char *moby) {
     enum {
         COLLISION_MATERIAL_WATER = 0
     };
-    Vec4 lower_probe_point, b;
-    int r = moby[0x20];
+    Vec4 lower_probe_point, upper_probe_point;
+    int resulting_moby_state = moby[0x20];
     qcopy(&lower_probe_point, moby + 0x10);
-    qcopy(&b, moby + 0x10);
+    qcopy(&upper_probe_point, moby + 0x10);
     lower_probe_point.f[2] -= 0.3f;
-    b.f[2] += 1.0f;
-    if (FUN_001efa68(&b, &lower_probe_point, 6, moby, 0)) {
+    upper_probe_point.f[2] += 1.0f;
+    if (FUN_001efa68(&upper_probe_point, &lower_probe_point, 6, moby, 0)) {
         char *hit_moby = D_L00_00173E58;
         if (hit_moby && *(char **)(hit_moby + 0x24) && *(short *)(*(char **)(hit_moby + 0x24) + 0x46) == 5) {
-            r = 11;
+            resulting_moby_state = 11;
         } else {
             switch (collision_hit_material()) {
             case COLLISION_MATERIAL_WATER:
@@ -3087,10 +3114,10 @@ int FUN_L00_002bfec8(unsigned char *moby) {
             case 11:
             case 12:
             case 13:
-                r = 11;
+                resulting_moby_state = 11;
                 break;
             }
         }
     }
-    return r;
+    return resulting_moby_state;
 }

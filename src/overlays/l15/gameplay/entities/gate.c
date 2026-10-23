@@ -17,7 +17,9 @@ extern float fast_add_rotations(float, float) __asm__("FUN_001fa580");
 extern short D_L15_0015FFD8_d __asm__("D_L15_0015FFD8");
 
 extern short D_L15_00161EC0 __attribute__((sda));
-void FUN_L15_002e46b0(struct Moby *moby) {
+void update_moby_yaw_from_linked_state(struct Moby *moby) __asm__("FUN_L15_002e46b0");
+
+void update_moby_yaw_from_linked_state(struct Moby *moby) {
     int linked_moby_index = *(int *)moby->pvars;
     if (linked_moby_index != -1) {
         char *other = (char *)(linked_moby_index * 256 + *(int *)&D_L15_0015FFD8_d);
@@ -77,7 +79,9 @@ extern int D_L15_001BAAD0[];
 extern s32 current_level_index __asm__("D_0015ED84");
 extern f32 frame_time __asm__("D_0015ED6C");
 
-void FUN_L15_0029aff0(struct Moby *gate_moby)
+void update_sliding_gate(struct Moby *gate_moby) __asm__("FUN_L15_0029aff0");
+
+void update_sliding_gate(struct Moby *gate_moby)
 {
     enum {
         GATE_INITIALIZE = 0,
@@ -235,7 +239,9 @@ extern char D_0013E550[];
 extern char D_L15_00167440_2A48B0[] __asm__("D_L15_001673C0");
 extern int D_L15_00184B28_2A48B0 __asm__("D_L15_00184AA8") __attribute__((section(".data")));
 
-void FUN_L15_002a36d0(GateMoby_2A48B0 *gate_moby)
+void update_vertical_gate(GateMoby_2A48B0 *gate_moby) __asm__("FUN_L15_002a36d0");
+
+void update_vertical_gate(GateMoby_2A48B0 *gate_moby)
 {
     enum {
         GATE_INITIALIZE = 0,
@@ -407,7 +413,9 @@ extern struct Moby *D_L15_0015FFD8;
 extern f32 D_L15_001614FC __attribute__((sda));
 extern f32 D_L15_00161500 __attribute__((sda));
 
-void FUN_L15_002a3ba8(struct Moby *moby) {
+void update_swinging_door(struct Moby *moby) __asm__("FUN_L15_002a3ba8");
+
+void update_swinging_door(struct Moby *moby) {
     enum {
         SWINGING_DOOR_INITIALIZE = 0,
         SWINGING_DOOR_CLOSED = 1,
@@ -543,7 +551,9 @@ extern void FUN_L00_0025e450_7880(void *, void *, void *, float, float, int, int
 extern void *FUN_L01_002f8530_7880(void *, void *, int, float, int, float, float, float, int) __asm__("FUN_L01_002f8530");
 extern void *FUN_L00_0026bed0_7880(void *, void *, int, int, float, int, int) __asm__("FUN_L00_0026bed0");
 
-void FUN_L15_002a7880(struct Moby *moby)
+void update_destructible_moby_with_radial_debris(struct Moby *moby) __asm__("FUN_L15_002a7880");
+
+void update_destructible_moby_with_radial_debris(struct Moby *moby)
 {
     char *slot = 0;
     Vec_2a7880 velocity, first, second, offset, base;
@@ -725,7 +735,9 @@ extern void *mine_debris(void *pos, void *vel, int color, int color2, float size
 /* Hit by a shot (a 0x40-byte entry of the hit table that names this moby): sparks fly from the hit
    point, a burst and delta follow, then the moby goes away. Not hit: on its first update it sets its
    distances and is removed when its save bit says it is gone. */
-void FUN_L15_002aa280(struct Moby *moby)
+void update_destructible_moby_on_hit(struct Moby *moby) __asm__("FUN_L15_002aa280");
+
+void update_destructible_moby_on_hit(struct Moby *moby)
 {
     char *hit = 0;
     Vec4 velocity, hit_direction, push, offset, center;
@@ -1038,14 +1050,16 @@ extern void subtract_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a28");
 extern void FUN_001f9bf8_4f88(float, void *, void *) __asm__("FUN_001f9bf8");
 extern void FUN_001f9a68_4f88(float, void *, void *) __asm__("FUN_001f9a68");
 extern void FUN_L00_001ff290(void *, void *, void *);
-extern void FUN_L15_00247e90(float, float, struct Moby *, void *, int);
+extern void move_moby_with_sphere_collision(float, float, struct Moby *, void *, int) __asm__("FUN_L15_00247e90");
 extern float fast_arc_tan(float, float) __asm__("FUN_001f9e90");
 extern float fast_subtract_rotations(float, float) __asm__("FUN_001fa5c8");
 extern float fast_cos(float) __asm__("FUN_001f9dc8");
 extern float fast_sin(float) __asm__("FUN_001f9de0");
 extern float spring_turn(float *, float, float, float, float, float) __asm__("FUN_L00_00258110");
 
-void FUN_L15_002c4f88(struct Moby *moby, SteeringVec_4f88 *goal, SteeringVec_4f88 *look) {
+void steer_helicopter(struct Moby *moby, SteeringVec_4f88 *goal, SteeringVec_4f88 *look) __asm__("FUN_L15_002c4f88");
+
+void steer_helicopter(struct Moby *moby, SteeringVec_4f88 *goal, SteeringVec_4f88 *look) {
     SteeringVec_4f88 target;
     SteeringVec_4f88 look_copy;
     SteeringVec_4f88 scaled;
@@ -1102,7 +1116,7 @@ void FUN_L15_002c4f88(struct Moby *moby, SteeringVec_4f88 *goal, SteeringVec_4f8
     FUN_001f9a68_4f88(0.9f, &delta, &vars->delta);
     vars->delta.q = delta.q;
     FUN_L00_001ff290(&delta, &vars->delta, &scaled);
-    FUN_L15_00247e90(1.0f, 2.0f, moby, &vars->delta, 0);
+    move_moby_with_sphere_collision(1.0f, 2.0f, moby, &vars->delta, 0);
     /* Preserve the retail height store and facing input access order. */
     height = *(volatile float *)&vars->height;
     pos_x = *(volatile float *)&moby->pos.x;
@@ -1157,7 +1171,9 @@ extern float angle_atan2(float, float) __asm__("FUN_001f9e90");
  * same-class mobys within 10 units and keeps ~15 units off the goal while
  * another moby is closer to it (~10 otherwise); writes the steering point to
  * out and returns the heading to follow. */
-float FUN_L15_002c52b8(struct Moby *moby, float *out, Goal_52b8 goal) {
+float compute_helicopter_flocking_steering_point(struct Moby *moby, float *out, Goal_52b8 goal) __asm__("FUN_L15_002c52b8");
+
+float compute_helicopter_flocking_steering_point(struct Moby *moby, float *out, Goal_52b8 goal) {
     float steering_offset[4];
     float goal_distance;
     float wsum;
@@ -1293,9 +1309,11 @@ extern ULevelState D_L15_001BB830;
 extern float D_L15_00161A08 __attribute__((sda));
 extern float D_L15_00161A0C __attribute__((sda));
 
-extern struct Moby *FUN_L12_00308670(struct Moby *);
-extern void FUN_L12_00308708(void *, struct Moby *);
-void FUN_L15_002c6900(struct Moby *m);
+extern struct Moby *create_class_55b_moby_from_source(struct Moby *) __asm__("FUN_L12_00308670");
+extern void start_blarg_commander_knockback(void *, struct Moby *) __asm__("FUN_L12_00308708");
+void process_helicopter_hits(struct Moby *moby) __asm__("FUN_L15_002c6900");
+
+void process_helicopter_hits(struct Moby *m) __asm__("FUN_L15_002c6900");
 extern void FUN_L02_00261c80(void *, float *, float);
 extern int FUN_L00_0025ff38(float, void *, void *, int, int, void *, int);
 extern int FUN_L01_0026e008(int, int);
@@ -1354,7 +1372,7 @@ void helicopter_update(struct Moby *moby) {
     previous_pos.q = *(u128 *)&moby->pos;
     vars = (HelicopterVars *)moby->pvars;
     if (vars->pilot == 0) {
-        vars->pilot = FUN_L12_00308670(moby);
+        vars->pilot = create_class_55b_moby_from_source(moby);
     }
     if (moby->state != 0 && moby->state != 0x40 && vars->unk1A4 != 0 && hero.vehicle_mode != 2) {
         moby->collision = 0;
@@ -1364,7 +1382,7 @@ void helicopter_update(struct Moby *moby) {
         moby->state = 1;
         return;
     }
-    FUN_L15_002c6900(moby);
+    process_helicopter_hits(moby);
     goal.status = 0;
     if (moby->state == 1) {
         vars->range = vars->wake_range;
@@ -1532,7 +1550,7 @@ void helicopter_update(struct Moby *moby) {
         }
         move.f[2] = target->pos.z + 7.5f;
         point.q = *(u128 *)&target->pos;
-        FUN_L15_002c4f88(moby, (SteeringVec_4f88 *)&move, (SteeringVec_4f88 *)&point);
+        steer_helicopter(moby, (SteeringVec_4f88 *)&move, (SteeringVec_4f88 *)&point);
         if (vector_distance(&move, &moby->pos) < 1.0f || point_in_path_xy(&moby->pos, path->pt, path->n)) {
             if (goal.status != 2) {
                 moby->state = 5;
@@ -1548,7 +1566,7 @@ void helicopter_update(struct Moby *moby) {
         path = D_L15_001B0AB0[vars->area_path];
         move.q = *(u128 *)&moby->pos;
         point.q = *(u128 *)&target->pos;
-        FUN_L15_002c4f88(moby, (SteeringVec_4f88 *)&move, (SteeringVec_4f88 *)&point);
+        steer_helicopter(moby, (SteeringVec_4f88 *)&move, (SteeringVec_4f88 *)&point);
         if (goal.status == 2) break;
         if (point_in_path_xy(&moby->pos, path->pt, path->n)) {
             moby->state = 5;
@@ -1561,9 +1579,9 @@ void helicopter_update(struct Moby *moby) {
     case HELICOPTER_ENGAGE_AND_FIRE:
         moby_point_position(moby, 0, &point);
         if (goal.status != 2) {
-            FUN_L15_002c52b8(moby, move.f, *(Goal_52b8 *)&goal);
+            compute_helicopter_flocking_steering_point(moby, move.f, *(Goal_52b8 *)&goal);
             aim.q = *(u128 *)&target->pos;
-            FUN_L15_002c4f88(moby, (SteeringVec_4f88 *)&move, (SteeringVec_4f88 *)&aim);
+            steer_helicopter(moby, (SteeringVec_4f88 *)&move, (SteeringVec_4f88 *)&aim);
             if (fast_dec_timer_s16(&vars->fire_timer) && vars->shot == 0) {
                 vars->fire_timer = scale_game_frames(0x3C);
                 qcopy(&target_pos, &goal);
@@ -1575,7 +1593,7 @@ void helicopter_update(struct Moby *moby) {
         } else {
             aim.q = *(u128 *)&moby->pos;
             target_pos.q = *(u128 *)&target->pos;
-            FUN_L15_002c4f88(moby, (SteeringVec_4f88 *)&aim, (SteeringVec_4f88 *)&target_pos);
+            steer_helicopter(moby, (SteeringVec_4f88 *)&aim, (SteeringVec_4f88 *)&target_pos);
             moby->state = 4;
         }
         break;
@@ -1617,7 +1635,7 @@ void helicopter_update(struct Moby *moby) {
         }
         moby_point_position(moby, 5, &aim);
         if (vars->pilot != 0) {
-            FUN_L12_00308708(moby, vars->pilot);
+            start_blarg_commander_knockback(moby, vars->pilot);
             vars->pilot = 0;
         }
         spawn_explosion(moby, &move, &moby->pos, 0.0f, 0.0f, 0x14, 3, 4, 4.0f, 2.0f, 100000.0f, 3.0f, 2,
@@ -1717,23 +1735,23 @@ extern void trooper_anim_update(void *m, short *p) __asm__("FUN_L00_0025d458");
 extern void trooper_anim_finish(void *, void *) __asm__("FUN_L00_0025d538");
 float absolute_float(float input) __asm__("func_001F99C0");
 
-void FUN_L15_002c6900(struct Moby *moby) {
-    int st;
+void process_helicopter_hits(struct Moby *moby) {
+    int hit_reaction_status;
     float fv;
-    int res;
+    int hit_reaction_code;
     char *helicopter_vars;
     char *hit_record;
     float hit_away_heading, relative_hit_heading, recoil_rotation_y, recoil_rotation_x;
     helicopter_vars = (char *)moby->pvars;
     fv = 0.0f;
     hit_record = find_moby_hit(moby, 0x330000, 0);
-    res = hit_reaction(moby, hit_record, helicopter_vars + 0x20, 0, &st, &fv, 0, 4);
-    if (st != 1 && moby->state != 7 && moby->state != 0x40) {
+    hit_reaction_code = hit_reaction(moby, hit_record, helicopter_vars + 0x20, 0, &hit_reaction_status, &fv, 0, 4);
+    if (hit_reaction_status != 1 && moby->state != 7 && moby->state != 0x40) {
         float remaining_health = *(float *)(helicopter_vars + 0x20) - fv;
         *(float *)(helicopter_vars + 0x20) = remaining_health;
-        if (res == 1 || remaining_health <= 0.0f) {
+        if (hit_reaction_code == 1 || remaining_health <= 0.0f) {
             moby->state = 7;
-        } else if (res != 0xB) {
+        } else if (hit_reaction_code != 0xB) {
             *(unsigned char *)(helicopter_vars + 0x67) = 0xB4;
             trooper_anim_update(moby, (short *)(helicopter_vars + 0x60));
             if (*(float *)(hit_record + 0x1C) == 5627.925f && moby->state != 6) {
@@ -1779,15 +1797,15 @@ extern void func_L00_00260D30_t(void *, float *, float) __asm__("FUN_L00_0025fcb
 float FUN_L15_002cf110(void *m_, void *out, float target_search_range) {
     char *moby = m_;
     float steering_offset[4];
-    float tgt[4];
+    float target_position[4];
     float pad[4][4]; /* unused, but retail reserves the stack space */
-    float dist;
+    float target_distance;
     float wsum = 0.0f;
     int clear = 1;
     float k;
     char *other_moby;
-    func_L00_00260D30_t(moby, tgt, target_search_range);
-    dist = vector_distance(moby + 0x10, tgt);
+    func_L00_00260D30_t(moby, target_position, target_search_range);
+    target_distance = vector_distance(moby + 0x10, target_position);
     clear_u64_value(out);
     for (other_moby = D_L15_0015FFE4; other_moby != 0; other_moby = *(char **)(other_moby + 0x28)) {
         if (other_moby == moby)
@@ -1800,14 +1818,14 @@ float FUN_L15_002cf110(void *m_, void *out, float target_search_range) {
             scale_vector_xyz(steering_offset, steering_offset, 6.0f);
             add_vector_xyz(out, out, steering_offset);
         }
-        if (vector_distance(other_moby + 0x10, tgt) < dist)
+        if (vector_distance(other_moby + 0x10, target_position) < target_distance)
             clear = 0;
     }
     if (clear == 0) {
-        subtract_vector_xyz(steering_offset, moby + 0x10, tgt);
-        if (dist < 9.5f) {
+        subtract_vector_xyz(steering_offset, moby + 0x10, target_position);
+        if (target_distance < 9.5f) {
             k = 10.0f;
-        } else if (10.5f < dist) {
+        } else if (10.5f < target_distance) {
             k = -10.0f;
         } else {
             k = 0.0f;
@@ -1818,11 +1836,11 @@ float FUN_L15_002cf110(void *m_, void *out, float target_search_range) {
         scale_vector_xyz(out, out, 1.0f / wsum);
         add_vector_xyz(out, out, moby + 0x10);
     } else {
-        qcopy(out, tgt);
+        qcopy(out, target_position);
     }
     if (vector_distance(moby + 0x10, out) < 1.0f) {
         qcopy(out, moby + 0x10);
-        return fast_arc_tan(tgt[0] - *(float *)(moby + 0x10), tgt[1] - *(float *)(moby + 0x14));
+        return fast_arc_tan(target_position[0] - *(float *)(moby + 0x10), target_position[1] - *(float *)(moby + 0x14));
     }
     return fast_arc_tan(((float *)out)[0] - *(float *)(moby + 0x10),
                         ((float *)out)[1] - *(float *)(moby + 0x14));
@@ -1982,7 +2000,7 @@ extern void FUN_L00_00263ac8(float, int, int, unsigned char *);
 extern void FUN_L00_00263e30(void *, int, int, int, int, int, int);
 extern void FUN_L00_0026ced0(void *, void *, int, int, float, int);
 extern void FUN_L03_00250ae8(void *, void *, int);
-extern void FUN_L15_002d0fa8(void *);
+extern void process_ultramech_hits_and_update_target(void *) __asm__("FUN_L15_002d0fa8");
 extern void no_op_main_callback(void *, void *) __asm__("func_001E93E8");
 extern void add_vector_xyz(void *, void *, void *);
 extern void blend_moby_animation(void *, int, int, int) __asm__("FUN_00212f90");
@@ -2027,7 +2045,7 @@ void ultramech_unlimited_update(UMoby *ultramech_moby) {
 
     moving = 0;
     ultramech_vars = ultramech_moby->data;
-    FUN_L15_002d0fa8(ultramech_moby);
+    process_ultramech_hits_and_update_target(ultramech_moby);
     combat_target = ultramech_vars->target;
     if (ultramech_moby->state != 0 && ultramech_moby->state != 0x40 && hero.vehicle_mode != 2) {
         ultramech_moby->w94 = 0;
@@ -2140,9 +2158,9 @@ void ultramech_unlimited_update(UMoby *ultramech_moby) {
         scale_vector_xyz(&position_or_motion_vector, &position_or_motion_vector, frac);
         add_vector_xyz(&position_or_motion_vector, &position_or_motion_vector, (UVec *)path + (seg + 1));
         if (seg + 1 < path->n - 8) {
-            float ang = fast_arc_tan(path->pt[seg + 1].f[0] - ultramech_moby->pos.f[0],
+            float desired_heading = fast_arc_tan(path->pt[seg + 1].f[0] - ultramech_moby->pos.f[0],
                                      path->pt[seg + 1].f[1] - ultramech_moby->pos.f[1]);
-            ultramech_moby->rot.f[2] = spring_turn(&ultramech_vars->turnVel, ultramech_moby->rot.f[2], ang, 0.01f, 0.3f, 0.1f);
+            ultramech_moby->rot.f[2] = spring_turn(&ultramech_vars->turnVel, ultramech_moby->rot.f[2], desired_heading, 0.01f, 0.3f, 0.1f);
         }
         subtract_vector_xyz(&vector_or_hit_descriptor, &position_or_motion_vector, &ultramech_moby->pos);
         entry_path_step_length = vector_length_xyz(&vector_or_hit_descriptor);
@@ -2313,9 +2331,9 @@ void ultramech_unlimited_update(UMoby *ultramech_moby) {
         }
         break;
     case ULTRAMECH_APPROACH_TARGET: {
-        float ang = fast_arc_tan(combat_target->pos.f[0] - ultramech_moby->pos.f[0], combat_target->pos.f[1] - ultramech_moby->pos.f[1]);
+        float desired_heading = fast_arc_tan(combat_target->pos.f[0] - ultramech_moby->pos.f[0], combat_target->pos.f[1] - ultramech_moby->pos.f[1]);
         if (ultramech_vars->w164 != 2) {
-            ang = FUN_L15_002cf110_u(ultramech_moby, &position_or_motion_vector, ultramech_vars->f1B8);
+            desired_heading = FUN_L15_002cf110_u(ultramech_moby, &position_or_motion_vector, ultramech_vars->f1B8);
             if (vector_distance(&ultramech_moby->pos, &combat_target->pos) < *(float *)&D_L15_00161B28) {
                 ultramech_moby->state = 8;
                 if (ultramech_moby->anim != 2)
@@ -2326,7 +2344,7 @@ void ultramech_unlimited_update(UMoby *ultramech_moby) {
             if (ultramech_moby->anim != 0)
                 blend_moby_animation(ultramech_moby, 0, 0, scale_game_frames(0x14));
         }
-        FUN_L00_00258278((char *)ultramech_moby, &ultramech_vars->turnVel, ang, frame_time_sq * 1.0471976f,
+        FUN_L00_00258278((char *)ultramech_moby, &ultramech_vars->turnVel, desired_heading, frame_time_sq * 1.0471976f,
                          frame_time_sq * 3.1415927f, frame_time * 3.1415927f);
         qcopy(&vector_or_hit_descriptor, &ultramech_moby->pos);
         subtract_vector_xyz(&vector_arithmetic_result, &position_or_motion_vector, &ultramech_moby->pos);
@@ -2525,7 +2543,7 @@ extern void FUN_0024f560(float, void *, void *) __asm__("FUN_L02_00261c80");
 extern void FUN_0024f7e0(float, void *, void *, int, int, void *, int) __asm__("FUN_L00_0025ff38");
 extern float FUN_001f8bc8(void *, void *) __asm__("FUN_001f9b48");
 
-void FUN_L15_002d0fa8(void *ultramech_instance) {
+void process_ultramech_hits_and_update_target(void *ultramech_instance) {
     enum {
         HIT_REACTION_NO_ACTION = 0,
         HIT_REACTION_DEATH = 1,

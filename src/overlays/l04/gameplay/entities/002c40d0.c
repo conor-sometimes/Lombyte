@@ -10,14 +10,16 @@
 
 
 extern char *FUN_L00_002db890(char *);
-extern int FUN_L00_002dbc30(char *, int, int, float);
+extern int launch_suck_cannon_projectile(char *, int, int, float) __asm__("FUN_L00_002dbc30");
 extern void allocate_voice_for_target_entry(int, int, char *) __asm__("FUN_0022da68");
 
 /* Moby state 9 while FUN_L00_002dbc30 reports a hit; allocates a voice when the short at 0x68 of FUN_L00_002db890(moby) is 6. */
-int FUN_L04_002c40d0(struct Moby *moby, int input_quad_address, int b, float f) {
+int process_moby_hit_state_and_voice(struct Moby *moby, int input_quad_address, int b, float f) __asm__("FUN_L04_002c40d0");
+
+int process_moby_hit_state_and_voice(struct Moby *moby, int input_quad_address, int b, float f) {
     char *moby_callback_result = FUN_L00_002db890(moby);
-    int r = FUN_L00_002dbc30(moby, input_quad_address, b, f);
-    if (r != 0) {
+    int hit_processing_result = launch_suck_cannon_projectile(moby, input_quad_address, b, f);
+    if (hit_processing_result != 0) {
         moby->state = 0x9;
     } else if ((unsigned char)moby->state == 0x9) {
         moby->state = 1;
@@ -25,7 +27,7 @@ int FUN_L04_002c40d0(struct Moby *moby, int input_quad_address, int b, float f) 
     if (*(short *)(moby_callback_result + 0x68) == 6) {
         allocate_voice_for_target_entry(1, 0, moby);
     }
-    return r;
+    return hit_processing_result;
 }
 typedef struct {
     char pad[0x78];
@@ -49,11 +51,13 @@ extern void FUN_L00_00250df8(void *);
 extern struct Moby *func_0020D348_m(int) __asm__("FUN_0020c4f8");
 
 /* Creates a class 0x23A moby at pos, copying a few fields from src. */
-void *FUN_L04_002d34d8(char *source_moby, char *pos) {
+void *spawn_class_23a_moby(char *source_moby, char *spawn_position) __asm__("FUN_L04_002d34d8");
+
+void *spawn_class_23a_moby(char *source_moby, char *spawn_position) {
     char saved_position[16];
     char *saved_position_ptr = saved_position;
     char *created_moby;
-    *(OvlQuad *)saved_position = *(OvlQuad *)pos;
+    *(OvlQuad *)saved_position = *(OvlQuad *)spawn_position;
     created_moby = (char *)func_0020D348_m(0x23a);
     if (created_moby != 0) {
         *(unsigned char *)(created_moby + 0x30) = 0xFF;

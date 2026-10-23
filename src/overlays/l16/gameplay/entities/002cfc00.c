@@ -20,7 +20,9 @@ extern void transpose_rotation_matrix(void *, void *) __asm__("FUN_001fa2d8");
 extern void subtract_vector_xyz(void *, void *, void *);
 
 /* Same routine as FUN_L05_00307010, with this level's data offsets. */
-void FUN_L16_002cfc00(struct Moby *moby) {
+void accumulate_moby_frames_in_group_bounds(struct Moby *moby) __asm__("FUN_L16_002cfc00");
+
+void accumulate_moby_frames_in_group_bounds(struct Moby *moby) {
     char *data = (char *)moby->pvars;
     struct Hero *hero_state = &hero;
     float displacement_vector[4];
@@ -46,10 +48,10 @@ void FUN_L16_002cfc00(struct Moby *moby) {
             if (*(short *)(l1 + 0xA6) == 0x473) {
                 float adjusted_position[4];
                 float m[16];
-                char *pos = l1;
+                char *candidate_moby = l1;
                 qcopy(adjusted_position, data + 0x260);
                 adjusted_position[2] += 0.8f;
-                subtract_vector_xyz(displacement_vector, pos + 0x10, adjusted_position);
+                subtract_vector_xyz(displacement_vector, candidate_moby + 0x10, adjusted_position);
                 if (!(8.0f < vector_length_xyz(displacement_vector))) {
                     set_identity_matrix(m);
                     transpose_rotation_matrix(m, l1 + 0xC0);

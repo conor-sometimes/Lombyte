@@ -18,7 +18,9 @@ extern int scale_game_frames_83b0(int) __asm__("FUN_001f96f8");
 extern int FUN_L01_0026e008(int, int);
 
 /* Level 6 help hints: shows the help messages for the area and records how often and when each was due. */
-void FUN_L06_003083b0(struct Moby *moby) {
+void update_level06_help_hints(struct Moby *moby) __asm__("FUN_L06_003083b0");
+
+void update_level06_help_hints(struct Moby *moby) {
     int *vars = (int *)moby->pvars;
     struct Moby *indexed_moby;
     int i;
@@ -152,7 +154,9 @@ int D_L06_0016237C = 0x10019;
 
 extern f32 frame_time_macro __asm__("D_0015ED6C") __attribute__((section(".sdata")));
 /* Level 06 moby update: a spark emitter; state 4 bursts on a random timer, state 3 sprays continuously. */
-void FUN_L06_00308c68(struct Moby *emitter) {
+void update_spark_emitter(struct Moby *emitter) __asm__("FUN_L06_00308c68");
+
+void update_spark_emitter(struct Moby *emitter) {
     enum {
         SPARK_EMITTER_INITIALIZE = 0,
         SPARK_EMITTER_DELAYED_ACTION = 2,
@@ -265,13 +269,15 @@ extern s32 truncate_float_to_s32(f32) __asm__("FUN_001fa6d0");
 extern short *D_L06_001ABFC0[];
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
-void FUN_L06_00309240(int idx) {
+void activate_listed_class_5e8_mobys(int moby_list_index) __asm__("FUN_L06_00309240");
+
+void activate_listed_class_5e8_mobys(int moby_list_index) {
     short *moby_index_entry;
     char *moby;
     char *data;
     float position_test_vector[4];
-    if (D_L06_001ABFC0[idx] != 0) {
-        moby_index_entry = D_L06_001ABFC0[idx];
+    if (D_L06_001ABFC0[moby_list_index] != 0) {
+        moby_index_entry = D_L06_001ABFC0[moby_list_index];
         do {
             moby = D_L06_0015FFD8 + ((*(unsigned short *)moby_index_entry & 0x7FFF) << 8);
             if (*(short *)(moby + 0xA6) == 0x5E8 && (unsigned char)moby[0x20] == 1) {
@@ -298,7 +304,9 @@ extern int D_L06_0015F5C4;
 extern int scale_game_frames(int) __asm__("FUN_001f96f8");
 extern void cutscene_set_camera_target(int) __asm__("FUN_L00_002637f8");
 
-void FUN_L06_00309348(unsigned char *moby) {
+void update_gated_moby_effects(unsigned char *moby) __asm__("FUN_L06_00309348");
+
+void update_gated_moby_effects(unsigned char *moby) {
     enum {
         MOBY_INITIALIZE = 0,
         MOBY_CONDITIONAL_CAMERA_TARGET_UPDATE = 1
@@ -352,7 +360,9 @@ void mark_moby_for_removal_c(struct Obj *obj) __asm__("FUN_0020c828");
 extern char *mk_a(int) __asm__("FUN_0020c4f8");
 extern void upd_a(void *) __asm__("FUN_L00_00250df8");
 
-void FUN_L06_00309e08(char *self) {
+void update_hit_triggered_moby_replacement(char *self) __asm__("FUN_L06_00309e08");
+
+void update_hit_triggered_moby_replacement(char *self) {
     enum {
         MOBY_INITIALIZE = 0,
         MOBY_WAIT_FOR_HIT = 1,

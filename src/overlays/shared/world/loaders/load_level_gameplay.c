@@ -456,7 +456,7 @@ extern int D_L00_0016C058[];
 extern int D_L00_001AB840[];
 extern int D_L00_001BA4D0[];
 extern int fast_decompress(void *, void *) __asm__("FUN_L00_0024d8d0");
-extern int FUN_L00_00284d90(int, int);
+extern int find_or_assign_bolt_source_slot(int, int) __asm__("FUN_L00_00284d90");
 extern s32 truncate_float_to_s32(f32) __asm__("func_001FA6D0");
 extern short D_L00_001AC780[];
 extern short D_L00_001B0770[];
@@ -476,13 +476,13 @@ extern void FUN_0022a5e0(void *);
 extern void light_tfrags(void *) __asm__("FUN_00234f98");
 extern void light_ties(void *) __asm__("FUN_00237370");
 extern void setup_level_cameras(void) __asm__("FUN_L00_001ed358");
-extern void FUN_L00_00204c60(void);
-extern void FUN_L00_00204f80(void);
+extern void initialize_hero(void) __asm__("FUN_L00_00204c60");
+extern void reset_hero_to_idle(void) __asm__("FUN_L00_00204f80");
 extern void FUN_L00_0024a798(int, int);
 extern void FUN_L00_00250df8(void *);
-extern void FUN_L00_0028df58(short *);
-extern void FUN_L00_0028e180();
-extern void FUN_L00_0028e8a0(char *);
+extern void resolve_lookup_record(short *) __asm__("FUN_L00_0028df58");
+extern void update_moby_proximity_interaction() __asm__("FUN_L00_0028e180");
+extern void initialize_moby_state_record(char *) __asm__("FUN_L00_0028e8a0");
 extern void FillTransferWords(void *, s32, s32);
 extern void FlushCache(s32);
 extern void PackDmaTag(unsigned long, unsigned long, unsigned long);
@@ -513,7 +513,7 @@ char *load_level_gameplay(int skip_gameplay_read) {
     LevelHeader *hdr;
     char *mem;
     float *ship;
-    short *idx = D_L00_001AC780; /* moby index by file order; a pointer local, so its address is formed at each use */
+    short *moby_index_remap = D_L00_001AC780; /* moby index by file order; a pointer local, so its address is formed at each use */
     int level_or_group_scratch; /* scratch int: the level number in the moby loop, a group's offset and end flag in the group loop */
 
     hdr = D_L00_00173E00.f4;
@@ -601,18 +601,18 @@ char *load_level_gameplay(int skip_gameplay_read) {
         D_L00_0015FBC4 = *(int *)p;
         p += 0x10;
         if (D_L00_0015FBC4 != 0) {
-            Light *l;
+            Light *current_light;
             int i;
 
             copy_memory_aligned(D_L00_0017ECC0, p, D_L00_0015FBC4 << 4);
             copy_memory_aligned(D_L00_0017EEC0, p + (D_L00_0015FBC4 << 4), D_L00_0015FBC4 << 7);
             for (i = 0; i < D_L00_0015FBC4; i++) {
-                l = &D_L00_0017EEC0[i];
-                if (l->f48 < 0) {
-                    l->f48 = 11;
+                current_light = &D_L00_0017EEC0[i];
+                if (current_light->f48 < 0) {
+                    current_light->f48 = 11;
                 }
-                if (l->f4C < 0) {
-                    l->f4C = 11;
+                if (current_light->f4C < 0) {
+                    current_light->f4C = 11;
                 }
             }
         }
@@ -767,16 +767,16 @@ char *load_level_gameplay(int skip_gameplay_read) {
         for (i = 0; i < D_L00_00160490; i++) {
             ShrubInst *inst = D_L00_00160494 + i;
             ShrubMatrix *mtx = D_L00_0016049C + i;
-            int cls = D_L00_001BC1B0[*(int *)p];
+            int shrub_class_index = D_L00_001BC1B0[*(int *)p];
             float scale;
 
-            inst->f1A = cls;
-            if (cls != last) {
-                last = cls;
-                D_L00_001BC030[cls]->f18 = inst;
-                D_L00_001BC030[cls]->f16 = 0;
+            inst->f1A = shrub_class_index;
+            if (shrub_class_index != last) {
+                last = shrub_class_index;
+                D_L00_001BC030[shrub_class_index]->f18 = inst;
+                D_L00_001BC030[shrub_class_index]->f16 = 0;
             }
-            D_L00_001BC030[cls]->f16++;
+            D_L00_001BC030[shrub_class_index]->f16++;
             inst->f18 = i;
             inst->f10 = *(float *)(p + 4);
             if (inst->f10 < 16.0f) {
@@ -784,10 +784,10 @@ char *load_level_gameplay(int skip_gameplay_read) {
             }
             inst->f1B = 0;
             inst->f1E = 0xFFFF;
-            if (D_L00_001BC030[cls]->f1C != 0) {
+            if (D_L00_001BC030[shrub_class_index]->f1C != 0) {
                 float shrub_class_lower_bound;
 
-                inst->f17 = truncate_float_to_s32(*D_L00_001BC030[cls]->f1C);
+                inst->f17 = truncate_float_to_s32(*D_L00_001BC030[shrub_class_index]->f1C);
                 shrub_class_lower_bound = convert_integer_to_float(inst->f17) + 24.0f;
                 if (inst->f10 < shrub_class_lower_bound) {
                     inst->f10 = shrub_class_lower_bound;
@@ -798,7 +798,7 @@ char *load_level_gameplay(int skip_gameplay_read) {
             qcopy(mtx->m2, p + 0x30);
             qcopy(mtx->m3, p + 0x40);
             p += 0x50;
-            mtx->f3C = D_L00_001BC030[cls]->f20;
+            mtx->f3C = D_L00_001BC030[shrub_class_index]->f20;
             {
                 float a = (vector_length_xyz(mtx) + vector_length_xyz(mtx->m1)) * 0.5f;
                 float b = vector_length_xyz(mtx->m2);
@@ -829,10 +829,10 @@ char *load_level_gameplay(int skip_gameplay_read) {
             }
             inst->f1C = *(unsigned short *)p;
             p += 0x10;
-            transform_vector_by_basis(inst, D_L00_001BC030[cls], mtx);
+            transform_vector_by_basis(inst, D_L00_001BC030[shrub_class_index], mtx);
             scale = vector_length_xyz(mtx);
             scale = max_float(scale, vector_length_xyz(mtx->m1));
-            inst->fC = D_L00_001BC030[cls]->fC * max_float(scale, vector_length_xyz(mtx->m2));
+            inst->fC = D_L00_001BC030[shrub_class_index]->fC * max_float(scale, vector_length_xyz(mtx->m2));
             scale_vector(inst, inst, mtx->f3C);
             add_vector_xyz(inst, inst, mtx->m3);
         }
@@ -917,7 +917,7 @@ char *load_level_gameplay(int skip_gameplay_read) {
 
                 copy_memory_aligned(e, p, 0x90);
                 p += 0x90;
-                FUN_L00_0028df58((short *)e);
+                resolve_lookup_record((short *)e);
             }
         } else {
             D_0013E550.fD94 = 0;
@@ -965,7 +965,7 @@ char *load_level_gameplay(int skip_gameplay_read) {
             if (flags != 0) {
                 level_or_group_scratch = D_0015ED84; /* read before the test: see the group loop */
                 if (flags & 0x10) {
-                    vis = FUN_L00_00284d90(level_or_group_scratch, uid);
+                    vis = find_or_assign_bolt_source_slot(level_or_group_scratch, uid);
                 } else {
                     vis = 0xFF;
                 }
@@ -1003,19 +1003,19 @@ char *load_level_gameplay(int skip_gameplay_read) {
                 }
             }
             if (skip) {
-                idx[i] = -1;
+                moby_index_remap[i] = -1;
             } else {
                 MobyInst *m;
                 int a;
                 float ground_height_offset;
                 int pv;
-                int c0;
-                int c1;
-                int c2;
+                int moby_red;
+                int moby_green;
+                int moby_blue;
                 int upd;
 
                 {
-                    short *slot = idx + i;
+                    short *slot = moby_index_remap + i;
                     *slot = count;
                 }
                 m = D_L00_0015FFD8 + count;
@@ -1072,15 +1072,15 @@ char *load_level_gameplay(int skip_gameplay_read) {
                 if (m->f24 != 0) {
                     FUN_L00_00250df8(m);
                 }
-                c0 = *(int *)p;
+                moby_red = *(int *)p;
                 p += 4;
-                c1 = *(int *)p;
+                moby_green = *(int *)p;
                 p += 4;
-                c2 = *(int *)p;
+                moby_blue = *(int *)p;
                 p += 4;
                 upd = *(int *)p;
                 p += 4;
-                m->f80 = (c2 << 16) + (c1 << 8) + c0;
+                m->f80 = (moby_blue << 16) + (moby_green << 8) + moby_red;
                 PackRenderCommandFields(m, m->f80, 0, 0, 0);
                 m->f38 = upd;
                 if (*(int *)p != -1) {
@@ -1163,7 +1163,7 @@ char *load_level_gameplay(int skip_gameplay_read) {
                 int *r = (int *)(x + off);
 
                 if (*r >= 0) {
-                    *r = idx[*r];
+                    *r = moby_index_remap[*r];
                 }
             }
             q += 2;
@@ -1209,11 +1209,11 @@ char *load_level_gameplay(int skip_gameplay_read) {
             if (level_or_group_scratch >= 0) {
                 int g = (int)(base + level_or_group_scratch);
                 unsigned short *src;
-                short *dst;
+                short *group_write_cursor;
 
                 D_L00_001AB840[i] = g;
                 src = (unsigned short *)g;
-                dst = (short *)src;
+                group_write_cursor = (short *)src;
                 D_L00_0015FFF4 = i + 1;
                 do {
                     int id = *src;
@@ -1221,15 +1221,15 @@ char *load_level_gameplay(int skip_gameplay_read) {
 
                     level_or_group_scratch = *(short *)src;
                     g = (id & 0x7FFF) << 1; /* the entry's slot in the moby index, in two steps */
-                    g += (int)idx;
+                    g += (int)moby_index_remap;
                     level_or_group_scratch &= 0x8000;
                     t = *(short *)g;
                     if (t >= 0) {
-                        *dst++ = t;
+                        *group_write_cursor++ = t;
                     }
                     if (level_or_group_scratch) {
-                        if (D_L00_001AB840[i] < (int)dst) {
-                            dst[-1] |= 0x8000;
+                        if (D_L00_001AB840[i] < (int)group_write_cursor) {
+                            group_write_cursor[-1] |= 0x8000;
                         } else {
                             D_L00_001AB840[i] = 0;
                         }
@@ -1464,7 +1464,7 @@ char *load_level_gameplay(int skip_gameplay_read) {
             if (D_L00_00160540 != 0) {
                 for (m = D_L00_0015FFD8; m->f20 != 0xFF; m++) {
                     if (m->fA6 == first_class_ids[D_0013E030.f26]) {
-                        FUN_L00_0028e8a0((char *)m);
+                        initialize_moby_state_record((char *)m);
                         set_moby_animation(m, 1, 0);
                         break;
                     }
@@ -1479,7 +1479,7 @@ char *load_level_gameplay(int skip_gameplay_read) {
             m->f14 = ship[1];
             m->f18 = ship[2];
             rot = ship[3];
-            m->f74 = FUN_L00_0028e180;
+            m->f74 = update_moby_proximity_interaction;
             m->f32 = 0xFF;
             m->f48 = rot;
             m->f30 = 0x10;
@@ -1639,8 +1639,8 @@ char *load_level_gameplay(int skip_gameplay_read) {
         D_L00_0016C058[7] = 0;
     }
     reset_draw_globals();
-    FUN_L00_00204c60();
-    FUN_L00_00204f80();
+    initialize_hero();
+    reset_hero_to_idle();
     setup_level_cameras();
     update_camera();
     reset_global_state_fields();
@@ -1799,14 +1799,14 @@ extern void register_object_render_class(char *, void *, void *, s32) __asm__("F
 extern void noop_main_callback(void *, s32) __asm__("FUN_001e93e8");
 extern void register_shrub_render_class(char *, void *, void *, void *, s32) __asm__("FUN_00203b08");
 extern void unpack_point_records(void *, s32) __asm__("FUN_00202800");
-extern void FUN_L00_0023f120(char *);
+extern void relocate_counted_pointer_table(char *) __asm__("FUN_L00_0023f120");
 extern void FUN_L00_0023f0d8(char *);
 extern void parse_particle_textures(void *, char *, void *, s32) __asm__("FUN_002026c8");
 extern void fill_transfer_words(void *, s32, s32) __asm__("FUN_001f97e8");
-extern char *FUN_L00_0023fa00(char *, s32 *);
+extern char *load_level_texture_bank(char *, s32 *) __asm__("FUN_L00_0023fa00");
 extern char *FUN_L00_00241940_244110(s32) __asm__("FUN_L00_00241940");
 extern f32 int_to_float(s32) __asm__("FUN_001fa6c0");
-extern void FUN_L00_00285008(void);
+extern void restore_or_clear_level_state(void) __asm__("FUN_L00_00285008");
 extern void clear_scene_state_buffers(void) __asm__("FUN_00226f50");
 extern void FUN_L00_00264740(void);
 
@@ -1941,7 +1941,7 @@ s32 FUN_L00_00244110(s32 full, s32 keep) {
         D_L00_0015F420 = base + core_header[0x1A];
         unpack_point_records((char *)core_header + core_header[0x17], core_header[0x16]);
         if (core_header[0x28]) {
-            FUN_L00_0023f120(base + core_header[0x28]);
+            relocate_counted_pointer_table(base + core_header[0x28]);
         } else {
             D_L00_0015F438 = 0;
             D_L00_0015F43C = 0;
@@ -2009,7 +2009,7 @@ s32 FUN_L00_00244110(s32 full, s32 keep) {
                 }
             }
         }
-        D_L00_00173E00_244110.f18 = FUN_L00_0023fa00((char *)((u32)end & ~0x3F), core_header);
+        D_L00_00173E00_244110.f18 = load_level_texture_bank((char *)((u32)end & ~0x3F), core_header);
     }
     D_L00_00173E00_244110.f1C = FUN_L00_00241940_244110(full);
     if (full) {
@@ -2064,7 +2064,7 @@ s32 FUN_L00_00244110(s32 full, s32 keep) {
         debug_print(D_L00_0015FC80);
     }
     if (keep) {
-        FUN_L00_00285008();
+        restore_or_clear_level_state();
     } else {
         clear_scene_state_buffers();
         for (z = 15; z >= 0; z--)

@@ -8,10 +8,10 @@
 #include "sda.h"
 
 
-extern int FUN_L00_002db8f8(void *);
+extern int process_moby_suck_cannon_suction(void *) __asm__("FUN_L00_002db8f8");
 
 int FUN_L18_002fcbb0(struct Moby *a) {
-    int r = FUN_L00_002db8f8(a);
+    int r = process_moby_suck_cannon_suction(a);
     if (r == 0) {
         if (a->state == 0x7)
             a->state = 0x2;
@@ -27,7 +27,9 @@ extern int scale_ticks(int) __asm__("FUN_001f96f8");
 
 void blend_moby_animation(MobyAnim *arg0, int arg1, int arg2, int arg3) __asm__("FUN_00212f90");
 
-void FUN_L18_002fcd00(struct Moby *moby) {
+void hide_moby_and_clear_collision(struct Moby *moby) __asm__("FUN_L18_002fcd00");
+
+void hide_moby_and_clear_collision(struct Moby *moby) {
     unsigned short flags;
     moby->state = 0x8;
     if (moby->prev_seq != 0) {

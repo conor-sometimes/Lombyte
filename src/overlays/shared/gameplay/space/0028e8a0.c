@@ -16,13 +16,15 @@
 
 extern char D_0013E030_c[] __asm__("D_0013E030");
 extern void FUN_L00_0028e990_c(void) __asm__("FUN_L00_0028e990");
-extern void FUN_L00_0028e180(void);
+extern void update_moby_proximity_interaction(void) __asm__("FUN_L00_0028e180");
 void set_moby_animation(struct Obj *o, s32 sel, s32 idx) __asm__("FUN_00212ed8");
 
 extern s32 D_L00_00160540_gp __asm__("D_L00_00160540") __attribute__((sda));
-void FUN_L00_0028e8a0(char *moby) {
+void initialize_moby_state_record(char *moby) __asm__("FUN_L00_0028e8a0");
+
+void initialize_moby_state_record(char *moby) {
     char *moby_state_record;
-    int *src;
+    int *moby_state_copy_source;
     D_L00_00160540_gp = 1;
     FUN_L00_0028e990_c();
     if (current_level_index == 0xD) {
@@ -35,14 +37,14 @@ void FUN_L00_0028e8a0(char *moby) {
     moby_state_record = D_0013E030_c;
     *(short *)(moby_state_record + 0x26) = *(unsigned short *)(moby + 0xA6) - 0x213;
     *(char **)moby_state_record = moby;
-    *(void **)(moby + 0x74) = FUN_L00_0028e180;
+    *(void **)(moby + 0x74) = update_moby_proximity_interaction;
     *(unsigned short *)(moby + 0x34) &= 0xFFFC;
     *(int *)(moby + 0x94) = *(int *)(*(int *)(moby + 0x24) + 0x10);
     set_moby_animation(moby, 1, 0);
-    src = *(int **)(moby + 0x78);
-    *(int *)(moby_state_record + 0x30) = src[0];
-    *(int *)(moby_state_record + 0x34) = src[1];
-    *(int *)(moby_state_record + 0x38) = src[2];
+    moby_state_copy_source = *(int **)(moby + 0x78);
+    *(int *)(moby_state_record + 0x30) = moby_state_copy_source[0];
+    *(int *)(moby_state_record + 0x34) = moby_state_copy_source[1];
+    *(int *)(moby_state_record + 0x38) = moby_state_copy_source[2];
 }
 #include "sda.h"
 extern u8 *D_0013E030 NOT_SDA;
@@ -96,14 +98,14 @@ void f2335a0_28e9c8(void) __asm__("FUN_002335a0");
 extern int hero_set_state(int, int) __asm__("FUN_L00_002223f8");
 void f232fe8_28e9c8(void) __asm__("FUN_L00_00232fe8");
 int fr_28e9c8(int) __asm__("FUN_001f96f8");
-void FUN_L00_00245610(int, int);
+void load_chunks_with_optional_fade(int, int) __asm__("FUN_L00_00245610");
 void f2049f0_28e9c8(int) __asm__("FUN_002049f0");
 void f22ca50_28e9c8(void) __asm__("FUN_0022ca50");
 int f122298_28e9c8(int) __asm__("FUN_00122298");
 int f215b10_28e9c8(void) __asm__("FUN_00215b10");
 void FUN_L00_0028e9c8(int audio_selection_mode) {
     O_28e9c8 *moby;
-    int secondary_track_index, base_audio_selection_index, audio_stream_table_index, alternate_audio_stream_table_index, u;
+    int secondary_track_index, base_audio_selection_index, audio_stream_table_index, alternate_audio_stream_table_index, shared_table_offset;
     D_0013E030_28e9c8.x24 = -1;
     D_L00_0015F5D8 = 1;
     D_0013E030_28e9c8.x20 = audio_selection_mode;
@@ -112,12 +114,12 @@ void FUN_L00_0028e9c8(int audio_selection_mode) {
     memset_28e9c8(D_L00_0017C340, 0, 0x40);
     memset_28e9c8(D_L00_0017C380, 0, 0x40);
     f2335a0_28e9c8();
-    u = D_L00_001611CC - 0x60000;
-    D_L00_0016C860_28e9c8.x58 = D_L00_00173E00_28e9c8.x4 + u;
-    D_L00_0016C860_28e9c8.x5c = D_L00_00173E00_28e9c8.x8 + u;
+    shared_table_offset = D_L00_001611CC - 0x60000;
+    D_L00_0016C860_28e9c8.x58 = D_L00_00173E00_28e9c8.x4 + shared_table_offset;
+    D_L00_0016C860_28e9c8.x5c = D_L00_00173E00_28e9c8.x8 + shared_table_offset;
     fade_level = 1.0f;
     D_L00_0015F5C4 = 6;
-    D_L00_001611CC = u;
+    D_L00_001611CC = shared_table_offset;
     D_L00_0015F400 = 0;
     hero_set_state(100, 2);
     D_001413F5_28e9c8 = 1;
@@ -138,7 +140,7 @@ void FUN_L00_0028e9c8(int audio_selection_mode) {
             audio_stream_table_index = 8;
             secondary_track_index = 14;
         }
-        FUN_L00_00245610(audio_stream_table_index, fr_28e9c8(6));
+        load_chunks_with_optional_fade(audio_stream_table_index, fr_28e9c8(6));
     } else {
         int k, fade_frame_count;
         base_audio_selection_index = D_0013E030_28e9c8.x26;
@@ -161,7 +163,7 @@ void FUN_L00_0028e9c8(int audio_selection_mode) {
         fade_frame_count = 0;
         if (!D_0013E030_28e9c8.x2c)
             fade_frame_count = fr_28e9c8(6);
-        FUN_L00_00245610(alternate_audio_stream_table_index, fade_frame_count);
+        load_chunks_with_optional_fade(alternate_audio_stream_table_index, fade_frame_count);
     }
     music_stream_state.queued_secondary_track = secondary_track_index + 40000;
     f2049f0_28e9c8(0);
@@ -225,7 +227,9 @@ s32 FUN_001f96f8_0028ed58(s32) __asm__("FUN_001f96f8");
 void FUN_002049f0_0028ed58(s32) __asm__("FUN_002049f0");
 s32 FUN_0020b178_0028ed58(s32, s32) __asm__("FUN_0020b178");
 extern s32 D_L00_00160570[1] __attribute__((sda));
-void FUN_L00_0028ed58(s32 target_level_index) {
+void prepare_target_level_transition(s32 target_level_index) __asm__("FUN_L00_0028ed58");
+
+void prepare_target_level_transition(s32 target_level_index) {
     A_0028ed58 *shared_state_record = &D_0013E030_0028ed58;
     C_0028ed58 *shared_result_record;
     s32 shared_table_offset;

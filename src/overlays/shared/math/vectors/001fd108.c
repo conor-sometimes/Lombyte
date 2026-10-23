@@ -12,7 +12,9 @@ INCLUDE_ASM("config/us/overlays/asm/FUN_L00_001fde98.s", FUN_L00_001fde98);
 extern char D_L00_0016EA40_001fe990[] __asm__("D_L00_0016EA40");
 float random_angle_radians() __asm__("FUN_00213308");
 /* Fills the first free 0x20-byte glints slot with v, b and x; returns its index or -1. */
-int FUN_L00_001fe990(u128 *input_payload, int b, float x) {
+int allocate_glint_slot(u128 *input_payload, int b, float x) __asm__("FUN_L00_001fe990");
+
+int allocate_glint_slot(u128 *input_payload, int b, float x) {
     u128 input_copy;
     u128 *tp = &input_copy;
     char *slot;
@@ -50,7 +52,9 @@ extern P glints[16] __asm__("D_L00_0016EA40");
 extern float fast_subtract_rotations(float, float) __asm__("FUN_001fa5c8");
 extern void fill_transfer_words(u8 *, s32, s32) __asm__("func_001F97E8");
 
-void FUN_L00_001fea18(void) {
+void update_glints(void) __asm__("FUN_L00_001fea18");
+
+void update_glints(void) {
     int i;
     P *glint_slot = glints;
     for (i = 15; i >= 0; i--, glint_slot++) {

@@ -20,7 +20,9 @@ extern int f9770_269290(void *) __asm__("FUN_001f9770");
 extern void lerp_269290(void *, void *, void *, float) __asm__("FUN_001f9a40");
 extern void f7a08_269290(void *) __asm__("FUN_L00_00267a08");
 
-void FUN_L00_00269290(char *particle) {
+void update_three_phase_effect_particle(char *particle) __asm__("FUN_L00_00269290");
+
+void update_three_phase_effect_particle(char *particle) {
     S_269290 *particle_data = (S_269290 *)(particle + 0x20);
     float v[4] __attribute__((aligned(16)));
     float a[4] __attribute__((aligned(16)));
@@ -96,7 +98,9 @@ extern void free_effect_particle(void *) __asm__("FUN_L00_00267a08");
 float absolute_float(float input) __asm__("FUN_001f99c0");
 extern int truncate_float_to_s32(float) __asm__("FUN_001fa6d0");
 
-void FUN_L00_002694f8(char *particle) {
+void update_drifting_effect_particle_with_distance_fade(char *particle) __asm__("FUN_L00_002694f8");
+
+void update_drifting_effect_particle_with_distance_fade(char *particle) {
     char *particle_data = particle + 0x20;
     float position_scratch[4];
     float reference_distance, reference_angle_delta;
@@ -104,12 +108,12 @@ void FUN_L00_002694f8(char *particle) {
     float *g;
     char *reference_position;
     char *B;
-    char *pos;
+    char *particle_position;
     collision_check_counter = *(int *)(particle_data + 0x1C);
     if (collision_check_counter >= 3) {
         remaining_lifetime = *(short *)(particle + 0xA);
-        pos = particle + 0x10;
-        if (remaining_lifetime > func_001F9850(0x78) && coll_sphere(7.99f, pos, 0x12, 0)) {
+        particle_position = particle + 0x10;
+        if (remaining_lifetime > func_001F9850(0x78) && coll_sphere(7.99f, particle_position, 0x12, 0)) {
             *(int *)(particle_data + 0x14) = 1;
             *(short *)(particle + 0xA) = func_001F9850(0x78);
             *(int *)(particle_data + 0x1C) = -1;
@@ -117,7 +121,7 @@ void FUN_L00_002694f8(char *particle) {
             *(int *)(particle_data + 0x1C) = 0;
         }
     } else {
-        pos = particle + 0x10;
+        particle_position = particle + 0x10;
         if (collision_check_counter < 0)
             goto after;
         *(int *)(particle_data + 0x1C) = collision_check_counter + 1;
@@ -127,12 +131,12 @@ void FUN_L00_002694f8(char *particle) {
         *(float *)particle_data = fast_cos(g[1]) * g[5] / 2.5f;
         *(float *)(particle_data + 4) = fast_sin(g[1]) * g[5] / 2.5f;
         *(int *)(particle_data + 8) = 0;
-        fast_vec_add(pos, pos, particle_data);
+        fast_vec_add(particle_position, particle_position, particle_data);
     }
 after:
     reference_position = D_L00_00166DC0;
     B = reference_position - 0x140;
-    reference_distance = fast_vec_dist(pos, reference_position);
+    reference_distance = fast_vec_dist(particle_position, reference_position);
     reference_angle_delta = fast_subtract_rotations(fast_arc_tan(*(float *)(particle + 0x10) - *(float *)(B + 0x140),
                                              *(float *)(particle + 0x14) - *(float *)(B + 0x144)),
                                 *(float *)(B + 0x158));
@@ -146,10 +150,10 @@ after:
                    fast_add_rotations(*(float *)(B + 0x158), reference_angle_delta > 0.0f ? -1.0471976f : 1.0471976f)) *
                reference_distance;
         position_scratch[2] = *(float *)(particle + 0x18) - *(float *)(B + 0x148);
-        fast_vec_add(pos, position_scratch, reference_position);
-        qcopy(position_scratch, pos);
+        fast_vec_add(particle_position, position_scratch, reference_position);
+        qcopy(position_scratch, particle_position);
         position_scratch[2] = position_scratch[2] + 32.0f;
-        if (func_L00_001EFFF0(pos, position_scratch, 0x12, 0, 0))
+        if (func_L00_001EFFF0(particle_position, position_scratch, 0x12, 0, 0))
             goto kill;
     }
     if ((D_L00_0015F5CC & 3) == 0)
@@ -241,7 +245,9 @@ void fast_vec_add(void *, void *, void *) __asm__("FUN_001f9a10");
 s32 mine_blend_color(s32, s32, f32) __asm__("FUN_L00_002371e0");
 s32 fast_dec_timer_s16(void *) __asm__("FUN_001f9770");
 void free_effect_particle(void *) __asm__("FUN_L00_00267a08");
-void FUN_L00_00269a70(O00269a70 *particle) {
+void update_damped_effect_particle(O00269a70 *particle) __asm__("FUN_L00_00269a70");
+
+void update_damped_effect_particle(O00269a70 *particle) {
     S00269a70 *s = &particle->s;
     particle->xc = convert_integer_to_float(s->x18 * (s->x1c - particle->xa) / s->x1c + s->x1a) * 1000.0f;
     fast_vec_scale(s, s, D_0015ED60 * -0.019999980926513672f + 1.0f);
@@ -267,13 +273,13 @@ extern s32 truncate_float_to_s32(f32) __asm__("func_001FA6D0");
 extern void *FUN_L00_002678b8(int);
 extern int truncate_float_to_s32(float) __asm__("FUN_001fa6d0");
 
-void FUN_L00_00269b70(void *pos, unsigned char red, unsigned char green, unsigned char blue, int target, float particle_scalar_change, float initial_particle_scalar) {
+void FUN_L00_00269b70(void *spawn_position, unsigned char red, unsigned char green, unsigned char blue, int target, float particle_scalar_change, float initial_particle_scalar) {
     char *particle;
     float *particle_data;
     if (target) {
         particle = FUN_L00_002678b8(5);
         if (particle) {
-            qcopy(particle + 0x10, pos);
+            qcopy(particle + 0x10, spawn_position);
             *(int *)(particle + 4) = 0x7F000000 | (blue << 16) | (green << 8) | red;
             particle_data = (float *)(particle + 0x20);
             particle[9] = truncate_float_to_s32(4.0f) - 0x60;
@@ -297,7 +303,9 @@ extern int scale_game_frames(int) __asm__("FUN_001f96f8");
 extern int fast_dec_timer(void *) __asm__("FUN_001f9740");
 extern void free_effect_particle(void *) __asm__("FUN_L00_00267a08");
 
-void FUN_L00_00269c70(char *particle) {
+void update_scalar_and_fade_effect_particle(char *particle) __asm__("FUN_L00_00269c70");
+
+void update_scalar_and_fade_effect_particle(char *particle) {
     float *particle_data;
     particle_data = (float *)(particle + 0x20);
     if (fast_dec_timer(particle_data)) {
@@ -315,7 +323,7 @@ void FUN_L00_00269c70(char *particle) {
 INCLUDE_ASM("config/us/overlays/asm/FUN_L00_00269d20.s", FUN_L00_00269d20);
 #else
 extern int particle_collision_269d20(void *, void *, int, void *, int) __asm__("FUN_001efa68");
-extern void FUN_L00_0025c2b0(float, void *, void *, void *);
+extern void subtract_homogeneous_scaled_vector_xyz(float, void *, void *, void *) __asm__("FUN_L00_0025c2b0");
 extern void particle_matrix_269d20(float, void *, void *) __asm__("FUN_001f9bf8");
 extern void particle_transform_269d20(void *, void *, void *) __asm__("FUN_001f9a10");
 extern float particle_color_float_269d20(int) __asm__("FUN_001fa6c0");
@@ -347,7 +355,7 @@ void FUN_L00_00269d20(unsigned char *m) {
         velocity[0] = *(float *)(p + 0x0);
         velocity[1] = *(float *)(p + 0x4);
         velocity[2] = *(float *)(p + 0x8);
-        FUN_L00_0025c2b0(*(float *)(e + 0x3c), matrix, velocity, D_L00_00173E80_26ff10);
+        subtract_homogeneous_scaled_vector_xyz(*(float *)(e + 0x3c), matrix, velocity, D_L00_00173E80_26ff10);
         *(float *)(p + 0x0) = matrix[0];
         *(float *)(p + 0x4) = matrix[1];
         *(float *)(p + 0x8) = matrix[2];
@@ -503,7 +511,9 @@ void FUN_L00_00267a08_0026a5b8(unsigned char *) __asm__("FUN_L00_00267a08");
 float FUN_001fa6c0_0026a5b8(int) __asm__("FUN_001fa6c0");
 int FUN_001fa6e0_0026a5b8(int, int, float) __asm__("FUN_001fa6e0");
 int FUN_001f96f8_0026a5b8(int) __asm__("FUN_001f96f8");
-void FUN_L00_0026a5b8(unsigned char *particle) {
+void update_animated_fading_effect_particle(unsigned char *particle) __asm__("FUN_L00_0026a5b8");
+
+void update_animated_fading_effect_particle(unsigned char *particle) {
     int *particle_data = (int *)(particle + 0x20);
     FUN_001f9a10_0026a5b8(particle + 0x10, particle + 0x10, particle_data);
     if (FUN_001f9770_0026a5b8(particle + 0xa)) {
@@ -526,7 +536,9 @@ float FUN_001fa580_0026a6f0(float, float) __asm__("FUN_001fa580");
 int FUN_001fa6d0_0026a6f0(float) __asm__("FUN_001fa6d0");
 int FUN_001f96f8_0026a6f0(int) __asm__("FUN_001f96f8");
 extern int D_L00_001601A4 __attribute__((sda));
-void FUN_L00_0026a6f0(unsigned char *particle) {
+void update_rotating_grayscale_effect_particle(unsigned char *particle) __asm__("FUN_L00_0026a6f0");
+
+void update_rotating_grayscale_effect_particle(unsigned char *particle) {
     int *particle_data = (int *)(particle + 0x20);
     int faded_alpha;
     if (FUN_001f9740_0026a6f0(particle_data)) {
@@ -551,7 +563,9 @@ void FUN_L00_00267a08_0026a880(unsigned char *) __asm__("FUN_L00_00267a08");
 int FUN_001fa6d0_0026a880(float) __asm__("FUN_001fa6d0");
 void FUN_001f9a10_0026a880(void *, void *, void *) __asm__("FUN_001f9a10");
 void FUN_001f9a68_0026a880(void *, void *, float) __asm__("FUN_001f9a68");
-void FUN_L00_0026a880(unsigned char *particle) {
+void update_damped_blue_shift_effect_particle(unsigned char *particle) __asm__("FUN_L00_0026a880");
+
+void update_damped_blue_shift_effect_particle(unsigned char *particle) {
     float *particle_data = (float *)(particle + 0x20);
     int blue_byte, alpha_byte;
     float dt;
@@ -663,7 +677,9 @@ extern void FUN_L00_0026a9f0_u(void *, void *, int, int, int, int, int, float, i
                                float) __asm__("FUN_L00_0026a9f0");
 extern int truncate_float_to_s32(float) __asm__("FUN_001fa6d0");
 
-void FUN_L00_0026ac78(char *particle) {
+void update_branching_and_fading_effect_particle(char *particle) __asm__("FUN_L00_0026ac78");
+
+void update_branching_and_fading_effect_particle(char *particle) {
     char *particle_data = particle + 0x20;
     particle[8]++;
     if ((particle_data[0x19] ^ 1) & 1) {
@@ -684,10 +700,10 @@ void FUN_L00_0026ac78(char *particle) {
                 int a = truncate_float_to_s32((float)(unsigned char)particle_data[0x1B] *
                                         random_float_between_alt(0.9f, 1.1f));
                 int k = (unsigned char)particle_data[0x18];
-                float g = random_float_between_alt(0.85f, 1.0f);
+                float child_velocity_offset_scale = random_float_between_alt(0.85f, 1.0f);
                 FUN_L00_0026a9f0_u(particle + 0x10, particle_data, *(int *)(particle_data + 0x10), *(int *)(particle_data + 0x14), a, k,
                                    (unsigned char)particle_data[0x1A] + 1, *(float *)(particle_data + 0x1C),
-                                   (unsigned char)particle_data[0x19], *(float *)(particle_data + 0xC) * g);
+                                   (unsigned char)particle_data[0x19], *(float *)(particle_data + 0xC) * child_velocity_offset_scale);
             }
         }
         if (!(particle_data[0x19] & 4)) {
@@ -871,7 +887,9 @@ extern unsigned char D_0013E05A[];
 extern void add_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void fast_vec_normalize_c(void *, void *, f32) __asm__("FUN_001f9bf8");
 
-void FUN_L00_0026b500(unsigned char *particle) {
+void update_spinning_and_fading_effect_particle(unsigned char *particle) __asm__("FUN_L00_0026b500");
+
+void update_spinning_and_fading_effect_particle(unsigned char *particle) {
     unsigned char *particle_data = particle + 0x20;
     float negated_particle_speed;
     float size_endpoint_scale = 1.0f;
@@ -970,7 +988,9 @@ int FUN_001f9770_0026b910(s16 *) __asm__("FUN_001f9770");
 int FUN_001f96f8_0026b910(int) __asm__("FUN_001f96f8");
 s32 FUN_001fa6d0_0026b910(f32) __asm__("FUN_001fa6d0");
 void FUN_L00_00267a08_0026b910(void *) __asm__("FUN_L00_00267a08");
-void FUN_L00_0026b910(Part_26b910 *particle) {
+void update_spinning_fade_in_out_effect_particle(Part_26b910 *particle) __asm__("FUN_L00_0026b910");
+
+void update_spinning_fade_in_out_effect_particle(Part_26b910 *particle) {
     Body_26b910 *particle_data = &particle->body;
     particle->b8 += particle_data->b8;
     particle->f18 += particle_data->f10;
@@ -1003,7 +1023,9 @@ int FUN_001f9770_0026ba68(void *) __asm__("FUN_001f9770");
 void FUN_L00_00267a08_0026ba68(unsigned char *) __asm__("FUN_L00_00267a08");
 int FUN_001f96f8_0026ba68(int) __asm__("FUN_001f96f8");
 int FUN_001fa6d0_0026ba68(float) __asm__("FUN_001fa6d0");
-void FUN_L00_0026ba68(unsigned char *particle) {
+void update_attached_or_fading_effect_particle(unsigned char *particle) __asm__("FUN_L00_0026ba68");
+
+void update_attached_or_fading_effect_particle(unsigned char *particle) {
     u128 position_offset;
     int *particle_data = (int *)(particle + 0x20);
     particle[8] += particle[0x20];
@@ -1081,20 +1103,22 @@ int FUN_L00_00257b90_26bca8(int, int) __asm__("FUN_L00_00257b90");
 int FUN_001f96f8_26bca8(int) __asm__("FUN_001f96f8");
 unsigned char *FUN_L00_0026bb70_26bca8(void *, void *, int, int, float, int, int, int,
                                        int) __asm__("FUN_L00_0026bb70");
-void FUN_L00_0026bca8(unsigned char *particle) {
+void update_shrinking_effect_particle_with_gravity_and_secondary_spawns(unsigned char *particle) __asm__("FUN_L00_0026bca8");
+
+void update_shrinking_effect_particle_with_gravity_and_secondary_spawns(unsigned char *particle) {
     V26bca8 updated_position_copy, spawn_velocity, random_direction;
     unsigned char *particle_data = particle + 0x20;
     unsigned char *particle_position;
-    float lifetime_size_scratch, b;
+    float lifetime_size_scratch, initial_lifetime_or_speed_scratch;
     if (FUN_001f9770_26bca8(particle + 0xA)) {
         FUN_L00_00267a08_26bca8(particle);
         return;
     }
     particle_position = particle + 0x10;
     lifetime_size_scratch = FUN_001fa6c0_26bca8(*(short *)(particle + 0xA));
-    b = FUN_001fa6c0_26bca8(*(short *)(particle_data + 0x18));
+    initial_lifetime_or_speed_scratch = FUN_001fa6c0_26bca8(*(short *)(particle_data + 0x18));
     lifetime_size_scratch *= *(float *)(particle_data + 0x1C);
-    lifetime_size_scratch /= b;
+    lifetime_size_scratch /= initial_lifetime_or_speed_scratch;
     *(float *)(particle + 0xC) = lifetime_size_scratch;
     lifetime_size_scratch = FUN_001fa6c0_26bca8(*(short *)(particle + 0xA));
     *(int *)(particle + 4) = FUN_L00_002371e0_26bca8(*(int *)(particle_data + 0x14), *(int *)(particle_data + 0x10),
@@ -1108,8 +1132,8 @@ void FUN_L00_0026bca8(unsigned char *particle) {
         random_direction.f[1] = FUN_002132a8_26bca8(-1.0f, 1.0f);
         random_direction.f[2] = FUN_002132a8_26bca8(-1.0f, 1.0f);
         spawn_velocity.q = random_direction.q;
-        b = FUN_001f9af0_26bca8(particle_data);
-        FUN_001f9bf8_26bca8(&spawn_velocity, &spawn_velocity, b * FUN_002132a8_26bca8(0.15f, 0.25f));
+        initial_lifetime_or_speed_scratch = FUN_001f9af0_26bca8(particle_data);
+        FUN_001f9bf8_26bca8(&spawn_velocity, &spawn_velocity, initial_lifetime_or_speed_scratch * FUN_002132a8_26bca8(0.15f, 0.25f));
         FUN_001f9a10_26bca8(&spawn_velocity, &spawn_velocity, particle_data);
         FUN_001f9a68_26bca8(&spawn_velocity, &spawn_velocity, FUN_002132a8_26bca8(0.75f, 0.95f));
         FUN_L00_0026bb70_26bca8(particle_position, &spawn_velocity, *(int *)(particle + 4), *(int *)(particle_data + 0x14),
@@ -1197,7 +1221,9 @@ extern f32 random_float_between(f32, f32) __asm__("FUN_002132a8");
 extern int FUN_L00_002371e0_c(int, int, float) __asm__("FUN_L00_002371e0");
 extern void FUN_L00_0026bed0_c(void *, void *, int, int, float, int, int) __asm__("FUN_L00_0026bed0");
 
-void FUN_L00_0026c088(Part_0026CF28 *particle) {
+void update_fading_debris_particle_with_landing_spawn(Part_0026CF28 *particle) __asm__("FUN_L00_0026c088");
+
+void update_fading_debris_particle_with_landing_spawn(Part_0026CF28 *particle) {
     float saved[4];
     float grav[4] = { D_0015ED70 * 4.8f, D_0015ED70 * 24.5f, D_0015ED70 * 9.8f, -(D_0015ED70 * 0.24f) };
     Data_0026CF28 *particle_data = (Data_0026CF28 *)(particle + 1);
@@ -1299,7 +1325,9 @@ extern f32_26c558 D_0015ED60;
 extern int tick_26c558(void *) __asm__("FUN_001f9770");
 extern void kill_26c558(void *) __asm__("FUN_L00_00267a08");
 extern int trunc_26c558(f32_26c558) __asm__("FUN_001fa6d0");
-void FUN_L00_0026c558(P_26c558 *particle) {
+void update_descending_fade_in_out_effect_particle(P_26c558 *particle) __asm__("FUN_L00_0026c558");
+
+void update_descending_fade_in_out_effect_particle(P_26c558 *particle) {
     Q_26c558 *q = &particle->q;
     q->f4 += D_0015ED60 * 0.013f * q->fC;
     if (q->f4 <= 0.0f || tick_26c558(&particle->hA)) {
@@ -1340,8 +1368,10 @@ E0026c6e8 *FUN_L00_002678b8_u(s32) __asm__("FUN_L00_002678b8");
 s32 random_integer_below(s32) __asm__("FUN_00213260");
 s32 truncate_float_to_s32(f32) __asm__("FUN_001fa6d0");
 void subtract_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a28");
-void FUN_L00_0026c6e8(void *pos, void *vel);
-void FUN_L00_0026c6e8(void *spawn_position, void *initial_velocity) {
+void spawn_two_point_effect_particle(void *spawn_position, void *initial_velocity) __asm__("FUN_L00_0026c6e8");
+
+void spawn_two_point_effect_particle(void *pos, void *vel) __asm__("FUN_L00_0026c6e8");
+void spawn_two_point_effect_particle(void *spawn_position, void *initial_velocity) {
     E0026c6e8 *particle = FUN_L00_002678b8_u(0x13);
     u32 initial_packed_color;
     if (particle == 0)
@@ -1370,7 +1400,9 @@ extern void fast_vec_add(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void free_effect_particle(void *) __asm__("FUN_L00_00267a08");
 
 /* Moves both points by the vector at 0x30; lowers the top byte at a+4 by 6, 00267a08 below 0. */
-void FUN_L00_0026c7f0(char *particle) {
+void move_and_fade_two_point_particle(char *particle) __asm__("FUN_L00_0026c7f0");
+
+void move_and_fade_two_point_particle(char *particle) {
     int faded_color;
     fast_vec_add(particle + 0x10, particle + 0x10, particle + 0x30);
     fast_vec_add(particle + 0x20, particle + 0x20, particle + 0x30);
@@ -1419,20 +1451,22 @@ f32 FUN_L00_0025c230_26c860(void *, void *, void *, s32) __asm__("FUN_L00_0025c2
 s32 FUN_001f9770_26c860(void *) __asm__("FUN_001f9770");
 void FUN_L00_00267a08_26c860(void *) __asm__("FUN_L00_00267a08");
 s32 FUN_001fa6d0_26c860(f32) __asm__("FUN_001fa6d0");
-void FUN_L00_0026c860(M_26c860 *particle) {
+void update_spiraling_fade_in_out_effect_particle(M_26c860 *particle) __asm__("FUN_L00_0026c860");
+
+void update_spiraling_fade_in_out_effect_particle(M_26c860 *particle) {
     R_26c860 *r = &particle->r;
     V_26c860 reference_position, position_offset_scratch, transformed_position_offset;
-    M3_26c860 mat;
+    M3_26c860 position_offset_matrix;
     if (r->f10 != 0.0f) {
         f32 zero = 0.0f;
-        mat.q[0] = r->p0->q[0];
-        mat.q[1] = r->p0->q[1];
-        mat.q[2] = r->p0->q[2];
+        position_offset_matrix.q[0] = r->p0->q[0];
+        position_offset_matrix.q[1] = r->p0->q[1];
+        position_offset_matrix.q[2] = r->p0->q[2];
         position_offset_scratch.y = FUN_001f9de0_26c860(r->f14) * r->f10;
         position_offset_scratch.z = FUN_001f9dc8_26c860(r->f14) * r->f10;
         position_offset_scratch.x = zero;
         position_offset_scratch.w = zero;
-        FUN_001f9d20_26c860(&transformed_position_offset, &position_offset_scratch, &mat);
+        FUN_001f9d20_26c860(&transformed_position_offset, &position_offset_scratch, &position_offset_matrix);
         FUN_001f9a28_26c860(&particle->v10, &particle->v10, &transformed_position_offset);
         r->f1C += D_0015ED60_26c860 * 0.06001f;
         FUN_L00_0024f7c8_26c860(r->p18, 0, &reference_position);
@@ -1445,7 +1479,7 @@ void FUN_L00_0026c860(M_26c860 *particle) {
         position_offset_scratch.z = FUN_001f9dc8_26c860(r->f14) * r->f10;
         position_offset_scratch.x = zero;
         position_offset_scratch.w = zero;
-        FUN_001f9d20_26c860(&transformed_position_offset, &position_offset_scratch, &mat);
+        FUN_001f9d20_26c860(&transformed_position_offset, &position_offset_scratch, &position_offset_matrix);
         FUN_001f9a10_26c860(&particle->v10, &particle->v10, &transformed_position_offset);
         if (zero < FUN_L00_0025c230_26c860(&reference_position, r->p18 + 0xC0, &particle->v10, 1)) {
             FUN_L00_00267a08_26c860(particle);
@@ -1537,7 +1571,9 @@ void FUN_001f9bf8_0026ccb0(void *, void *, float) __asm__("FUN_001f9bf8");
 int FUN_001f96f8_0026ccb0(int) __asm__("FUN_001f96f8");
 int FUN_L00_00257b90_0026ccb0(int, int) __asm__("FUN_L00_00257b90");
 void FUN_L00_0026cbb0_0026ccb0(void *, void *, s32, s32, f32, int, int) __asm__("FUN_L00_0026cbb0");
-void FUN_L00_0026ccb0(O_0026ccb0_0026ccb0 *particle) {
+void update_shrinking_effect_particle_with_secondary_spawns(O_0026ccb0_0026ccb0 *particle) __asm__("FUN_L00_0026ccb0");
+
+void update_shrinking_effect_particle_with_secondary_spawns(O_0026ccb0_0026ccb0 *particle) {
     S_0026ccb0_0026ccb0 *s = &particle->s;
     u128 *particle_position;
     V_0026ccb0_0026ccb0 updated_position_copy, spawn_velocity_storage, random_direction;
@@ -1647,7 +1683,9 @@ extern int FUN_001fa6d0_26d1b0(float) __asm__("FUN_001fa6d0");
 extern float FUN_001fa6c0_26d1b0(int) __asm__("FUN_001fa6c0");
 extern void FUN_L00_00267a08_26d1b0(void *) __asm__("FUN_L00_00267a08");
 
-void FUN_L00_0026d1b0(unsigned char *particle) {
+void update_moving_spinning_fade_in_out_effect_particle(unsigned char *particle) __asm__("FUN_L00_0026d1b0");
+
+void update_moving_spinning_fade_in_out_effect_particle(unsigned char *particle) {
     unsigned char *particle_data = particle + 0x20;
     float alpha_fade_scratch;
     int phase_duration;
@@ -1736,7 +1774,9 @@ typedef struct {
 f32 FUN_001fa6c0_0026d470(s32) __asm__("FUN_001fa6c0");
 s32 FUN_001fa6d0_0026d470(f32) __asm__("FUN_001fa6d0");
 void FUN_L00_00267a08_0026d470(void *) __asm__("FUN_L00_00267a08");
-void FUN_L00_0026d470(Part_26d470 *particle) {
+void update_source_bound_effect_particle(Part_26d470 *particle) __asm__("FUN_L00_0026d470");
+
+void update_source_bound_effect_particle(Part_26d470 *particle) {
     Src_26d470 *e;
     Body_26d470 *particle_data;
     float updated_alpha_offset;
@@ -1826,7 +1866,9 @@ void clr_26d700(void *) __asm__("FUN_001f99f8");
 int tick_26d700(void *) __asm__("FUN_001f9770");
 void kill_26d700(P_26d700 *) __asm__("FUN_L00_00267a08");
 int rgba_26d700(float, float, float, float) __asm__("FUN_L00_0025bfe0");
-void FUN_L00_0026d700(P_26d700 *particle) {
+void update_color_decaying_effect_particle_with_collision(P_26d700 *particle) __asm__("FUN_L00_0026d700");
+
+void update_color_decaying_effect_particle_with_collision(P_26d700 *particle) {
     V_26d700 next_position;
     S_26d700 *s;
     float r, g, b, dt;
@@ -1919,18 +1961,18 @@ void FUN_001f9a28_0026daa0(V_0026daa0 *, void *, V_0026daa0 *) __asm__("FUN_001f
 void FUN_001f9bf8_0026daa0(V_0026daa0 *, V_0026daa0 *, float) __asm__("FUN_001f9bf8");
 void FUN_001f9a10_0026daa0(void *, V_0026daa0 *, V_0026daa0 *) __asm__("FUN_001f9a10");
 extern unsigned char *D_L00_001B20E8 __attribute__((section(".data")));
-unsigned char *FUN_L00_0026daa0(char *src, int color, int lifetime, int source_position_selector, float initial_particle_scalar) {
+unsigned char *FUN_L00_0026daa0(char *source_moby, int color, int lifetime, int source_position_selector, float initial_particle_scalar) {
     unsigned char *particle = FUN_L00_002678b8_0026daa0(0x1A);
     if (particle) {
         E_0026daa0 *particle_data = (E_0026daa0 *)(particle + 0x20);
         V_0026daa0 source_position, position_offset;
-        particle_data->o = src;
+        particle_data->o = source_moby;
         particle_data->iC = color >> 24;
         particle_data->h6 = source_position_selector;
         particle_data->i8 = lifetime;
         particle_data->h4 = lifetime;
         if ((short)source_position_selector == -1) {
-            qcopy(particle + 0x10, src + 0x10);
+            qcopy(particle + 0x10, source_moby + 0x10);
         } else {
             FUN_L00_0024f7c8_0026daa0(particle_data->o, (short)source_position_selector, &source_position);
             FUN_001f9a28_0026daa0(&position_offset, D_L00_00166DC0_0026daa0, &source_position);
@@ -1964,7 +2006,9 @@ void FUN_L00_0024f7c8_0026dbe0(void *, int, V_0026dbe0 *) __asm__("FUN_L00_0024f
 void FUN_001f9a28_0026dbe0(V_0026dbe0 *, void *, V_0026dbe0 *) __asm__("FUN_001f9a28");
 void FUN_001f9bf8_0026dbe0(V_0026dbe0 *, V_0026dbe0 *, float) __asm__("FUN_001f9bf8");
 void FUN_001f9a10_0026dbe0(void *, V_0026dbe0 *, V_0026dbe0 *) __asm__("FUN_001f9a10");
-void FUN_L00_0026dbe0(unsigned char *particle) {
+void update_source_attached_fading_effect_particle(unsigned char *particle) __asm__("FUN_L00_0026dbe0");
+
+void update_source_attached_fading_effect_particle(unsigned char *particle) {
     E_0026dbe0 *particle_data;
     V_0026dbe0 source_position, position_offset;
     if (particle == 0)
@@ -2020,7 +2064,9 @@ extern int fast_dec_timer(void *) __asm__("FUN_001f9740");
 extern void fast_vec_add(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void free_effect_particle(void *) __asm__("FUN_L00_00267a08");
 
-void FUN_L00_0026de00(char *particle) {
+void move_and_fade_effect_particle_by_lifetime(char *particle) __asm__("FUN_L00_0026de00");
+
+void move_and_fade_effect_particle_by_lifetime(char *particle) {
     char *particle_data = particle + 0x20;
     fast_vec_add(particle + 0x10, particle + 0x10, particle_data);
     *(unsigned *)(particle + 4) = (*(unsigned *)(particle + 4) & 0xFFFFFF) +
@@ -2064,7 +2110,9 @@ s32 FUN_001fa6d0_26de90(f32) __asm__("FUN_001fa6d0");
 s32 FUN_001f96f8_26de90(s32) __asm__("FUN_001f96f8");
 void FUN_001f9cf8_26de90(void *, void *, void *) __asm__("FUN_001f9cf8");
 extern u8 *D_L00_001B20F0 __attribute__((section(".data")));
-void FUN_L00_0026de90(void *spawn_origin, void *optional_spawn_basis, f32 size) {
+void spawn_jittered_effect_particle_with_optional_basis(void *spawn_origin, void *optional_spawn_basis, f32 size) __asm__("FUN_L00_0026de90");
+
+void spawn_jittered_effect_particle_with_optional_basis(void *spawn_origin, void *optional_spawn_basis, f32 size) {
     M_26de90 *particle;
     V_26de90 transformed_spawn_offset, spawn_offset, local_velocity;
     X_26de90 x;
@@ -2136,7 +2184,9 @@ extern void FUN_L00_00267a08_26e150(void *) __asm__("FUN_L00_00267a08");
 extern int FUN_001fa6d0_26e150(float) __asm__("FUN_001fa6d0");
 extern void FUN_001f9a10_26e150(void *, void *, void *) __asm__("FUN_001f9a10");
 
-void FUN_L00_0026e150(M_26e150 *particle) {
+void update_moving_fade_in_out_effect_particle(M_26e150 *particle) __asm__("FUN_L00_0026e150");
+
+void update_moving_fade_in_out_effect_particle(M_26e150 *particle) {
     struct Q_26e150 *q = &particle->q;
     float vel = q->vel;
     float alpha_before_reversal;
@@ -2200,7 +2250,9 @@ extern void pos_26e3a8(void *, s32, void *) __asm__("FUN_L00_0024f7c8");
 extern void vsub_26e3a8(void *, void *, void *) __asm__("FUN_001f9a28");
 extern void vscl_26e3a8(void *, void *, f32) __asm__("FUN_001f9bf8");
 extern void vadd_26e3a8(void *, void *, void *) __asm__("FUN_001f9a10");
-void FUN_L00_0026e3a8(P_26e3a8 *particle) {
+void update_animated_source_attached_fade_in_out_effect_particle(P_26e3a8 *particle) __asm__("FUN_L00_0026e3a8");
+
+void update_animated_source_attached_fade_in_out_effect_particle(P_26e3a8 *particle) {
     E_26e3a8 *e;
     f32 alpha_reversal_threshold;
     f32 a[4] __attribute__((aligned(16)));
@@ -2302,32 +2354,34 @@ s32 FUN_L00_001f0d60_x(void *, s32, s32, f32) __asm__("FUN_L00_001f0d60");
 void FUN_L00_001ff660_x(void *, void *, void *) __asm__("FUN_L00_001ff660");
 void FUN_L00_00267a08_x(O_26e670_26e670 *) __asm__("FUN_L00_00267a08");
 
-void FUN_L00_0026e670(O_26e670_26e670 *particle) {
+void update_linked_effect_particle_with_collision_and_fade(O_26e670_26e670 *particle) __asm__("FUN_L00_0026e670");
+
+void update_linked_effect_particle_with_collision_and_fade(O_26e670_26e670 *particle) {
     V_26e670_26e670 next_position, position_displacement, acc, projected_next_position;
     P_26e670_26e670 *P = &particle->p;
 
     if ((P->h1E ^ 1) & 1) {
-        O_26e670_26e670 *l = P->link;
+        O_26e670_26e670 *linked_particle = P->link;
         P_26e670_26e670 *linked_particle_data = 0;
         f32 k = 2.0f, g;
-        if (l)
-            linked_particle_data = &l->p;
+        if (linked_particle)
+            linked_particle_data = &linked_particle->p;
         FUN_001f99f8_x(&acc);
         g = 0.15f;
-        if (P->h1C == 0 && l != 0 && !(*(long long *)&linked_particle_data->x18 & 0x1FFFF00000000LL)) {
+        if (P->h1C == 0 && linked_particle != 0 && !(*(long long *)&linked_particle_data->x18 & 0x1FFFF00000000LL)) {
             f32 kk;
             f32 c02 = 0.2f, c1 = 1.0f, c999 = 0.999f;
             do {
                 kk = k * k;
-                FUN_001f9a28_x(&next_position, &l->pos, &particle->pos);
+                FUN_001f9a28_x(&next_position, &linked_particle->pos, &particle->pos);
                 k += c1;
                 g *= c999;
                 FUN_001f9bf8_x(&next_position, &next_position, c02 / kk);
                 FUN_001f9a10_x(&acc, &acc, &next_position);
-                l = linked_particle_data->link;
-                if (l)
-                    linked_particle_data = &l->p;
-                if (!l)
+                linked_particle = linked_particle_data->link;
+                if (linked_particle)
+                    linked_particle_data = &linked_particle->p;
+                if (!linked_particle)
                     break;
             } while (!(*(long long *)&linked_particle_data->x18 & 0x1FFFF00000000LL));
         }
@@ -2401,7 +2455,9 @@ extern void vadd_26eb88(void *, void *, void *) __asm__("FUN_001f9a10");
 extern float dist_26eb88(void *, void *) __asm__("FUN_001f9b48");
 extern float D_L00_001601F4 __attribute__((sda));
 extern float D_L00_001601F8 __attribute__((sda));
-void FUN_L00_0026eb88(unsigned char *particle) {
+void update_target_relative_two_point_effect_particle(unsigned char *particle) __asm__("FUN_L00_0026eb88");
+
+void update_target_relative_two_point_effect_particle(unsigned char *particle) {
     OvlQuad position_scratch;
     OvlQuad target_offset_scratch[1];
     unsigned char *target_object = *(unsigned char **)(particle + 0x30);
@@ -2452,7 +2508,9 @@ extern f32 FUN_002132a8_0026ed28(f32, f32) __asm__("FUN_002132a8");
 extern s32 FUN_L00_0025bfe0_0026ed28(f32, f32, f32, f32) __asm__("FUN_L00_0025bfe0");
 extern f32 D_0015ED60_0026ed28 __asm__("D_0015ED60");
 extern u8 *D_L00_001B20A0_0026ed28[] __asm__("D_L00_001B20A0") __attribute__((section(".data")));
-Part_26ed28 *FUN_L00_0026ed28(u8 *a) {
+Part_26ed28 *spawn_moby_bound_effect_particle(u8 *a) __asm__("FUN_L00_0026ed28");
+
+Part_26ed28 *spawn_moby_bound_effect_particle(u8 *a) {
     Part_26ed28 *particle;
     Body_26ed28 *particle_data;
     particle = FUN_L00_002678b8_0026ed28(0x20);
@@ -2484,7 +2542,9 @@ extern float D_0015ED60_26ee48 __asm__("D_0015ED60");
 void FUN_L00_00267a08_26ee48(void *) __asm__("FUN_L00_00267a08");
 int FUN_L00_0025bfe0_26ee48(float, float, float, float) __asm__("FUN_L00_0025bfe0");
 int FUN_001fa6d0_26ee48(float) __asm__("FUN_001fa6d0");
-void FUN_L00_0026ee48(unsigned char *particle) {
+void update_moby_bound_fade_in_out_effect_particle(unsigned char *particle) __asm__("FUN_L00_0026ee48");
+
+void update_moby_bound_fade_in_out_effect_particle(unsigned char *particle) {
     B_26ee48 *particle_data;
     unsigned char *o;
     if (particle == 0)
@@ -2535,7 +2595,9 @@ extern int fast_dec_timer_s16(void *) __asm__("FUN_001f9770");
 extern void free_effect_particle(void *) __asm__("FUN_L00_00267a08");
 
 /* Calls free_effect_particle on a once fast_dec_timer_s16(a + 10) returns non-zero. */
-void FUN_L00_0026f048(char *particle) {
+void tick_effect_particle_lifetime(char *particle) __asm__("FUN_L00_0026f048");
+
+void tick_effect_particle_lifetime(char *particle) {
     if (fast_dec_timer_s16(particle + 10) != 0) {
         free_effect_particle(particle);
     }
@@ -2604,9 +2666,11 @@ extern float fast_add_rotations(float, float) __asm__("FUN_001fa580");
 extern void set_vector_length_xy(void *, void *, float) __asm__("FUN_001f9c48");
 s32 random_integer_below(s32 arg0) __asm__("FUN_00213260");
 
-void FUN_L00_0026f280(char *particle) {
+void update_swaying_and_fading_effect_particle(char *particle) __asm__("FUN_L00_0026f280");
+
+void update_swaying_and_fading_effect_particle(char *particle) {
     char *particle_data = particle + 0x20;
-    float v[3];
+    float motion_vector_scratch[3];
     char *q;
     float offset_angle, k;
     if (fast_dec_timer_s16(particle + 0xA)) {
@@ -2628,32 +2692,32 @@ void FUN_L00_0026f280(char *particle) {
         }
     }
     if (*(short *)(particle + 0xA) < scale_game_frames(0xE)) {
-        int r = *(unsigned char *)(particle + 7);
-        *(int *)(particle + 4) = ((r * *(short *)(particle + 0xA) / scale_game_frames(0xE)) << 24) |
+        int alpha_before_fade = *(unsigned char *)(particle + 7);
+        *(int *)(particle + 4) = ((alpha_before_fade * *(short *)(particle + 0xA) / scale_game_frames(0xE)) << 24) |
                           (*(int *)(particle + 4) & 0xFFFFFF);
     }
     *(float *)(particle + 0xC) += D_0015ED60_c * 840.00006f;
     if (*(float *)(particle_data + 0xC) < *(float *)(particle + 0xC))
         *(float *)(particle + 0xC) = *(float *)(particle_data + 0xC);
-    v[0] = *(float *)(particle_data + 0);
-    v[1] = *(float *)(particle_data + 4);
-    v[2] = *(float *)(particle_data + 8);
+    motion_vector_scratch[0] = *(float *)(particle_data + 0);
+    motion_vector_scratch[1] = *(float *)(particle_data + 4);
+    motion_vector_scratch[2] = *(float *)(particle_data + 8);
     {
-        float len = vector_length_xy(v);
-        set_vector_length_xy(v, v, D_0015ED60_c * -0.029999971f * len + len);
+        float horizontal_speed = vector_length_xy(motion_vector_scratch);
+        set_vector_length_xy(motion_vector_scratch, motion_vector_scratch, D_0015ED60_c * -0.029999971f * horizontal_speed + horizontal_speed);
     }
-    fast_vec_add(particle + 0x10, particle + 0x10, v);
-    approach_value(v + 2, frame_time * 1.3f, frame_time_sq * 5.0f);
-    *(float *)(particle_data + 0) = v[0];
-    *(float *)(particle_data + 4) = v[1];
-    *(float *)(particle_data + 8) = v[2];
+    fast_vec_add(particle + 0x10, particle + 0x10, motion_vector_scratch);
+    approach_value(motion_vector_scratch + 2, frame_time * 1.3f, frame_time_sq * 5.0f);
+    *(float *)(particle_data + 0) = motion_vector_scratch[0];
+    *(float *)(particle_data + 4) = motion_vector_scratch[1];
+    *(float *)(particle_data + 8) = motion_vector_scratch[2];
     *(float *)(particle_data + 0x14) = fast_add_rotations(*(float *)(particle_data + 0x14), *(float *)(particle_data + 0x18));
     offset_angle = fast_add_rotations(D_L00_00166DD8_d, 1.5707964f);
     k = fast_sin(*(float *)(particle_data + 0x14)) * *(float *)(particle_data + 0x1C);
-    v[0] = fast_cos(offset_angle) * k;
-    v[1] = fast_sin(offset_angle) * k;
-    v[2] = 0;
-    fast_vec_add(particle + 0x10, particle + 0x10, v);
+    motion_vector_scratch[0] = fast_cos(offset_angle) * k;
+    motion_vector_scratch[1] = fast_sin(offset_angle) * k;
+    motion_vector_scratch[2] = 0;
+    fast_vec_add(particle + 0x10, particle + 0x10, motion_vector_scratch);
 }
 extern float D_0015ED70_0026f548 __asm__("D_0015ED70");
 unsigned char *FUN_L00_002678b8_0026f548(int) __asm__("FUN_L00_002678b8");
@@ -2694,9 +2758,11 @@ typedef struct {
 extern V D_L00_00173E60;
 extern int collision_hit_material(void) __asm__("FUN_001f0b58");
 extern void FUN_L00_002715e8(void *, int, int, float, float);
-extern void FUN_L00_002741a0(void *, int, float, float);
+extern void spawn_random_planar_drift_particle(void *, int, float, float) __asm__("FUN_L00_002741a0");
 
-void FUN_L00_0026f660(char *particle) {
+void update_ballistic_effect_particle_with_contact_spawns(char *particle) __asm__("FUN_L00_0026f660");
+
+void update_ballistic_effect_particle_with_contact_spawns(char *particle) {
     char *particle_data = particle + 0x20;
     int mode = *(int *)(particle_data + 0x10);
     V next_position;
@@ -2733,7 +2799,7 @@ void FUN_L00_0026f660(char *particle) {
             if (collision_hit_material() != 0) {
                 int *collision_data = D_L00_00173E40;
                 *(float *)((char *)collision_data + 0x28) += 0.05f;
-                FUN_L00_002741a0(collision_data + 8, -1, 0.25f, 3150.0f);
+                spawn_random_planar_drift_particle(collision_data + 8, -1, 0.25f, 3150.0f);
             }
             free_effect_particle(particle);
             return;
@@ -2770,7 +2836,9 @@ typedef struct {
     u128 v10;
 } Q_26f898;
 
-void FUN_L00_0026f898(unsigned char *particle) {
+void update_flag_controlled_pulsing_effect_particle(unsigned char *particle) __asm__("FUN_L00_0026f898");
+
+void update_flag_controlled_pulsing_effect_particle(unsigned char *particle) {
     u128 position_offset;
     Q_26f898 *particle_data;
     float angle_sine;
@@ -2809,7 +2877,9 @@ void fast_vec_normalize(void *, void *, float) __asm__("FUN_001f9bf8");
 void fast_vec_scale(void *, void *, float) __asm__("FUN_001f9a68");
 void fast_vec_add(void *, void *, void *) __asm__("FUN_001f9a10");
 int mine_blend_color(int, int, float) __asm__("FUN_L00_002371e0");
-void FUN_L00_0026fa00(char *particle) {
+void update_offset_and_pulse_effect_particle(char *particle) __asm__("FUN_L00_0026fa00");
+
+void update_offset_and_pulse_effect_particle(char *particle) {
     V4 position_offset;
     int *particle_data = (int *)(particle + 0x20);
     int color_blend_peak_ticks, k;
@@ -2850,7 +2920,9 @@ extern void FUN_L00_00267a08_26fb00(void *) __asm__("FUN_L00_00267a08");
 extern void FUN_001f9a10_26fb00(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void FUN_001f9a68_26fb00(void *, void *, float) __asm__("FUN_001f9a68");
 
-void FUN_L00_0026fb00(P_26fb00 *particle) {
+void update_damped_and_fading_effect_particle(P_26fb00 *particle) __asm__("FUN_L00_0026fb00");
+
+void update_damped_and_fading_effect_particle(P_26fb00 *particle) {
     Q_26fb00 *q = &particle->q;
     float zero, x, y;
     if (FUN_001f9770_26fb00(&particle->ha)) {
@@ -2906,7 +2978,9 @@ extern s32 D_L00_00160204 __attribute__((sda));
 extern f32 D_L00_00160208 __attribute__((sda));
 extern u8 D_L00_0016020C __attribute__((sda));
 extern u8 *D_L00_001B211C __attribute__((section(".data")));
-void FUN_L00_0026fc38(O0026fc38 *particle) {
+void update_animated_offset_effect_particle(O0026fc38 *particle) __asm__("FUN_L00_0026fc38");
+
+void update_animated_offset_effect_particle(O0026fc38 *particle) {
     V0026fc38 position_offset;
     S0026fc38 *s = &particle->s;
     particle->xc = D_L00_00160200;
@@ -2948,7 +3022,7 @@ extern f32 rang_26fd28(void) __asm__("FUN_00213308");
 extern f32 rfb_26fd28(f32, f32) __asm__("FUN_002132a8");
 extern s32 rnd_26fd28(void) __asm__("FUN_001160d8");
 extern u8 *tex_26fd28 __asm__("D_L00_001B20B0") __attribute__((section(".data")));
-P_26fd28 *FUN_L00_0026fd28(u128 *pos, u128 *vel, u8 initial_flags, s32 collision_context) {
+P_26fd28 *FUN_L00_0026fd28(u128 *pos, u128 *initial_velocity, u8 initial_flags, s32 collision_context) {
     P_26fd28 *particle;
     E_26fd28 *e;
     f32 initial_rotation_phase;
@@ -2957,7 +3031,7 @@ P_26fd28 *FUN_L00_0026fd28(u128 *pos, u128 *vel, u8 initial_flags, s32 collision
     if (particle != 0) {
         e = &particle->e;
         qcopy(&particle->pos, pos);
-        qcopy(e, vel);
+        qcopy(e, initial_velocity);
         particle->w4 = FUN_L00_0025bfe0(0.7f, 0.7f, 0.7f, 0.08f);
         particle->b9 = trunc_26fd28(4.0f) + 0x40;
         particle->b1 = 0;
@@ -3044,7 +3118,9 @@ extern void FUN_L00_00267a08_26ff10(Moby_26ff10 *) __asm__("FUN_L00_00267a08");
 extern f32 FUN_001fa6c0_26ff10(s32) __asm__("FUN_001fa6c0");
 extern s32 FUN_001fa6d0_26ff10(f32) __asm__("FUN_001fa6d0");
 
-void FUN_L00_0026ff10(Moby_26ff10 *particle) {
+void update_splitting_effect_particle_with_collision_response_and_fade(Moby_26ff10 *particle) __asm__("FUN_L00_0026ff10");
+
+void update_splitting_effect_particle_with_collision_response_and_fade(Moby_26ff10 *particle) {
     VV_26ff10 v0u;
     VV_26ff10 v1u;
     S_26ff10 collision_parameters;
@@ -3057,7 +3133,7 @@ void FUN_L00_0026ff10(Moby_26ff10 *particle) {
     s64 hit;
     s32 k, mode, kk2, t;
     void *aux, *col, *pa, *pb;
-    f32 f, g, alpha_factor;
+    f32 f, rotation_direction_sign, alpha_factor;
 
     pv = &particle->pv;
     if (particle->h0A != 0 && FUN_001f9770_26ff10(&particle->h0A) != 0) {
@@ -3179,15 +3255,15 @@ void FUN_L00_0026ff10(Moby_26ff10 *particle) {
         pv->y = pv->y * 0.95f;
     }
     fm = pv->f18;
-    g = -1.0f;
+    rotation_direction_sign = -1.0f;
     if (fm & 1)
-        g = 1.0f;
+        rotation_direction_sign = 1.0f;
     if (fm & 8) {
         pv->z = pv->z + frame_scale_sq * 0.008f;
         f = FUN_001fa6c0_26ff10(pv->f16);
-        pv->t = pv->t + g * (D_0015ED60_26ff10 * -0.01f) / f;
+        pv->t = pv->t + rotation_direction_sign * (D_0015ED60_26ff10 * -0.01f) / f;
     } else {
-        pv->t = pv->t + g * (D_0015ED60_26ff10 * -0.01f);
+        pv->t = pv->t + rotation_direction_sign * (D_0015ED60_26ff10 * -0.01f);
     }
     if (1.0f < pv->t)
         pv->t = pv->t - 1.0f;
@@ -3205,7 +3281,9 @@ extern int fast_dec_timer_s16(void *) __asm__("FUN_001f9770");
 extern void free_effect_particle(void *) __asm__("FUN_L00_00267a08");
 
 /* Calls free_effect_particle on a once fast_dec_timer_s16(a + 0xA) returns non-zero; skips id -1. */
-void FUN_L00_00270710(char *particle) {
+void tick_finite_effect_particle_lifetime(char *particle) __asm__("FUN_L00_00270710");
+
+void tick_finite_effect_particle_lifetime(char *particle) {
     if (*(short *)(particle + 0xA) != -1) {
         if (fast_dec_timer_s16(particle + 0xA) != 0) {
             free_effect_particle(particle);
@@ -3220,7 +3298,7 @@ extern int FUN_L00_0025bfe0(float, float, float, float);
 extern unsigned char *D_L00_001B20B0 __attribute__((section(".data")));
 extern void *FUN_L00_002678b8_c2(int) __asm__("FUN_L00_002678b8");
 
-void *FUN_L00_00270758(char *spawn_position, char *b, unsigned char initial_flags, int collision_context) {
+void *FUN_L00_00270758(char *spawn_position, char *initial_velocity, unsigned char initial_flags, int collision_context) {
     char *particle = FUN_L00_002678b8_c2(0x2A);
 
     if (particle != 0) {
@@ -3229,7 +3307,7 @@ void *FUN_L00_00270758(char *spawn_position, char *b, unsigned char initial_flag
         int rnd;
 
         qcopy(particle + 0x10, spawn_position);
-        qcopy(particle_data, b);
+        qcopy(particle_data, initial_velocity);
         *(int *)(particle + 4) = FUN_L00_0025bfe0(0.7f, 0.7f, 0.7f, 0.08f);
         particle[9] = (char)(truncate_float_to_s32(4.0f) + 0x40);
         particle[1] = 0;
@@ -3304,12 +3382,14 @@ extern s32 coll_line_fix(void *, void *, s32, s32, void *) __asm__("FUN_001efa68
 extern f32 FUN_001fa6c0_c(s32) __asm__("FUN_001fa6c0");
 extern s32 FUN_001fa6d0_c(f32) __asm__("FUN_001fa6d0");
 
-void FUN_L00_00270948(M_270948 *particle) {
+void update_splitting_effect_particle_with_collision_and_fade(M_270948 *particle) __asm__("FUN_L00_00270948");
+
+void update_splitting_effect_particle_with_collision_and_fade(M_270948 *particle) {
     V_270948 v, position_scratch;
     C_270948 collision_parameters;
     E_270948 *e = &particle->e;
     M_270948 *spawned_particle;
-    f32 position_jitter_extent, nr, alpha_factor, s;
+    f32 position_jitter_extent, nr, alpha_factor, alpha_input_or_rotation_sign;
     s32 hit;
     u8 fl;
 
@@ -3378,10 +3458,10 @@ void FUN_L00_00270948(M_270948 *particle) {
     } else {
         particle->fC += 260000.0f / (f32)(s32)(8.0f / (D_0015ED60 * 0.443f)) * D_0015ED60;
     }
-    s = FUN_001fa6c0_c(e->h14);
+    alpha_input_or_rotation_sign = FUN_001fa6c0_c(e->h14);
     {
         f32 alpha_normalization_divisor = (f32)(s32)(8.0f / (D_0015ED60 * 0.443f));
-        alpha_factor = 0.08f / alpha_normalization_divisor * D_0015ED60 * (s / alpha_normalization_divisor) + 0.08f;
+        alpha_factor = 0.08f / alpha_normalization_divisor * D_0015ED60 * (alpha_input_or_rotation_sign / alpha_normalization_divisor) + 0.08f;
     }
     if (alpha_factor < 0.0f)
         alpha_factor = 0.0f;
@@ -3397,14 +3477,14 @@ void FUN_L00_00270948(M_270948 *particle) {
     }
     {
         u8 flags = e->b18;
-        s = -1.0f;
+        alpha_input_or_rotation_sign = -1.0f;
         if (flags & 1)
-            s = 1.0f;
+            alpha_input_or_rotation_sign = 1.0f;
         if (flags & 8) {
             e->v.f[2] += frame_scale_sq * 0.008f;
-            e->x10 += s * (D_0015ED60 * -0.01f) / FUN_001fa6c0_c(e->h16);
+            e->x10 += alpha_input_or_rotation_sign * (D_0015ED60 * -0.01f) / FUN_001fa6c0_c(e->h16);
         } else {
-            e->x10 += s * (D_0015ED60 * -0.01f);
+            e->x10 += alpha_input_or_rotation_sign * (D_0015ED60 * -0.01f);
         }
     }
     if (1.0f < e->x10)
@@ -3418,7 +3498,9 @@ s32 FUN_001fa6d0_2710a0(f32) __asm__("FUN_001fa6d0");
 s32 FUN_001f96f8_2710a0(s32) __asm__("FUN_001f96f8");
 void FUN_001f9a10_2710a0(void *, void *, void *) __asm__("FUN_001f9a10");
 void FUN_L00_00267a08_2710a0(void *) __asm__("FUN_L00_00267a08");
-void FUN_L00_002710a0(u8 *particle) {
+void update_accelerating_fade_in_out_effect_particle(u8 *particle) __asm__("FUN_L00_002710a0");
+
+void update_accelerating_fade_in_out_effect_particle(u8 *particle) {
     u8 *particle_data = particle + 0x20;
     s16 elapsed_ticks;
     f32 fade_ratio, x;

@@ -8,7 +8,9 @@
 
 /* 1 when m is the hero's current moby of interest: unk4F8 in control mode 3
    or state 0x1C, otherwise unk2FC while unk30E is clear. */
-s32 FUN_L01_00277fb8(struct Moby *candidate_moby) {
+s32 is_hero_on_moby(struct Moby *candidate_moby) __asm__("FUN_L01_00277fb8");
+
+s32 is_hero_on_moby(struct Moby *candidate_moby) {
     struct Hero *hero_ptr = &hero;
 
     if (hero_ptr->state.control_mode == 3 || hero_ptr->state.current == 0x1C) {
@@ -77,7 +79,9 @@ void FUN_L01_002787a0(char *moby) {
 extern char *func_0020D348_m(int);
 extern void FUN_L00_00250df8(void *);
 
-void FUN_L01_00278e20(struct Moby *placement_source_moby, int oClass) {
+void spawn_moby_from_placement(struct Moby *placement_source_moby, int oClass) __asm__("FUN_L01_00278e20");
+
+void spawn_moby_from_placement(struct Moby *placement_source_moby, int oClass) {
     char *destination_moby = func_0020D348_m(oClass);
     if (destination_moby != 0) {
         *(short *)(destination_moby + 0x32) = 0xFF;

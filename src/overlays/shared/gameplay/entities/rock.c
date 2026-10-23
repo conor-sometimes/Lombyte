@@ -44,13 +44,15 @@ extern f32 vendor_spring(f32 *value, f32 target, f32 *speed, f32 accel, f32 dece
 
 /* Grind rail: measures its paths once, then while the hero is in control mode 0x10 snaps it to the nearest path
    point in range and pulls it along, faster on level 1 the more rail is left. */
-void FUN_L01_002f6328(struct Moby *rail_moby) {
+void update_rail_hero_motion(struct Moby *rail_moby) __asm__("FUN_L01_002f6328");
+
+void update_rail_hero_motion(struct Moby *rail_moby) {
     RailVars *rail_vars = (RailVars *)rail_moby->pvars;
     RailPath *path;
     RailPath *best_path;
     Vec4 best_pt;
     Vec4 pt;
-    Vec4 dir;
+    Vec4 rail_step_delta;
     Vec4 pull;
     s32 seg;
     f32 candidate_fraction;
@@ -58,7 +60,7 @@ void FUN_L01_002f6328(struct Moby *rail_moby) {
     f32 best_t;
     f32 drag;
     f32 best;
-    f32 dist;
+    f32 candidate_path_distance;
     f32 left;
     f32 rate;
     s32 i, j, k, remaining_segment_index, end;
@@ -85,11 +87,11 @@ void FUN_L01_002f6328(struct Moby *rail_moby) {
     for (k = 0; k < rail_vars->count; k++) {
         path = D_L01_001B0930[rail_vars->paths[k]];
         FUN_L00_0025df68(path, &hero.motion.pos, &pt, &seg, &candidate_fraction, 0, 999.0f, 5.0f, 0.0f);
-        dist = vector_distance(&hero.motion.pos, &pt);
-        if (dist < best) {
+        candidate_path_distance = vector_distance(&hero.motion.pos, &pt);
+        if (candidate_path_distance < best) {
             best_path = path;
             qcopy(&best_pt, &pt);
-            best = dist;
+            best = candidate_path_distance;
             best_seg = seg;
             best_t = candidate_fraction;
         }
@@ -117,17 +119,17 @@ void FUN_L01_002f6328(struct Moby *rail_moby) {
         }
     }
     if (end == 0) {
-        fast_vec_sub(&dir, &pt, &best_pt);
-        hero.unk9D4 = fast_arc_tan(vector_length_xy(&dir), dir.f[2]);
-        hero.unk9D0 = fast_arc_tan(dir.f[0], dir.f[1]);
-        dir.i[2] = 0;
+        fast_vec_sub(&rail_step_delta, &pt, &best_pt);
+        hero.unk9D4 = fast_arc_tan(vector_length_xy(&rail_step_delta), rail_step_delta.f[2]);
+        hero.unk9D0 = fast_arc_tan(rail_step_delta.f[0], rail_step_delta.f[1]);
+        rail_step_delta.i[2] = 0;
         if (hero.unk9DC < rail_vars->speed) {
             approach_value(&hero.unk9DC, rail_vars->speed, frame_time_sq * 6.0f);
         } else {
             approach_value(&hero.unk9DC, rail_vars->speed, frame_time_sq * 6.0f);
         }
-        if (0.001f < fast_vec_length(&dir)) {
-            fast_vec_normalize(&hero.motion.platform_delta, &dir, hero.unk9DC);
+        if (0.001f < fast_vec_length(&rail_step_delta)) {
+            fast_vec_normalize(&hero.motion.platform_delta, &rail_step_delta, hero.unk9DC);
         }
         fast_vec_sub(&pull, &best_pt, &hero.motion.pos);
         rate = frame_time * 5.0f;
@@ -135,11 +137,11 @@ void FUN_L01_002f6328(struct Moby *rail_moby) {
         drag = -vector_length_xy(&pull);
         vendor_spring(&drag, 0.0f, &hero.unk9E0, frame_scale_sq * 0.008f, frame_scale_sq * 0.3f, rate);
         {
-            f32 len = fast_vec_length(&pull);
-            if (len < hero.unk9E0) {
-                hero.unk9E0 = len;
+            f32 horizontal_pull_distance = fast_vec_length(&pull);
+            if (horizontal_pull_distance < hero.unk9E0) {
+                hero.unk9E0 = horizontal_pull_distance;
             }
-            if (hero.unk9E0 < len) {
+            if (hero.unk9E0 < horizontal_pull_distance) {
                 fast_vec_normalize(&pull, &pull, hero.unk9E0);
             }
         }
@@ -226,7 +228,9 @@ extern void scale_vector_xyz_c(void *, void *, float) __asm__("FUN_001f9a68");
 extern char D_0013F3D0[];
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
-void FUN_L01_002f6a30(struct Moby *moby) {
+void update_explosive_projectile(struct Moby *moby) __asm__("FUN_L01_002f6a30");
+
+void update_explosive_projectile(struct Moby *moby) {
     Vec_2F7E08 old_pos;
     Vec_2F7E08 smoke_pos;
     Data_2F7E08 *data;
@@ -653,7 +657,9 @@ extern char D_L01_001672C0_c[] __asm__("D_L01_00167240");
 extern char D_0014171B_c[] __asm__("D_0014C190");
 extern int stub_printf(void *, int, int) __asm__("FUN_001e93b0");
 
-void FUN_L01_002fb5b0(char *moby) {
+void update_cutscene_trigger(char *moby) __asm__("FUN_L01_002fb5b0");
+
+void update_cutscene_trigger(char *moby) {
     enum {
         CUTSCENE_TRIGGER_INITIALIZE = 0,
         CUTSCENE_TRIGGER_WAIT_FOR_TRIGGER = 1,
@@ -751,10 +757,10 @@ void FUN_L01_002fb5b0(char *moby) {
 /* Ported from rac1-decomp (src/overlays/shared/vendor_002F7700.c: func_L01_002FE498), where it is exact; names translated to the US level program. */
 
 extern char D_L01_001E34C0[];
-extern void FUN_L01_002b91c8(char *, int);
+extern void render_water_grids(char *, int) __asm__("FUN_L01_002b91c8");
 
 void FUN_L01_002fd0c0(void) {
-    FUN_L01_002b91c8(D_L01_001E34C0, 0x15);
+    render_water_grids(D_L01_001E34C0, 0x15);
 }
 /* Resets the marker record's scale once, for mobys of the caller's class or class 0x32B. */
 /* Ported from rac1-decomp (src/overlays/shared/vendor_002F7700.c: func_L01_00300400), where it is exact; names translated to the US level program. */
@@ -1207,7 +1213,9 @@ extern void FUN_L00_002b5b20_302648(struct Moby *, void *) __asm__("FUN_L00_002b
 extern s32 D_L01_0015F30C __attribute__((sda));
 /* While the camera is in mode 0x1D, counts the frames the class 0xAC moby spends outside every zone.
  * Entering a zone resets the count; past a random threshold FUN_L00_002b5b20 runs on that moby. */
-void FUN_L01_00302648(struct Moby *moby) {
+void update_target_outside_zone_timeout(struct Moby *moby) __asm__("FUN_L01_00302648");
+
+void update_target_outside_zone_timeout(struct Moby *moby) {
     ZoneVars_302648 *zone_vars = (ZoneVars_302648 *)moby->pvars;
     struct Moby *target_moby = 0;
     struct Moby *candidate_moby;
@@ -1288,7 +1296,7 @@ extern int allocate_voice_for_target_entry(int, int, void *) __asm__("FUN_0022da
 extern void blend_moby_animation(struct Moby *, s32, s32, s32) __asm__("FUN_00212f90");
 extern void set_hero_animation(f32, s32, s32) __asm__("FUN_L00_002323b8");
 extern void queue_dialogue_message(s32, s32) __asm__("FUN_L00_00263d40");
-extern void FUN_L01_00308470(struct Moby *);
+extern void initialize_gold_bolt_data(struct Moby *) __asm__("FUN_L01_00308470");
 /* the unit defines these with a char * parameter further down */
 extern void FUN_L01_00308550_f(struct Moby *) __asm__("FUN_L01_00308550");
 extern void FUN_L01_00308380_f(struct Moby *) __asm__("FUN_L01_00308380");
@@ -1328,7 +1336,7 @@ void gold_bolt_update(struct Moby *moby) {
         vars->unk64 = D_L01_00161F24 * 0.017453292f * D_0015ED6C_f;
         vars->unk60 = D_L01_00161F28 * 0.017453292f * D_0015ED6C_f;
         moby->state = 1;
-        FUN_L01_00308470(moby);
+        initialize_gold_bolt_data(moby);
         return;
     case GOLD_BOLT_WAIT_FOR_PICKUP:
         moby->scale = moby->pclass->scale * D_L01_00161F10_gp;
@@ -1827,7 +1835,7 @@ void teleporter_update(struct Moby *moby) {
         FUN_L01_003092d0_c(moby);
         break;
     case TELEPORTER_PREPARE_TRANSFER: {
-        int r = FUN_L00_00233f38();
+        int transfer_preparation_status = FUN_L00_00233f38();
         if (*(float *)(data + 0x20) < 1.0f) {
             advance_accelerated_scalar((float *)(data + 0x20), (float *)(data + 0x28), 1.0f,
                                        D_L01_00161F88 * frame_time_sq,
@@ -1839,10 +1847,10 @@ void teleporter_update(struct Moby *moby) {
                                        D_L01_00161F8C * frame_time_sq,
                                        D_L01_00161F90 * frame_time);
         } else if (D_L01_0015F594 != 4 || !(*(float *)(data + 0x20) > 0.25f)) {
-            if (r == 2) {
+            if (transfer_preparation_status == 2) {
                 *(float *)(data + 0x34) = 1.95f;
                 moby->state = 3;
-            } else if (r == 0) {
+            } else if (transfer_preparation_status == 0) {
                 moby->state = 4;
             }
         }

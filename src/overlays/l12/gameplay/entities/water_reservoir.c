@@ -22,7 +22,9 @@ extern void add_vector_72(float *, float *, float *) __asm__("FUN_001f9a10");
 extern void *FUN_00218888_72(void *, float *, float *, int, int, int, int, int, int) __asm__("FUN_00218888");
 extern float approach_value_72(float, float, float *) __asm__("FUN_00213ed8");
 extern void enqueue_callback_list_1_72(void *, void *) __asm__("FUN_001f4600");
-extern void FUN_L12_002ecac0(struct Moby *);
+void draw_water_reservoir(struct Moby *moby) __asm__("FUN_L12_002ecac0");
+
+extern void draw_water_reservoir(struct Moby *) __asm__("FUN_L12_002ecac0");
 extern float D_L12_0015F3FC;
 extern float D_L12_001619CC __attribute__((sda));
 int D_L12_001619D0 = 105;
@@ -111,7 +113,7 @@ update:
             approach_value_72(3.0f, D_L12_00161A08 * frame_time, &data[2]);
         }
     }
-    enqueue_callback_list_1_72(FUN_L12_002ecac0, moby);
+    enqueue_callback_list_1_72(draw_water_reservoir, moby);
 }
 
 #define NOT_SDA
@@ -144,7 +146,7 @@ extern short D_L12_00161A24 __attribute__((sda));
 extern void copy_matrix_rotation(void *, void *) __asm__("FUN_001fa298");
 extern void draw_geometry_quad(void *, void *, int);
 
-void FUN_L12_002ecac0(struct Moby *moby) {
+void draw_water_reservoir(struct Moby *moby) {
     char *data = (char *)moby->pvars;
     Quad quad;
     float rotation_matrix[12];
@@ -199,7 +201,9 @@ extern float fast_arc_tan(float, float) __asm__("FUN_001f9e90");
 extern int scale_game_frames(int) __asm__("FUN_001f96f8");
 extern void FUN_L00_00250df8(void *);
 
-char *FUN_L12_002ecce8(char *src, char *pos, int owner, int seed, float f0, float f1, float f2) {
+char *spawn_rocket(char *initial_velocity, char *pos, int owner, int seed, float yaw, float f1, float f2) __asm__("FUN_L12_002ecce8");
+
+char *spawn_rocket(char *initial_velocity, char *pos, int owner, int seed, float yaw, float f1, float f2) {
     struct Moby *moby = (struct Moby *)func_0020D348_m(0x199);
     if (moby != 0) {
         char *data;
@@ -210,13 +214,13 @@ char *FUN_L12_002ecce8(char *src, char *pos, int owner, int seed, float f0, floa
         moby->visible = 1;
         moby->state = 1;
         qcopy(&moby->pos, pos);
-        qcopy(data, src);
+        qcopy(data, initial_velocity);
         moby->rot.z = fast_arc_tan(*(float *)data, *(float *)(data + 4));
         moby->rot.y = -fast_arc_tan(vector_length_xy(data), *(float *)(data + 8));
         scaled_frames = scale_game_frames(seed);
         *(int *)(data + 0x10) = owner;
         *(float *)(data + 0x18) = f2;
-        *(float *)(data + 0x1C) = f0;
+        *(float *)(data + 0x1C) = yaw;
         *(float *)(data + 0x24) = f1;
         *(int *)(data + 0x28) = 0;
         *(int *)(data + 0x14) = scaled_frames;
@@ -359,7 +363,9 @@ extern void queue_dialogue_message(int, int) __asm__("FUN_L00_00263d40");
 extern void allocate_voice_for_bank_entry_alt(int, int, int) __asm__("FUN_0022db10");
 extern unsigned char D_0013D50F_e[] __asm__("D_0013D408");
 
-void FUN_L12_002ed280(struct Moby *moby) {
+void update_hoven_help_and_dialogue(struct Moby *moby) __asm__("FUN_L12_002ed280");
+
+void update_hoven_help_and_dialogue(struct Moby *moby) {
     int *moby_vars = (int *)moby->pvars;
     if (FUN_L01_0026e008(moby_vars[3], -1) == 0) {
         unsigned char *dialogue_trigger_state = D_0013D50F_e;

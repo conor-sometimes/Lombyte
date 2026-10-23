@@ -24,29 +24,31 @@ typedef struct {
 extern Rec D_L06_0017A240[];
 extern int hero_slot_item_id(int) __asm__("FUN_L00_0020d498");
 
-int FUN_L06_0021d0a0(int allow_item_help) {
-    struct Hero *g = &hero;
-    switch (g->vehicle_mode) {
-    case 1:
+int get_hero_help_value(int allow_item_help) __asm__("FUN_L06_0021d0a0");
+
+int get_hero_help_value(int allow_item_help) {
+    struct Hero *hero_context = &hero;
+    switch (hero_context->vehicle_mode) {
+    case HERO_VEHICLE_MODE_CLANK:
         return 0;
     case 3:
         return 0;
     }
     {
-        struct Hero *g2 = &hero;
-        if (g2->health.hp == 1) {
+        struct Hero *hero_help_context = &hero;
+        if (hero_help_context->health.hp == 1) {
             return 0x54;
         }
         if (allow_item_help == 0) {
             return 0;
         }
-        if (g2->unk20A8 == 0) {
+        if (hero_help_context->unk20A8 == 0) {
             return 0;
         }
-        if (g2->unk20AA == 0) {
+        if (hero_help_context->unk20AA == 0) {
             return 0;
         }
-        if (g2->unk22C8 != 0) {
+        if (hero_help_context->unk22C8 != 0) {
             return 0;
         }
     }
@@ -68,16 +70,16 @@ extern s32 D_L06_0015F5CC_macro __asm__("D_L06_0015F5CC") __attribute__((section
 extern f32 D_L06_0017BFDC_lui __asm__("D_L06_0017BFDC") __attribute__((section(".data")));
 extern void FUN_L00_00232670(void);
 extern void FUN_L00_00211670(void);
-extern void FUN_L06_00222fb8(void);
+extern void apply_hero_ground_material_response(void) __asm__("FUN_L06_00222fb8");
 extern void FUN_L00_0020bed0_u(void) __asm__("FUN_L00_0020bed0");
 extern void FUN_L00_00215b68(void);
-extern void FUN_L06_0023b440(void);
-extern void FUN_L00_00216f10(void);
-extern void FUN_L00_002054e8(void);
-extern void FUN_L00_00208a10(void);
+extern void update_hero_state_machine(void) __asm__("FUN_L06_0023b440");
+extern void update_hero_delayed_voice_requests(void) __asm__("FUN_L00_00216f10");
+extern void update_hero_easing_records(void) __asm__("FUN_L00_002054e8");
+extern void update_hero_vehicle_moby(void) __asm__("FUN_L00_00208a10");
 extern void FUN_L00_00207c48(void);
 extern void FUN_L00_00207a58(void);
-extern void FUN_L00_002059d8(void);
+extern void update_hero_glow_and_extra_manipulators(void) __asm__("FUN_L00_002059d8");
 extern void FUN_L00_00207d00(void);
 extern void FUN_L00_00208b60(void);
 extern void FUN_L00_002484e0(void *);
@@ -103,7 +105,9 @@ extern s32 truncate_float_to_s32(f32) __asm__("FUN_001fa6d0");
 extern f32 convert_integer_to_float(s32) __asm__("FUN_001fa6c0");
 extern void approach_value(f32, f32, void *) __asm__("FUN_00213ed8");
 
-void FUN_L06_0021e1a0(void) {
+void update_hero_vehicle_attachments_and_effects(void) __asm__("FUN_L06_0021e1a0");
+
+void update_hero_vehicle_attachments_and_effects(void) {
     enum {
         ATTACHMENT_PULSE_GREEN = 1,
         ATTACHMENT_PULSE_YELLOW = 2,
@@ -128,23 +132,23 @@ void FUN_L06_0021e1a0(void) {
 
     FUN_L00_00232670();
     FUN_L00_00211670();
-    FUN_L06_00222fb8();
+    apply_hero_ground_material_response();
     g = (char *)&hero;
     if (*(u8 *)(g + 0x20a4) == 1) {
         FUN_L00_0020bed0_u();
         FUN_L00_00215b68();
     }
-    FUN_L06_0023b440();
+    update_hero_state_machine();
     if (*(u8 *)(g + 0x20a4) == 0) return;
-    FUN_L00_00216f10();
-    FUN_L00_002054e8();
+    update_hero_delayed_voice_requests();
+    update_hero_easing_records();
     if (*(u8 *)(g + 0x20a4) == 0) return;
-    FUN_L00_00208a10();
+    update_hero_vehicle_moby();
     FUN_L00_00207c48();
     FUN_L00_00207a58();
     if (*(u8 *)(g + 0x20a4) == 1) {
         D_L06_0017BFDC_lui = D_0015EE18_macro;
-        FUN_L00_002059d8();
+        update_hero_glow_and_extra_manipulators();
         if (*(char **)(g + 0x1624) == 0) {
             *(char **)(g + 0x1624) = create_moby(0x4b4);
             if (*(char **)(g + 0x1624)) {
@@ -438,7 +442,7 @@ extern s32 D_L06_001745DC __attribute__((section(".data")));
 extern char D_0013F3D0[] __attribute__((section(".data")));
 void FUN_L06_002291d0(int force) {
     V_2291d0 primary_vector_origin, primary_vector_endpoint, b, secondary_vector_endpoint;
-    char *src;
+    char *vector_origin_base;
     P_2291d0 *g;
     f32 primary_origin_z_offset, k, secondary_vector_scale, ang, negative_horizontal_dot;
     int r;
@@ -456,13 +460,13 @@ void FUN_L06_002291d0(int force) {
         primary_origin_z_offset = 0.35f;
         k = 0.27000001072883606f;
     }
-    src = D_0013F3D0;
-    qcopy(&primary_vector_origin, src);
+    vector_origin_base = D_0013F3D0;
+    qcopy(&primary_vector_origin, vector_origin_base);
     primary_vector_origin.f[2] += primary_origin_z_offset;
-    qcopy(&b, src);
+    qcopy(&b, vector_origin_base);
     b.f[2] += primary_origin_z_offset * 0.3f;
-    if (force || FUN_001f9b20_2291d0(src + 0x60) < 0.01f) {
-        g = (P_2291d0 *)(src - 0x80);
+    if (force || FUN_001f9b20_2291d0(vector_origin_base + 0x60) < 0.01f) {
+        g = (P_2291d0 *)(vector_origin_base - 0x80);
         secondary_vector_scale = 1.4f;
         primary_vector_endpoint.f[0] = FUN_001f9dc8_2291d0(g->f98) * k;
         primary_vector_endpoint.f[1] = FUN_001f9de0_2291d0(g->f98) * k;
@@ -471,7 +475,7 @@ void FUN_L06_002291d0(int force) {
         secondary_vector_endpoint.f[1] = FUN_001f9de0_2291d0(g->f98) * k * secondary_vector_scale;
         *(s32 *)&secondary_vector_endpoint.f[2] = 0;
     } else {
-        qcopy(&primary_vector_endpoint, src + 0x60);
+        qcopy(&primary_vector_endpoint, vector_origin_base + 0x60);
         *(s32 *)&primary_vector_endpoint.f[2] = 0;
         FUN_001f9a68_2291d0(&primary_vector_endpoint, &primary_vector_endpoint, k / FUN_001f9b20_2291d0(&primary_vector_endpoint));
         qcopy(&secondary_vector_endpoint, &primary_vector_endpoint);
@@ -542,7 +546,9 @@ extern s32 coll1_22a1d0(void *, s32, s32, f32) __asm__("FUN_L00_001f0d60");
 extern s32 coll2_22a1d0(void *, s32, f32, s32, f32) __asm__("FUN_L00_001f19a0");
 extern s32 coll3_22a1d0(void *, f32) __asm__("FUN_L00_001f3170");
 extern void vscl_22a1d0(void *, void *, f32) __asm__("FUN_001f9bf8");
-s32 FUN_L06_0022a1d0(s32 mode) {
+s32 resolve_hero_position_collisions(s32 mode) __asm__("FUN_L06_0022a1d0");
+
+s32 resolve_hero_position_collisions(s32 mode) {
     V_22a1d0 old;
     V_22a1d0 collision_query_offset;
     V_22a1d0 position_displacement;
@@ -654,7 +660,9 @@ extern void FUN_L00_00233660_2348d0(void *, f32, f32, f32) __asm__("FUN_L00_0023
 extern void FUN_L00_00211250_2348d0(void) __asm__("FUN_L00_00211250");
 
 extern Entry70_2348d0 D_L06_0017A070[];
-void FUN_L06_002348d0(void) {
+void update_hero_timers_and_spatial_state(void) __asm__("FUN_L06_002348d0");
+
+void update_hero_timers_and_spatial_state(void) {
     Vec4 sum;
     Vec4 history_delta;
     struct Moby *spawned_moby;

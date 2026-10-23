@@ -15,20 +15,20 @@ void fast_vec_scale(void *, void *, f32) __asm__("FUN_001f9a68");
 void add_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a10");
 void FUN_L00_0025d238(V0025d238 *src, V0025d238 *inout_vector) {
     V0025d238 source_copy, scaled_delta;
-    f32 *pv, *source_component, *delta_component;
+    f32 *inout_component, *source_component, *delta_component;
     V0025d238 *source_copy_ptr = &source_copy, *scaled_delta_ptr = &scaled_delta;
     s32 i;
     source_copy.q = src->q;
     source_component = source_copy.f;
-    pv = inout_vector->f;
+    inout_component = inout_vector->f;
     delta_component = scaled_delta.f;
     for (i = 2; i >= 0; i--) {
-        if (*pv < 0.0f) {
+        if (*inout_component < 0.0f) {
             subtract_vector_xyz(scaled_delta_ptr, inout_vector, source_copy_ptr);
             fast_vec_scale(scaled_delta_ptr, scaled_delta_ptr, absolute_float((*source_component - 0.1f) / *delta_component));
             add_vector_xyz(inout_vector, source_copy_ptr, scaled_delta_ptr);
         }
-        pv++;
+        inout_component++;
         delta_component++;
         source_component++;
     }
@@ -127,7 +127,9 @@ void trooper_anim_finish(s32 id, S_25d538 *animation_state) {
     }
     glow_n(id, r, g, b);
 }
-s32 FUN_L00_0025d7a0(s32 *tab, s32 i, s32 index_offset, s32 wrap) {
+s32 offset_path_index(s32 *tab, s32 i, s32 index_offset, s32 wrap) __asm__("FUN_L00_0025d7a0");
+
+s32 offset_path_index(s32 *tab, s32 i, s32 index_offset, s32 wrap) {
     if (wrap) {
         i = (i + index_offset + tab[0]) % tab[0];
     } else {
@@ -151,33 +153,33 @@ typedef struct { float x, y, z, w; } Pt_0025E860;
 typedef struct { int n; int pad[3]; Pt_0025E860 pt[1]; } Spline_0025E860;
 
 // Moves DIST along a spline from segment *IDX at offset *T, updates both, and writes the point reached to OUT; 1 when an end was passed.
-int FUN_L00_0025d808(Spline_0025E860 *path, float *out, int *idx, float *segment_offset, int loop, float dist) {
+int FUN_L00_0025d808(Spline_0025E860 *path, float *out, int *segment_index, float *segment_offset, int loop, float dist) {
     float segment_delta[4];
-    int ret = 0;
-    int dir = 1;
+    int crossed_path_boundary = 0;
+    int traversal_direction = 1;
     int i;
     int j;
 
     if (dist < 0.0f) {
         dist = -dist;
-        dir = -1;
+        traversal_direction = -1;
     }
-    while (dist != 0.0f && (*idx != path->n - 1 || loop)) {
+    while (dist != 0.0f && (*segment_index != path->n - 1 || loop)) {
         int adv;
 
-        i = *idx;
-        if (dir == 1) {
+        i = *segment_index;
+        if (traversal_direction == 1) {
             adv = path->pt[i].w < *segment_offset + dist;
         } else {
             adv = *segment_offset < dist;
         }
         if (adv) {
-            i += dir;
+            i += traversal_direction;
             if (i >= path->n || i < 0) {
                 i = (i + path->n) % path->n;
             }
-            if (dir == 1) {
-                dist -= path->pt[*idx].w - *segment_offset;
+            if (traversal_direction == 1) {
+                dist -= path->pt[*segment_index].w - *segment_offset;
                 *segment_offset = 0.0f;
                 if (dist < 0.0f) {
                     dist = 0.0f;
@@ -186,12 +188,12 @@ int FUN_L00_0025d808(Spline_0025E860 *path, float *out, int *idx, float *segment
                 dist -= *segment_offset;
                 *segment_offset = path->pt[i].w;
             }
-            if ((dir == 1 && *idx == path->n - 1) || (dir == -1 && *idx == 0)) {
-                ret = 1;
+            if ((traversal_direction == 1 && *segment_index == path->n - 1) || (traversal_direction == -1 && *segment_index == 0)) {
+                crossed_path_boundary = 1;
             }
-            *idx = i;
+            *segment_index = i;
         } else {
-            if (dir == 1) {
+            if (traversal_direction == 1) {
                 *segment_offset = *segment_offset + dist;
             } else {
                 *segment_offset = *segment_offset - dist;
@@ -199,11 +201,11 @@ int FUN_L00_0025d808(Spline_0025E860 *path, float *out, int *idx, float *segment
             dist = 0.0f;
         }
     }
-    i = *idx;
+    i = *segment_index;
     qcopy_nc(out, &path->pt[i]);
     if (i == path->n - 1 && !loop) {
-        if (dir == -1) {
-            *idx = 0;
+        if (traversal_direction == -1) {
+            *segment_index = 0;
             qcopy_nc(out, &path->pt[0]);
             *segment_offset = 0.0f;
         }
@@ -216,7 +218,7 @@ int FUN_L00_0025d808(Spline_0025E860 *path, float *out, int *idx, float *segment
     vec_sub_25d808(segment_delta, &path->pt[j], &path->pt[i]);
     vec_scale_25d808(segment_delta, segment_delta, *segment_offset);
     vec_add_25d808(out, out, segment_delta);
-    return ret;
+    return crossed_path_boundary;
 }
 
 typedef unsigned int u128_0025da70 __attribute__((mode(TI), aligned(16)));
@@ -226,13 +228,13 @@ typedef struct {
 float FUN_001f99c0_0025da70(float) __asm__("FUN_001f99c0");
 void FUN_001f9b80_0025da70(Vec4_0025da70 *, Vec4_0025da70 *) __asm__("FUN_001f9b80");
 void FUN_001f9b48_0025da70(Vec4_0025da70 *, Vec4_0025da70 *) __asm__("FUN_001f9b48");
-void FUN_L00_0025da70(u128_0025da70 *first_point, u128_0025da70 *second_point, float lim) {
+void FUN_L00_0025da70(u128_0025da70 *first_point, u128_0025da70 *second_point, float z_difference_threshold) {
     Vec4_0025da70 point_copies[2];
     Vec4_0025da70 *pa = &point_copies[0];
     Vec4_0025da70 *pb = &point_copies[1];
     *(u128_0025da70 *)pa = *first_point;
     *(u128_0025da70 *)pb = *second_point;
-    if (0.0f < lim && FUN_001f99c0_0025da70(pa->z - pb->z) < lim) {
+    if (0.0f < z_difference_threshold && FUN_001f99c0_0025da70(pa->z - pb->z) < z_difference_threshold) {
         FUN_001f9b80_0025da70(pa, pb);
     } else {
         FUN_001f9b48_0025da70(pa, pb);
@@ -292,8 +294,10 @@ extern void vscl_25dcd8(void *, void *, float) __asm__("FUN_001f9bf8");
 extern void scale_vector_xyz(void *, void *, float) __asm__("FUN_001f9a68");
 extern float dot_25dcd8(void *, void *) __asm__("FUN_001f9ab0");
 extern float FUN_L00_0025da70_c(void *, void *, float) __asm__("FUN_L00_0025da70");
-float FUN_L00_0025dcd8(OvlQuad *out, OvlQuad *p, OvlQuad *a, OvlQuad *b, float r);
-float FUN_L00_0025dcd8(OvlQuad *out, OvlQuad *query_point, OvlQuad *segment_start, OvlQuad *b, float r) {
+float resolve_level_path_segment_point(OvlQuad *out, OvlQuad *query_point, OvlQuad *segment_start, OvlQuad *b, float r) __asm__("FUN_L00_0025dcd8");
+
+float resolve_level_path_segment_point(OvlQuad *out, OvlQuad *p, OvlQuad *a, OvlQuad *b, float r) __asm__("FUN_L00_0025dcd8");
+float resolve_level_path_segment_point(OvlQuad *out, OvlQuad *query_point, OvlQuad *segment_start, OvlQuad *b, float r) {
     OvlQuad segment_workspace[2];
     OvlQuad direction_copy[1];
     OvlQuad query_point_copy[1];
@@ -396,7 +400,7 @@ s32 FUN_L00_0025df68(s32 *path, OvlQuad *point, OvlQuad *nearest,
     current_fraction = best_fraction;
     end = best_segment;
     sample_path(path, &work[0], &end, &current_fraction, step, wrap);
-    end = FUN_L00_0025d7a0(path, end, 1, wrap);
+    end = offset_path_index(path, end, 1, wrap);
     current = start;
     distance = 1000000000.0f;
     do {
@@ -418,7 +422,7 @@ s32 FUN_L00_0025df68(s32 *path, OvlQuad *point, OvlQuad *nearest,
         count = *path;
         previous = count - 1;
         previous = (best_segment + previous) % count;
-        distance = FUN_L00_0025dcd8(nearest, point,
+        distance = resolve_level_path_segment_point(nearest, point,
             (OvlQuad *)(path + 4 + previous * 4),
             (OvlQuad *)(path + 4 + best_segment * 4), height_tolerance);
         *segment = previous;
@@ -430,7 +434,7 @@ s32 FUN_L00_0025df68(s32 *path, OvlQuad *point, OvlQuad *nearest,
     }
     count = *path;
     if (best_segment < count - 1 || wrap) {
-        next_distance = FUN_L00_0025dcd8(&work[1], point,
+        next_distance = resolve_level_path_segment_point(&work[1], point,
             (OvlQuad *)(path + 4 + best_segment * 4),
             (OvlQuad *)(path + 4 + ((best_segment + 1) % count) * 4),
             height_tolerance);
@@ -532,7 +536,7 @@ extern float D_L00_0015F5D0_macro __asm__("D_L00_0015F5D0") __attribute__((secti
 void spawn_explosion(char *m, void *unused, char *pos, float fA, float fB, int n, int k8, int k9,
                        float fC, float fD, float fE, float fF, int k10, float fG, int k11,
                        int s16, int s18, unsigned char flag) __asm__("FUN_L00_0025e450");
-void spawn_explosion(char *owner_moby, void *unused, char *pos, float fA, float fB, int burst_particle_count, int k8, int k9,
+void spawn_explosion(char *owner_moby, void *unused, char *explosion_position, float fA, float fB, int burst_particle_count, int k8, int k9,
                        float fC, float fD, float fE, float fF, int k10, float fG, int k11,
                        int spray_count, int effect_reduction_level, unsigned char flag) {
     Q_25e450 vb;
@@ -551,9 +555,9 @@ void spawn_explosion(char *owner_moby, void *unused, char *pos, float fA, float 
         effect_reduction_level = 0;
         if (1.7f < effect_reduction_metric) effect_reduction_level = 1;
     }
-    if (pos == 0) {
+    if (explosion_position == 0) {
         if (owner_moby == 0) return;
-        pos = owner_moby + 0x10;
+        explosion_position = owner_moby + 0x10;
     }
     {
     if (fA > 0.0f) {
@@ -562,7 +566,7 @@ void spawn_explosion(char *owner_moby, void *unused, char *pos, float fA, float 
         ev.b18 = 2;
         ev.b19 = 1;
         ev.h1A = *(unsigned short *)(owner_moby + 0xA6);
-        collect_mobies_in_sphere_25e450(fA, pos, 0x10, owner_moby, &ev);
+        collect_mobies_in_sphere_25e450(fA, explosion_position, 0x10, owner_moby, &ev);
     }
     }
     for (i = 0; i < burst_particle_count; i++) {
@@ -575,11 +579,11 @@ void spawn_explosion(char *owner_moby, void *unused, char *pos, float fA, float 
         build_spherical_offset_25e450(&dir, fF * (random_float_between_25e450(7.0f, 10.5f) * frame_time_macro), b, a);
         dir.f[2] += frame_time_macro * 3.0f;
         dist = fF * 40000.0f;
-        func_L00_0026CA10_25e450(pos, &dir, func_L00_0025D140_25e450(0x4F007FFF, flag), func_L00_0025D140_25e450(0x1F00007F, flag),
+        func_L00_0026CA10_25e450(explosion_position, &dir, func_L00_0025D140_25e450(0x4F007FFF, flag), func_L00_0025D140_25e450(0x1F00007F, flag),
             random_int_between_25e450(scale_game_frames_25e450(0x3C), scale_game_frames_25e450(0x78)) - effect_reduction_level * 10, 1, -1, -1, dist);
         }
     }
-    subtract_vector_xyz_25e450(&effect_vector_work, D_L00_00166DC0_25e450, pos);
+    subtract_vector_xyz_25e450(&effect_vector_work, D_L00_00166DC0_25e450, explosion_position);
     dist = vector_length_xyz_25e450(&effect_vector_work);
     {
     if (spray_count != 0) {
@@ -597,7 +601,7 @@ void spawn_explosion(char *owner_moby, void *unused, char *pos, float fA, float 
             normalize_vector_xyz_25e450(&effect_vector_work, &effect_vector_work, (dist + dist) * frame_time_macro);
             add_vector_xyz_25e450(&nearby_spray_vector, &nearby_spray_vector, &effect_vector_work);
             func_L00_001FF548_25e450(&nearby_spray_vector, &nearby_spray_vector, frame_time_macro * 10.0f);
-            func_L00_002B0738_25e450(pos, &nearby_spray_vector, random_int_between_25e450(scale_game_frames_25e450(0x3C), scale_game_frames_25e450(0x5A)), 0, 0);
+            func_L00_002B0738_25e450(explosion_position, &nearby_spray_vector, random_int_between_25e450(scale_game_frames_25e450(0x3C), scale_game_frames_25e450(0x5A)), 0, 0);
         }
         spray_count = spray_count - 1;
         for (i = 0; i < spray_count; i++) {
@@ -610,7 +614,7 @@ void spawn_explosion(char *owner_moby, void *unused, char *pos, float fA, float 
             rnd.f[2] += frame_time_macro + frame_time_macro;
             sel = 0;
             if (i % 3 == 0) sel = 1;
-            func_L00_002B0738_25e450(pos, &rnd, random_int_between_25e450(scale_game_frames_25e450(0x3C), scale_game_frames_25e450(0x5A)), sel, 0);
+            func_L00_002B0738_25e450(explosion_position, &rnd, random_int_between_25e450(scale_game_frames_25e450(0x3C), scale_game_frames_25e450(0x5A)), sel, 0);
         }
     }
     }
@@ -632,11 +636,11 @@ void spawn_explosion(char *owner_moby, void *unused, char *pos, float fA, float 
         c1 = D_L00_001E9048_25e450;
         sp = sp - proximity_speed_reduction * frame_time_macro;
         sp = sp * fF;
-        func_L00_0026B890_25e450(pos, &vb, func_L00_0025D140_25e450(c0.v[random_integer_below_25e450(6)], flag),
+        func_L00_0026B890_25e450(explosion_position, &vb, func_L00_0025D140_25e450(c0.v[random_integer_below_25e450(6)], flag),
             func_L00_0025D140_25e450(c1.v[random_integer_below_25e450(6)], flag), fF * 400000.0f,
             random_int_between_25e450(scale_game_frames_25e450(0xF), scale_game_frames_25e450(0x14)) - effect_reduction_level * 3,
             random_int_between_25e450(scale_game_frames_25e450(0x1E), scale_game_frames_25e450(0x2D)) - effect_reduction_level * 5, 0, 0, sp);
-        func_L00_0026B890_25e450(pos, &vb, 0x7FFFFFFF, 0xFFFFFF, fF * 400000.0f,
+        func_L00_0026B890_25e450(explosion_position, &vb, 0x7FFFFFFF, 0xFFFFFF, fF * 400000.0f,
             random_int_between_25e450(scale_game_frames_25e450(5), scale_game_frames_25e450(0xA)) - effect_reduction_level * 2,
             random_int_between_25e450(scale_game_frames_25e450(0xF), scale_game_frames_25e450(0x14)) - effect_reduction_level * 3, 0, 0, sp * 0.5f);
     }
@@ -658,7 +662,7 @@ void spawn_explosion(char *owner_moby, void *unused, char *pos, float fA, float 
         normalize_vector_xyz_25e450(&vel, &vel, fF * (random_float_between_25e450(0.0f, 3.0f) * frame_time_macro));
         first_packed_color = func_L00_0025D140_25e450(c0.v[random_integer_below_25e450(6)], flag);
         second_packed_color = func_L00_0025D140_25e450(c1.v[random_integer_below_25e450(6)], flag);
-        func_L00_0026B368_25e450(pos, &vel, first_packed_color, second_packed_color,
+        func_L00_0026B368_25e450(explosion_position, &vel, first_packed_color, second_packed_color,
             random_int_between_25e450(scale_game_frames_25e450(0x1E), scale_game_frames_25e450(0x2D)) - effect_reduction_level * 5, 200000.0f);
     }
     }
@@ -674,18 +678,18 @@ void spawn_explosion(char *owner_moby, void *unused, char *pos, float fA, float 
         }
         u = later_glow_red & 0xFF;
         if (D_L00_0015F5D0_macro < 0.95f && fE < dist) {
-            spawn_glow_particle_25e450(owner_moby, pos, &vb, fC, scale_game_frames_25e450(0x10), first_glow_red, 0x96, first_glow_blue, 0x20);
-            spawn_glow_particle_25e450(owner_moby, pos, &vb, fC, scale_game_frames_25e450(0x16), u, 0x7F, 0x50, 0x20);
+            spawn_glow_particle_25e450(owner_moby, explosion_position, &vb, fC, scale_game_frames_25e450(0x10), first_glow_red, 0x96, first_glow_blue, 0x20);
+            spawn_glow_particle_25e450(owner_moby, explosion_position, &vb, fC, scale_game_frames_25e450(0x16), u, 0x7F, 0x50, 0x20);
         }
-        spawn_glow_particle_25e450(owner_moby, pos, &vb, fC, scale_game_frames_25e450(0x1E), u, 0x7F, 0, 0x30);
+        spawn_glow_particle_25e450(owner_moby, explosion_position, &vb, fC, scale_game_frames_25e450(0x1E), u, 0x7F, 0, 0x30);
     }
     if (owner_moby != 0 && fD > 0.0f) {
-        spawn_glow_particle_25e450(owner_moby, pos, &vb, fD, scale_game_frames_25e450(0x1B), 0xFF, 0xFF, 0xFF, 0x20);
+        spawn_glow_particle_25e450(owner_moby, explosion_position, &vb, fD, scale_game_frames_25e450(0x1B), 0xFF, 0xFF, 0xFF, 0x20);
     }
     {
     if (k11) {
         Q_25e450 v;
-        *(u128_25e450 *)&v = *(u128_25e450 *)pos;
+        *(u128_25e450 *)&v = *(u128_25e450 *)explosion_position;
         v.f[3] = 2.0f;
         if (func_L00_00200290_25e450(&v, 10.0f) != -1) {
             ((Cam_25e450 *)D_L00_00166C80_25e450)->f160 = (dist < 20.0f) ? 0.4f - dist * 0.0175f : 0.050000012f;
@@ -699,7 +703,7 @@ void spawn_explosion(char *owner_moby, void *unused, char *pos, float fA, float 
     if (fG != 0.0f) {
         if (effect_reduction_level == 0) {
             Q_25e450 v;
-            qcopy(&v, pos);
+            qcopy(&v, explosion_position);
             v.f[3] = fG;
             if (func_L00_00200290_25e450(&v, 100.0f) != -1) {
                 if (0.0f < fG) {
@@ -712,9 +716,9 @@ void spawn_explosion(char *owner_moby, void *unused, char *pos, float fA, float 
                     ((Fl_25e450 *)D_L00_001B0250)->f[8] = 15.0f;
                 }
                 if (flag) {
-                    func_L00_002D4CE8_25e450(D_L00_001B02A0, pos, 0, 0);
+                    func_L00_002D4CE8_25e450(D_L00_001B02A0, explosion_position, 0, 0);
                 } else {
-                    func_L00_002D4CE8_25e450(D_L00_001B0250, pos, 0, 0);
+                    func_L00_002D4CE8_25e450(D_L00_001B0250, explosion_position, 0, 0);
                 }
             }
         }

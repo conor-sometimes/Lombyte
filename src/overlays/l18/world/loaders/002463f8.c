@@ -154,15 +154,15 @@ extern void register_object_render_class(char *, void *, void *, s32) __asm__("F
 extern void noop_main_callback(void *, s32) __asm__("FUN_001e93e8");
 extern void register_shrub_render_class(char *, void *, void *, void *, s32) __asm__("FUN_00203b08");
 extern void unpack_point_records(void *, s32) __asm__("FUN_00202800");
-extern void FUN_L00_0023f120(char *);
+extern void relocate_counted_pointer_table(char *) __asm__("FUN_L00_0023f120");
 extern void FUN_L00_0023f0d8(char *);
 extern void parse_particle_textures(void *, char *, void *, s32) __asm__("FUN_002026c8");
 extern void printf_1e93b0(const char *, ...) __asm__("FUN_001e93b0");
 extern void fill_transfer_words(void *, s32, s32) __asm__("FUN_001f97e8");
-extern char *FUN_L00_0023fa00(char *, s32 *);
+extern char *load_level_texture_bank(char *, s32 *) __asm__("FUN_L00_0023fa00");
 extern char *FUN_L00_00241940_2463f8(s32) __asm__("FUN_L00_00241940");
 extern f32 int_to_float(s32) __asm__("FUN_001fa6c0");
-extern void FUN_L00_00285008(void);
+extern void restore_or_clear_level_state(void) __asm__("FUN_L00_00285008");
 extern void clear_scene_state_buffers(void) __asm__("FUN_00226f50");
 extern void FUN_L00_00264740(void);
 
@@ -183,7 +183,9 @@ extern u8 D_L18_0015FC88[] __attribute__((section(".sdata")));
  * mobies at 0x24 of their data); a stored coordinate times scale / 1024 gives
  * world units. Index 0x10 gives where the sky data starts and 0x14 where the
  * collision data starts. */
-s32 FUN_L18_002463f8(s32 full, s32 keep) {
+s32 load_level_core_data(s32 full, s32 keep) __asm__("FUN_L18_002463f8");
+
+s32 load_level_core_data(s32 full, s32 keep) {
     Load2463f8 *ld = &D_L18_00174800_2463f8;
     s32 *level_header = ld->f4;
     s32 *level_file_base = D_0015EE48.file;
@@ -298,7 +300,7 @@ s32 FUN_L18_002463f8(s32 full, s32 keep) {
         D_L18_0015F420 = base + level_header[0x1A];
         unpack_point_records((char *)level_header + level_header[0x17], level_header[0x16]);
         if (level_header[0x28]) {
-            FUN_L00_0023f120(base + level_header[0x28]);
+            relocate_counted_pointer_table(base + level_header[0x28]);
         } else {
             D_L18_0015F438 = 0;
             D_L18_0015F43C = 0;
@@ -366,7 +368,7 @@ s32 FUN_L18_002463f8(s32 full, s32 keep) {
                 }
             }
         }
-        D_L18_00174800_2463f8.f18 = FUN_L00_0023fa00((char *)((u32)end & ~0x3F), level_header);
+        D_L18_00174800_2463f8.f18 = load_level_texture_bank((char *)((u32)end & ~0x3F), level_header);
     }
     D_L18_00174800_2463f8.f1C = FUN_L00_00241940_2463f8(full);
     if (full) {
@@ -421,7 +423,7 @@ s32 FUN_L18_002463f8(s32 full, s32 keep) {
         printf_1e93b0(D_L18_0015FC80);
     }
     if (keep) {
-        FUN_L00_00285008();
+        restore_or_clear_level_state();
     } else {
         clear_scene_state_buffers();
         for (z = 15; z >= 0; z--)
@@ -456,8 +458,10 @@ extern void font_print_center_large_001f6c20(int a, int b, int c, int d, int e) 
 
 
 /* Draws the level timer as "H:MM:SS.t" text with a pulsing colour. */
-void FUN_L18_002d8098(struct Moby *moby) {
-    char buf[8];
+void draw_pulsing_timer_hud(struct Moby *moby) __asm__("FUN_L18_002d8098");
+
+void draw_pulsing_timer_hud(struct Moby *moby) {
+    char timer_text[8];
     char *data = (char *)moby->pvars;
     float color_blend_factor;
     int col;
@@ -472,20 +476,22 @@ void FUN_L18_002d8098(struct Moby *moby) {
         color_blend_factor = 0.0f;
     }
     col = fast_tween_color(timer_color_dim, timer_color_bright, color_blend_factor);
-    buf[0] = 0x30;
-    buf[1] = *(int *)(data + 0x6c) / scale_ticks(0xE10) + 0x30;
-    buf[2] = 0x3A;
-    buf[3] = *(int *)(data + 0x6c) % scale_ticks(0xE10) / scale_ticks(0x258) + 0x30;
-    buf[4] = *(int *)(data + 0x6c) % scale_ticks(0x258) / scale_ticks(0x3C) + 0x30;
-    buf[5] = 0x3A;
-    buf[6] = *(int *)(data + 0x6c) % scale_ticks(0x3C) / scale_ticks(6) + 0x30;
-    buf[7] = func_001FA898_r((float)random_integer_below(10)) + 0x30;
-    font_print_center_large_001f6c20(timer_text_x, timer_text_y, col, (int)buf, 8);
+    timer_text[0] = 0x30;
+    timer_text[1] = *(int *)(data + 0x6c) / scale_ticks(0xE10) + 0x30;
+    timer_text[2] = 0x3A;
+    timer_text[3] = *(int *)(data + 0x6c) % scale_ticks(0xE10) / scale_ticks(0x258) + 0x30;
+    timer_text[4] = *(int *)(data + 0x6c) % scale_ticks(0x258) / scale_ticks(0x3C) + 0x30;
+    timer_text[5] = 0x3A;
+    timer_text[6] = *(int *)(data + 0x6c) % scale_ticks(0x3C) / scale_ticks(6) + 0x30;
+    timer_text[7] = func_001FA898_r((float)random_integer_below(10)) + 0x30;
+    font_print_center_large_001f6c20(timer_text_x, timer_text_y, col, (int)timer_text, 8);
 }
 
 extern void FUN_L02_002a4058_u(char *arg, int val) __asm__("FUN_L01_0026e0e0");
 
-void FUN_L18_002e9e50(char *moby_group) {
+void set_moby_group_state_two(char *moby_group) __asm__("FUN_L18_002e9e50");
+
+void set_moby_group_state_two(char *moby_group) {
     FUN_L02_002a4058_u(moby_group, 0x2);
 }
 

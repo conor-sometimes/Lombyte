@@ -47,10 +47,12 @@ extern int get_effect_texture_alt(int) __asm__("FUN_001f44b8");
 extern void font_queue_vu_state(void) __asm__("FUN_001f76a0");
 extern void FUN_L08_00308db8_u(int) __asm__("FUN_L08_00308db8");
 extern void FUN_L08_00308e90_u(int) __asm__("FUN_L08_00308e90");
-extern void FUN_L08_00308f68(int);
+extern void queue_batalia_offset_textured_batches(int) __asm__("FUN_L08_00308f68");
 void vu1_add_g_sregister(s32 a0, s64 a1) __asm__("FUN_00233980");
 
-void FUN_L08_00309030(void) {
+void queue_batalia_textured_batch_passes(void) __asm__("FUN_L08_00309030");
+
+void queue_batalia_textured_batch_passes(void) {
     vu1_add_g_sregister(0x42, 0x8000000044L);
     vu1_add_g_sregister(8, 0);
     vu1_add_g_sregister(0x14, 0xFF9000000260L);
@@ -71,7 +73,7 @@ void FUN_L08_00309030(void) {
     FUN_L08_00308e90_u(1);
     vu1_add_g_sregister(6, get_effect_texture_alt(0x3D));
     vu1_add_g_sregister(0x42, (long)D_L08_001623C0 << 32 | 0x48);
-    FUN_L08_00308f68(0);
+    queue_batalia_offset_textured_batches(0);
 }
 #include "sda.h"
 /* Update for a moby that waits for a float flag on a nearby object then runs a delete sequence. */
@@ -80,10 +82,12 @@ extern char *find_moby_hit(void *, int, int) __asm__("FUN_L00_0025a420");
 extern void allocate_voice_for_target_entry(int, int, int) __asm__("FUN_0022da68");
 extern void FUN_L00_00263e30(void *, int, int, int, int, int, int);
 extern void FUN_L01_002787a0(void *);
-extern void FUN_L01_00278e20(void *, int);
+extern void spawn_moby_from_placement(void *, int) __asm__("FUN_L01_00278e20");
 void mark_moby_for_removal(struct Obj *obj) __asm__("FUN_0020c828");
 
-void FUN_L08_0030bc00(struct Moby *moby) {
+void update_moby_hit_removal_state(struct Moby *moby) __asm__("FUN_L08_0030bc00");
+
+void update_moby_hit_removal_state(struct Moby *moby) {
     enum {
         MOBY_STATE_INITIALIZE = 0,
         MOBY_STATE_WAIT_FOR_HIT = 1,
@@ -105,7 +109,7 @@ void FUN_L08_0030bc00(struct Moby *moby) {
         allocate_voice_for_target_entry(0, 0, (int)moby);
         FUN_L01_002787a0(moby);
         FUN_L00_00263e30(moby, 0x736, 1, 0x737, 1, 0x1, 2);
-        FUN_L01_00278e20(moby, 0x735);
+        spawn_moby_from_placement(moby, 0x735);
         mark_moby_for_removal(moby);
         break;
     }

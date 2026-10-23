@@ -42,7 +42,9 @@ extern void FUN_L01_00262618(ScrollLayer *);
 extern void FUN_L01_0021fa98(s32, s32, s32, s32, s32, s32);
 
 /* Scrolls the UV offsets of count overlay layers (wrapping into [-1, 1]) and, for each one in view, queues its two-texture GS setup and draws it. */
-void FUN_L01_002b96e0(s32 count, ScrollLayer *scroll_layer) {
+void update_and_draw_scrolling_overlay_layers(s32 count, ScrollLayer *scroll_layer) __asm__("FUN_L01_002b96e0");
+
+void update_and_draw_scrolling_overlay_layers(s32 count, ScrollLayer *scroll_layer) {
     struct DmaTag *tag;
     u64 *packet_payload;
     s32 vis;
@@ -147,10 +149,12 @@ extern f32 fast_add_rotations(f32 a, f32 b) __asm__("FUN_001fa580");
 extern void euler_rotation_matrix(void *, void *) __asm__("FUN_001fa050");
 extern void transform_vector(void *, void *, void *) __asm__("FUN_001f9d20");
 extern void fast_vec_add(void *, void *, void *) __asm__("FUN_001f9a10");
-extern void FUN_L01_0027e900(void *, void *, f32, f32, f32, f32, f32, f32, f32, f32, f32, s32, u8,
-                             u8, u8);
+extern void create_spark_particle(void *, void *, f32, f32, f32, f32, f32, f32, f32, f32, f32, s32, u8,
+                             u8, u8) __asm__("FUN_L01_0027e900");
 
-void FUN_L01_002bd100(EmitterMoby *self) {
+void update_spark_particle_emitter(EmitterMoby *self) __asm__("FUN_L01_002bd100");
+
+void update_spark_particle_emitter(EmitterMoby *self) {
     Emitter *emitter_vars;
     EmitVec out;
     EmitVec position_scratch;
@@ -204,7 +208,7 @@ void FUN_L01_002bd100(EmitterMoby *self) {
                 euler_rotation_matrix(&u.rot.m, &u.rot.ang);
                 transform_vector(&out, &emitter_vars->vel, &u.rot.m);
                 size = random_float_between(emitter_vars->size_min, emitter_vars->size_max);
-                FUN_L01_0027e900(emitter_vars, &position_scratch, out.f[0], out.f[1], out.f[2], size,
+                create_spark_particle(emitter_vars, &position_scratch, out.f[0], out.f[1], out.f[2], size,
                                  random_float_between(emitter_vars->life_min, emitter_vars->life_max), emitter_vars->fade[0],
                                  emitter_vars->fade[1], emitter_vars->fade[2], emitter_vars->fade[3], emitter_vars->tex, emitter_vars->blend, emitter_vars->alpha,
                                  0xFF);
@@ -217,7 +221,7 @@ void FUN_L01_002bd100(EmitterMoby *self) {
                     transform_vector(&u.lin.vel, &u.lin.vel, &u.lin.m);
                 }
                 size = random_float_between(emitter_vars->size_min, emitter_vars->size_max);
-                FUN_L01_0027e900(emitter_vars, &position_scratch, u.lin.vel.f[0], u.lin.vel.f[1], u.lin.vel.f[2], size,
+                create_spark_particle(emitter_vars, &position_scratch, u.lin.vel.f[0], u.lin.vel.f[1], u.lin.vel.f[2], size,
                                  random_float_between(emitter_vars->life_min, emitter_vars->life_max), emitter_vars->fade[0],
                                  emitter_vars->fade[1], emitter_vars->fade[2], emitter_vars->fade[3], emitter_vars->tex, emitter_vars->blend, emitter_vars->alpha,
                                  0xFF);
@@ -346,7 +350,9 @@ extern float fast_difference_between_rotations(float, float) __asm__("FUN_001fa6
 /* Picks the path node the follower should head for: an ordered path just steps to the next stop; otherwise the
  * nearest node and its two neighbours are scored (distance, or heading change for slow movers) and the best one
  * is written to *idx. Returns nonzero when the pick differs from the nearest node. */
-int FUN_L01_002e6790(void *path_follower_entity, int *selected_path_node_index) {
+int select_birdbot_path_node(void *path_follower_entity, int *selected_path_node_index) __asm__("FUN_L01_002e6790");
+
+int select_birdbot_path_node(void *path_follower_entity, int *selected_path_node_index) {
     PathPickMoby *path_follower_moby = path_follower_entity;
     PathPickTarget target;
     SplashVec pt;
@@ -654,7 +660,7 @@ extern int FUN_L00_0025a478_u(void *, void *, void *, int, int *, float *, int,
                               int) __asm__("FUN_L00_0025a478");
 extern int mine_fall(void *, void *) __asm__("FUN_L00_0025c698");
 extern int hero_set_state(int, int) __asm__("FUN_L01_0023cf98");
-extern int FUN_L01_002e6790(void *, int *);
+extern int select_birdbot_path_node(void *, int *) __asm__("FUN_L01_002e6790");
 extern int is_point_inside_clip_volume(void *arg0, int arg1) __asm__("FUN_00214720");
 extern int scale_game_frames(int);
 extern int tick_countdown_32(void *);
@@ -680,7 +686,7 @@ extern void FUN_L00_00263ac8_u(float, int, int, unsigned char *) __asm__("FUN_L0
 extern void jet_mount(void *, void *, int, int, int) __asm__("FUN_L00_002eaaa0");
 extern void FUN_L00_002eac18(int);
 extern void FUN_L01_0026d930_u(char *p) __asm__("FUN_L01_0026d930");
-extern void FUN_L01_0026eff8(char *arg, float value);
+extern void set_range_centered_on_value(char *arg, float value) __asm__("FUN_L01_0026eff8");
 extern void add_vector_xyz(void *, void *, void *);
 extern void blend_moby_animation_cf(void *, int, int, int) __asm__("FUN_00212f90");
 extern void build_spherical_offset_cf(void *, float, float, float) __asm__("FUN_00214db0");
@@ -752,7 +758,7 @@ void birdbot_update(PeMoby *birdbot_moby) {
         birdbot_vars->w1C8--;
     }
     if (birdbot_moby->state != 0) {
-        path_reposition_requested = FUN_L01_002e6790(birdbot_moby, &idx);
+        path_reposition_requested = select_birdbot_path_node(birdbot_moby, &idx);
     }
     target_search_radius = flag ? birdbot_vars->f1A0 * 2.0f : birdbot_vars->f1A0;
     FUN_L00_0025fcb8(birdbot_moby, &selected_combat_target, target_search_radius);
@@ -1331,7 +1337,7 @@ void birdbot_update(PeMoby *birdbot_moby) {
     } else {
         ground = probe_ground_height(&birdbot_moby->pos, 0, 0.5f);
     }
-    FUN_L01_0026eff8((char *)birdbot_moby, ground);
+    set_range_centered_on_value((char *)birdbot_moby, ground);
     if (collision_hit_material() == 0 && birdbot_moby->pos.f[2] < ground + 1.0f) {
         spawn_explosion(birdbot_moby, &birdbot_vars->v40, &birdbot_moby->pos, 0.0f, 0.0f, 5, 2, 4, 2.0f, 1.0f, 9.0f, 1.0f, 4, 15.0f,
                          1, 1, -1, 0);
@@ -1548,7 +1554,7 @@ extern s32 FUN_L00_002dc9f0(void *, void *);
 extern void FUN_L01_0026d930(void *);
 extern void FUN_L01_0026e090(s32, s32);
 extern void FUN_L01_0028b5e0(void *, s32, void *, void *);
-extern s32 FUN_L01_002efbf8(void *, s32, s32);
+extern s32 reserve_expired_frame_slot(void *, s32, s32) __asm__("FUN_L01_002efbf8");
 
 #define SET_ANIM(m, a, b, c)                                                                       \
     if ((m)->anim != (a))                                                                          \
@@ -1590,23 +1596,23 @@ void peckbot_update(Mob577 *self) {
     void *target_moby;
     Vec577 *mp;
     Vec577 *np;
-    s32 res;
-    s32 res12;
+    s32 movement_result_flags;
+    s32 recovery_movement_result_flags;
     s32 frame_count_or_animation_id;
     f32 hp;
     f32 rad;
-    f32 dir;
-    f32 g17;
-    f32 g16;
+    f32 idle_destination_azimuth;
+    f32 descent_ground_height;
+    f32 ascent_ground_height;
     f32 chase_target_height_distance_ratio;
-    f32 g4;
+    f32 attack_ground_height;
     f32 t99;
     f32 recovery_target_height_distance_ratio;
     f32 nearby_moby_heading_difference;
     f32 turn;
     f32 z;
-    f32 g13;
-    f32 ang;
+    f32 forward_movement_ground_height;
+    f32 desired_heading;
 
     peckbot_vars = self->vars;
     FUN_L00_00263ac8(self, 0, peckbot_vars->x230, 1.5f);
@@ -1724,9 +1730,9 @@ void peckbot_update(Mob577 *self) {
         } else if (tick_countdown_32(&peckbot_vars->idle_timer) != 0) {
             peckbot_vars->idle_timer = scale_game_frames(0x78);
             rad = random_float_between(0.0f, 3.0f);
-            dir = random_angle_radians();
-            position_scratch.f[0] = fast_cos(dir) * rad;
-            position_scratch.f[1] = fast_sin(dir) * rad;
+            idle_destination_azimuth = random_angle_radians();
+            position_scratch.f[0] = fast_cos(idle_destination_azimuth) * rad;
+            position_scratch.f[1] = fast_sin(idle_destination_azimuth) * rad;
             position_scratch.f[2] = 0.0f;
             position_scratch.f[2] = random_float_between(5.0f, 7.0f);
             fast_vec_add(&peckbot_vars->dest, &position_scratch, &peckbot_vars->home);
@@ -1734,8 +1740,8 @@ void peckbot_update(Mob577 *self) {
         }
         break;
     case PECKBOT_STATE_MOVE_TO_DESTINATION:
-        ang = FUN_L00_001ff8b0_cf(peckbot_vars->dest.f[0] - self->pos.f[0], peckbot_vars->dest.f[1] - self->pos.f[1]);
-        FUN_L00_00258278(self, peckbot_vars->turn, ang, 0.05f, 0.3f, 0.2f);
+        desired_heading = FUN_L00_001ff8b0_cf(peckbot_vars->dest.f[0] - self->pos.f[0], peckbot_vars->dest.f[1] - self->pos.f[1]);
+        FUN_L00_00258278(self, peckbot_vars->turn, desired_heading, 0.05f, 0.3f, 0.2f);
         fast_vec_sub(&peckbot_vars->vel, &peckbot_vars->dest, &self->pos);
         FUN_L00_0025f730(&peckbot_vars->vel, frame_time * 4.0f);
         fast_vec_add(&vector_scratch, &peckbot_vars->vel, &self->pos);
@@ -1750,14 +1756,14 @@ void peckbot_update(Mob577 *self) {
         }
         break;
     case PECKBOT_STATE_DESCEND:
-        g17 = FUN_00213508(&self->pos, 0, 0.5f);
+        descent_ground_height = FUN_00213508(&self->pos, 0, 0.5f);
         approach_value(&peckbot_vars->vel.f[2], -(frame_time * 8.0f), frame_time_sq * 10.8f);
         self->pos.f[2] = self->pos.f[2] + peckbot_vars->vel.f[2];
-        if (self->anim != 1 && self->pos.f[2] - g17 <= frame_time * 8.0f * FUN_L04_001f1978(45.0f)) {
+        if (self->anim != 1 && self->pos.f[2] - descent_ground_height <= frame_time * 8.0f * FUN_L04_001f1978(45.0f)) {
             SET_ANIM(self, 1, 0, scale_game_frames(5));
         }
-        if (self->pos.f[2] <= g17) {
-            self->pos.f[2] = g17;
+        if (self->pos.f[2] <= descent_ground_height) {
+            self->pos.f[2] = descent_ground_height;
             if (random_integer_below(0x100) & 1) {
                 peckbot_vars->turn_deg = -peckbot_vars->turn_deg;
             }
@@ -1769,11 +1775,11 @@ void peckbot_update(Mob577 *self) {
         }
         break;
     case PECKBOT_STATE_ASCEND:
-        g16 = FUN_00213508(&self->pos, 0, 0.5f);
+        ascent_ground_height = FUN_00213508(&self->pos, 0, 0.5f);
         approach_value(&peckbot_vars->vel.f[2], frame_time * 8.0f, frame_time_sq * 10.8f);
         self->pos.f[2] += peckbot_vars->vel.f[2];
-        if (g16 + 6.0f <= self->pos.f[2]) {
-            self->pos.f[2] = g16 + 6.0f;
+        if (ascent_ground_height + 6.0f <= self->pos.f[2]) {
+            self->pos.f[2] = ascent_ground_height + 6.0f;
             self->state = 14;
             peckbot_vars->x228 = scale_game_frames(0xB4);
             clear_u64_value(&peckbot_vars->vel);
@@ -1811,8 +1817,8 @@ void peckbot_update(Mob577 *self) {
         }
         break;
     case PECKBOT_STATE_FACE_HOME_AND_WAIT:
-        ang = FUN_L00_001ff8b0_cf(peckbot_vars->home.f[0] - self->pos.f[0], peckbot_vars->home.f[1] - self->pos.f[1]);
-        FUN_L00_00258278(self, peckbot_vars->turn, ang, 0.05f, 0.3f, 0.2f);
+        desired_heading = FUN_L00_001ff8b0_cf(peckbot_vars->home.f[0] - self->pos.f[0], peckbot_vars->home.f[1] - self->pos.f[1]);
+        FUN_L00_00258278(self, peckbot_vars->turn, desired_heading, 0.05f, 0.3f, 0.2f);
         fast_vec_sub(&vector_scratch, &target.pos, &peckbot_vars->home);
         if ((fast_vec_length(&vector_scratch) < peckbot_vars->range &&
              FUN_001f99c0(peckbot_vars->home.f[2] - target.pos.f[2]) < 8.0f) ||
@@ -1850,9 +1856,9 @@ void peckbot_update(Mob577 *self) {
         }
         break;
     case PECKBOT_STATE_FACE_AWAY_FROM_TARGET:
-        ang =
+        desired_heading =
             FUN_L00_001ff8b0_cf(self->pos.f[0] - target.pos.f[0], self->pos.f[1] - target.pos.f[1]);
-        FUN_L00_00258278(self, peckbot_vars->turn, ang, 0.02f, 0.3f, 0.1f);
+        FUN_L00_00258278(self, peckbot_vars->turn, desired_heading, 0.02f, 0.3f, 0.1f);
         fast_vec_sub(&vector_scratch, &target.pos, &self->pos);
         if (fast_vec_length(&vector_scratch) < peckbot_vars->range &&
             FUN_001f99c0(self->pos.f[2] - target.pos.f[2]) < 8.0f &&
@@ -1893,22 +1899,22 @@ void peckbot_update(Mob577 *self) {
         } else {
             qcopy(&position_scratch, &target.pos);
         }
-        ang =
+        desired_heading =
             FUN_L00_001ff8b0_cf(position_scratch.f[0] - self->pos.f[0], position_scratch.f[1] - self->pos.f[1]) + peckbot_vars->turn_off;
-        FUN_L00_00258278(self, peckbot_vars->turn, ang, 0.05f, 0.3f, 0.2f);
+        FUN_L00_00258278(self, peckbot_vars->turn, desired_heading, 0.05f, 0.3f, 0.2f);
         vector_scratch.f[0] = fast_cos(self->rot.f[2]) * 2.0f;
         vector_scratch.f[1] = fast_sin(self->rot.f[2]) * 2.0f;
         vector_scratch.f[2] = 0.0f;
-        res = FUN_L00_00258b50(self, &peckbot_vars->x180, &vector_scratch, &position_scratch, 1.0f);
+        movement_result_flags = FUN_L00_00258b50(self, &peckbot_vars->x180, &vector_scratch, &position_scratch, 1.0f);
         if (tick_countdown_32(&peckbot_vars->turn_timer) != 0) {
             peckbot_vars->turn_timer = scale_game_frames(random_float_between(30.0f, 90.0f));
             peckbot_vars->turn_off = -peckbot_vars->turn_off;
         }
         fast_vec_sub(&home_to_target, &target.pos, &peckbot_vars->home);
-        if (vector_distance(&self->pos, &target.pos) < 1.5f && !(res & 2)) {
+        if (vector_distance(&self->pos, &target.pos) < 1.5f && !(movement_result_flags & 2)) {
             self->state = 4;
             SET_ANIM(self, 3, 0, scale_game_frames(3));
-        } else if (chase_target_height_distance_ratio > 1.0f || (res & 2)) {
+        } else if (chase_target_height_distance_ratio > 1.0f || (movement_result_flags & 2)) {
             self->pos.f[0] = oldpos.f[0];
             self->pos.f[1] = oldpos.f[1];
             self->state = 12;
@@ -1929,9 +1935,9 @@ void peckbot_update(Mob577 *self) {
         self->hit = 0;
         break;
     case PECKBOT_STATE_ATTACK_TARGET:
-        ang =
+        desired_heading =
             FUN_L00_001ff8b0_cf(target.pos.f[0] - self->pos.f[0], target.pos.f[1] - self->pos.f[1]);
-        FUN_L00_00258278(self, peckbot_vars->turn, ang, 0.05f, 0.3f, 0.2f);
+        FUN_L00_00258278(self, peckbot_vars->turn, desired_heading, 0.05f, 0.3f, 0.2f);
         if (self->anim_next == self->anim && FUN_0020c9e0(self) == 13.0f &&
             FUN_001f99c0(self->pos.f[2] - target.pos.f[2]) < 0.5f &&
             vector_distance(&self->pos, &target.pos) < 2.0f &&
@@ -1951,12 +1957,12 @@ void peckbot_update(Mob577 *self) {
             self->state = 3;
             SET_ANIM(self, 2, 0, scale_game_frames(3));
         }
-        g4 = FUN_00213508(&self->pos, 0, 0.5f);
+        attack_ground_height = FUN_00213508(&self->pos, 0, 0.5f);
         peckbot_vars->x198 = peckbot_vars->x198 - frame_time_sq * 9.8f;
         self->pos.f[2] = self->pos.f[2] + peckbot_vars->x198;
-        if (self->pos.f[2] < g4) {
+        if (self->pos.f[2] < attack_ground_height) {
             peckbot_vars->x198 = 0.0f;
-            self->pos.f[2] = g4;
+            self->pos.f[2] = attack_ground_height;
         }
         break;
     case PECKBOT_STATE_RETURN_HOME:
@@ -1965,12 +1971,12 @@ void peckbot_update(Mob577 *self) {
         } else {
             qcopy(&position_scratch, &peckbot_vars->home);
         }
-        ang = FUN_L00_001ff8b0_cf(position_scratch.f[0] - self->pos.f[0], position_scratch.f[1] - self->pos.f[1]);
-        FUN_L00_00258278(self, peckbot_vars->turn, ang, 0.02f, 0.3f, 0.1f);
+        desired_heading = FUN_L00_001ff8b0_cf(position_scratch.f[0] - self->pos.f[0], position_scratch.f[1] - self->pos.f[1]);
+        FUN_L00_00258278(self, peckbot_vars->turn, desired_heading, 0.02f, 0.3f, 0.1f);
         vector_scratch.f[0] = fast_cos(self->rot.f[2]) * 2.0f;
         vector_scratch.f[1] = fast_sin(self->rot.f[2]) * 2.0f;
         vector_scratch.f[2] = 0.0f;
-        res = FUN_L00_00258b50(self, &peckbot_vars->x180, &vector_scratch, &position_scratch, 1.0f);
+        movement_result_flags = FUN_L00_00258b50(self, &peckbot_vars->x180, &vector_scratch, &position_scratch, 1.0f);
         if (vector_distance(&self->pos, &peckbot_vars->home) < 2.0f) {
             self->state = 1;
             SET_ANIM(self, 4, 0, scale_game_frames(3));
@@ -1985,7 +1991,7 @@ void peckbot_update(Mob577 *self) {
         } else if (self->hit == 1) {
             self->state = 3;
             SET_ANIM(self, 2, 0, scale_game_frames(3));
-        } else if (res & 2) {
+        } else if (movement_result_flags & 2) {
             self->pos.f[0] = oldpos.f[0];
             self->pos.f[1] = oldpos.f[1];
             self->state = 12;
@@ -2022,7 +2028,7 @@ void peckbot_update(Mob577 *self) {
         if (mine_fall(self, peckbot_vars->knock) & 0x140) {
             clear_u64_value(&vector_scratch);
             frame_count_or_animation_id = scale_game_frames(1) * 60.0f;
-            if (FUN_L01_002efbf8(D_L01_00161A80, 3, frame_count_or_animation_id) >= 0) {
+            if (reserve_expired_frame_slot(D_L01_00161A80, 3, frame_count_or_animation_id) >= 0) {
                 cart_burst(self, &self->pos, 4, 0.5f, 13.0f);
             }
             FUN_L00_00263fd8(self, 0x6D3, &self->pos, &self->rot, 0, 0, 0.0f, D_L01_0015F580,
@@ -2052,17 +2058,17 @@ void peckbot_update(Mob577 *self) {
         } else {
             qcopy(&position_scratch, &peckbot_vars->home);
         }
-        ang = FUN_L00_001ff8b0_cf(position_scratch.f[0] - self->pos.f[0], position_scratch.f[1] - self->pos.f[1]);
-        FUN_L00_00258278(self, peckbot_vars->turn, ang, 0.05f, 0.3f, 0.2f);
+        desired_heading = FUN_L00_001ff8b0_cf(position_scratch.f[0] - self->pos.f[0], position_scratch.f[1] - self->pos.f[1]);
+        FUN_L00_00258278(self, peckbot_vars->turn, desired_heading, 0.05f, 0.3f, 0.2f);
         vector_scratch.f[0] = fast_cos(self->rot.f[2]) * 2.0f;
         vector_scratch.f[1] = fast_sin(self->rot.f[2]) * 2.0f;
         vector_scratch.f[2] = 0.0f;
-        res12 = FUN_L00_00258b50(self, &peckbot_vars->x180, &vector_scratch, &position_scratch, 1.0f);
+        recovery_movement_result_flags = FUN_L00_00258b50(self, &peckbot_vars->x180, &vector_scratch, &position_scratch, 1.0f);
         fast_vec_sub(&home_to_target, &target.pos, &peckbot_vars->home);
         if (vector_distance(&self->pos, &target.pos) < 1.5f && recovery_target_height_distance_ratio <= 1.0f) {
             self->state = 4;
             SET_ANIM(self, 3, 0, scale_game_frames(3));
-        } else if (recovery_target_height_distance_ratio <= 1.0f && !(res12 & 2)) {
+        } else if (recovery_target_height_distance_ratio <= 1.0f && !(recovery_movement_result_flags & 2)) {
             self->state = 5;
             SET_ANIM(self, 2, 0, scale_game_frames(3));
         } else if (vector_distance(&self->pos, &target.pos) > peckbot_vars->range + 6.0f) {
@@ -2111,12 +2117,12 @@ void peckbot_update(Mob577 *self) {
             }
         }
         qcopy(&self->pos, &position_scratch);
-        g13 = FUN_00213508(&self->pos, 0, 0.5f);
+        forward_movement_ground_height = FUN_00213508(&self->pos, 0, 0.5f);
         peckbot_vars->x198 = peckbot_vars->x198 - frame_time_sq * 9.8f;
         self->pos.f[2] = self->pos.f[2] + peckbot_vars->x198;
-        if (self->pos.f[2] < g13) {
+        if (self->pos.f[2] < forward_movement_ground_height) {
             peckbot_vars->x198 = 0.0f;
-            self->pos.f[2] = g13;
+            self->pos.f[2] = forward_movement_ground_height;
         }
         if (peckbot_vars->leader == NULL ||
             vector_distance(&self->pos, &peckbot_vars->leader->pos) > convert_integer_to_float(peckbot_vars->x216)) {
@@ -2182,14 +2188,14 @@ void water_current_update(Moby *self)
     PePath *path;
     Vec4 nearest;
     Vec4 ahead;
-    Vec4 dir;
+    Vec4 current_acceleration;
     Vec4 pull;
     f32 path_segment_index;
     s32 seg;
     s32 at_end;
-    f32 dist;
+    f32 hero_path_distance;
     f32 limit;
-    f32 len;
+    f32 current_speed;
     f32 cap;
     s32 i;
 
@@ -2215,20 +2221,20 @@ void water_current_update(Moby *self)
     }
     FUN_L00_0025df68(path, &hero.motion.pos, &nearest, &path_segment_index, &seg, 0, 999.0f, 5.0f, 0.0f);
     at_end = sample_path(path, &ahead, &path_segment_index, &seg, 0, 2.0f);
-    dist = vector_distance(&hero.motion.pos, &nearest);
-    if (water_current_vars->radius < dist) {
+    hero_path_distance = vector_distance(&hero.motion.pos, &nearest);
+    if (water_current_vars->radius < hero_path_distance) {
         return;
     }
 
     if ((u32)(hero.state.control_mode - 0x11) < 2) {
-        if (hero.unk22B8 < dist) {
+        if (hero.unk22B8 < hero_path_distance) {
             return;
         }
-        hero.unk22B8 = dist;
+        hero.unk22B8 = hero_path_distance;
         if (at_end == 0) {
-            subtract_vector_xyz(&dir, &ahead, &nearest);
-            normalize_vector_xyz(&dir, &dir, frame_time_sq * 7.0f);
-            add_vector_xyz(water_current_vars, water_current_vars, &dir);
+            subtract_vector_xyz(&current_acceleration, &ahead, &nearest);
+            normalize_vector_xyz(&current_acceleration, &current_acceleration, frame_time_sq * 7.0f);
+            add_vector_xyz(water_current_vars, water_current_vars, &current_acceleration);
             water_current_vars->vel.f[2] = 0.0f;
             if (water_current_vars->max_speed < vector_length_xyz(water_current_vars)) {
                 normalize_vector_xyz(water_current_vars, water_current_vars, water_current_vars->max_speed);
@@ -2245,8 +2251,8 @@ void water_current_update(Moby *self)
             }
         } else {
             /* past the end: slow down (factor 1 - 0.005 per frame unit) */
-            len = vector_length_xyz(water_current_vars);
-            normalize_vector_xyz(water_current_vars, water_current_vars, frame_scale * -0.004999995231628418f * len + len);
+            current_speed = vector_length_xyz(water_current_vars);
+            normalize_vector_xyz(water_current_vars, water_current_vars, frame_scale * -0.004999995231628418f * current_speed + current_speed);
             qcopy(&hero.motion.platform_delta, water_current_vars);
         }
         if (hero.state.control_mode == 0x12 && hero.state.prev == hero.state.control_mode) {
@@ -2260,8 +2266,8 @@ void water_current_update(Moby *self)
         }
     } else if ((hero.state.prev_control_mode == 0x12 || hero.state.prev2_control_mode == 0x12)
                && (u32)(hero.state.control_mode - 4) < 2) {
-        len = vector_length_xyz(water_current_vars);
-        normalize_vector_xyz(water_current_vars, water_current_vars, frame_scale * -0.014999985694885254f * len + len);
+        current_speed = vector_length_xyz(water_current_vars);
+        normalize_vector_xyz(water_current_vars, water_current_vars, frame_scale * -0.014999985694885254f * current_speed + current_speed);
         qcopy(&hero.motion.platform_delta, water_current_vars);
         if (hero.unk1D8 < scale_game_frames(0x23)) {
             hero.unk1D8 = scale_game_frames(0x23);
@@ -2614,7 +2620,7 @@ void stationary_ship_update(CarrierMoby *carrier_moby) {
     CarrierVars *v;
     CarrierCamVars *cv;
     PePath *carrier_path;
-    CarrierMoby *tbl;
+    CarrierMoby *level_moby_array;
     CarrierRiderVars *rv;
     CarrierOffsets offs;
     s32 i;
@@ -2715,9 +2721,9 @@ void stationary_ship_update(CarrierMoby *carrier_moby) {
     }
     for (j = 0; j < 8; j++) {
         if (v->riders[j] != -1) {
-            tbl = D_L01_0015FFD8_m;
-            tbl[v->riders[j]].flags &= ~6;
-            clear_vector(&tbl[v->riders[j]].rot);
+            level_moby_array = D_L01_0015FFD8_m;
+            level_moby_array[v->riders[j]].flags &= ~6;
+            clear_vector(&level_moby_array[v->riders[j]].rot);
             D_L01_0015FFD8_m[v->riders[j]].rot.z = FUN_001f9e90_cf(hero.motion.pos.f[0] - carrier_moby->pos.x, hero.motion.pos.f[1] - carrier_moby->pos.y);
             switch (D_L01_0015FFD8_m[v->riders[j]].oclass) {
             case 0x154:
@@ -2744,11 +2750,13 @@ void stationary_ship_update(CarrierMoby *carrier_moby) {
 }
 extern ScrollLayer D_L01_001E2FC0[];
 void mine_blend_color(void) __asm__("FUN_L00_002371e0");
-void FUN_L01_002b96e0(s32, ScrollLayer *);
+void update_and_draw_scrolling_overlay_layers(s32, ScrollLayer *) __asm__("FUN_L01_002b96e0");
 
-void FUN_L01_002f60f8(void) {
+void update_and_draw_level01_scrolling_layers(void) __asm__("FUN_L01_002f60f8");
+
+void update_and_draw_level01_scrolling_layers(void) {
     mine_blend_color();
-    FUN_L01_002b96e0(8, D_L01_001E2FC0);
+    update_and_draw_scrolling_overlay_layers(8, D_L01_001E2FC0);
 }
 #include "eetypes.h"
 #include "qzero.h"
@@ -2771,10 +2779,12 @@ extern void fast_vec_scale(void *, void *, float) __asm__("FUN_001f9a68");
 extern void fast_vec_sub(void *, void *, void *) __asm__("FUN_001f9a28");
 extern f32 fast_vec_length(void *) __asm__("FUN_001f9af0");
 extern f32 convert_integer_to_float(s32) __asm__("FUN_001fa6c0");
-extern void FUN_L01_002f6150(void);
+extern void draw_two_scroll_layers(void) __asm__("FUN_L01_002f6150");
 void enqueue_callback_list_1(void *fn, void *arg) __asm__("FUN_001f4600");
 
-void FUN_L01_002f6180(void *callback_argument) {
+void initialize_bounds_and_enqueue_scroll_layers(void *callback_argument) __asm__("FUN_L01_002f6180");
+
+void initialize_bounds_and_enqueue_scroll_layers(void *callback_argument) {
     Vec4 bounding_sphere;
     Vec4 point_to_center;
     Vec4 *point_cursor;
@@ -2806,7 +2816,7 @@ void FUN_L01_002f6180(void *callback_argument) {
             qcopy((D_L01_001E3380 + i)->out, &bounding_sphere);
         }
     }
-    enqueue_callback_list_1(FUN_L01_002f6150, callback_argument);
+    enqueue_callback_list_1(draw_two_scroll_layers, callback_argument);
 }
 #include "eetypes.h"
 #include "qcopy.h"
@@ -3025,14 +3035,14 @@ void bomber_jet_update(GunshipMoby *bomber_jet_moby) {
     int j;
     GunshipTargets explosion_vector_or_target_indices;
     GunshipTargets explosion_vector_or_filtered_target_indices;
-    SplashVec dir;
+    SplashVec beam_step_vector;
     SplashVec pos;
     SplashVec col;
     {
-        float dist = distance_xyz(bomber_jet_moby->pos, camera_pos);
+        float camera_distance = distance_xyz(bomber_jet_moby->pos, camera_pos);
         float x0 = gunship_near_dist;
         float k = -((1.0f - gunship_min_scale) / (gunship_far_dist - x0));
-        distance_scale = k * dist + (1.0f - k * x0);
+        distance_scale = k * camera_distance + (1.0f - k * x0);
     }
     hit = find_moby_hit(bomber_jet_moby, 0x800000, 0);
     bomber_jet_moby->bA4 = 0xFF;
@@ -3161,17 +3171,17 @@ void bomber_jet_update(GunshipMoby *bomber_jet_moby) {
                 if (gunship_vars->sub.cur == t[i]) found = i;
             }
             if (found != -1) {
-                int cnt;
+                int remaining_target_count;
                 explosion_vector_or_target_indices = gunship_no_targets;
                 j = 0;
                 explosion_vector_or_filtered_target_indices = gunship_no_targets;
-                cnt = 0;
+                remaining_target_count = 0;
                 for (i = 0; i < 4; i++) {
                     if (gunship_vars->targets[found][i] != -1) {
                         explosion_vector_or_target_indices.v[j] = gunship_vars->targets[found][i];
                         j++;
-                        explosion_vector_or_filtered_target_indices.v[cnt] = gunship_vars->targets[found][i];
-                        cnt++;
+                        explosion_vector_or_filtered_target_indices.v[remaining_target_count] = gunship_vars->targets[found][i];
+                        remaining_target_count++;
                     }
                 }
                 if (j == 0) break;
@@ -3180,12 +3190,12 @@ void bomber_jet_update(GunshipMoby *bomber_jet_moby) {
                     if (collision_line(camera_pos, camera_points + (explosion_vector_or_target_indices.v[i] << 7) + 0x30, 0x86, bomber_jet_moby, 0)) {
                         if (collision_hit.moby == 0 || collision_hit.moby != bomber_jet_moby) {
                             explosion_vector_or_filtered_target_indices.v[i] = -1;
-                            cnt--;
+                            remaining_target_count--;
                             break;
                         }
                     }
                 }
-                if (cnt != 0) {
+                if (remaining_target_count != 0) {
                     int k = 0;
                     for (i = 0; i < j; i++) {
                         if (explosion_vector_or_filtered_target_indices.v[i] != -1) {
@@ -3193,17 +3203,17 @@ void bomber_jet_update(GunshipMoby *bomber_jet_moby) {
                             k++;
                         }
                     }
-                    j = cnt;
+                    j = remaining_target_count;
                 }
                 if (j != 0) {
                     GunshipMoby *bm;
                     i = explosion_vector_or_target_indices.v[random_integer_below(j)];
                     gunship_vars->gun_side ^= 1;
                     moby_point_position(bomber_jet_moby, gunship_vars->gun_side, &pos);
-                    subtract_vector_xyz(&dir, camera_points + (i << 7) + 0x30, &pos);
-                    normalize_vector_xyz(&dir, &dir, frame_time_macro * 160.0f);
+                    subtract_vector_xyz(&beam_step_vector, camera_points + (i << 7) + 0x30, &pos);
+                    normalize_vector_xyz(&beam_step_vector, &beam_step_vector, frame_time_macro * 160.0f);
                     col.q = *(u128 *)((i << 7) + (int)camera_points + 0x30);
-                    bm = spawn_beam(bomber_jet_moby, &pos, &dir, &col, is_point_inside_clip_volume(&hero.motion.pos, gunship_vars->beam_volume), gunship_vars->trigger_volume != -1);
+                    bm = spawn_beam(bomber_jet_moby, &pos, &beam_step_vector, &col, is_point_inside_clip_volume(&hero.motion.pos, gunship_vars->beam_volume), gunship_vars->trigger_volume != -1);
                     if (bm != 0) {
                         int k = 0;
                         int *out = (int *)((char *)bm->vars + 0x20);
@@ -3215,10 +3225,10 @@ void bomber_jet_update(GunshipMoby *bomber_jet_moby) {
                             if (gunship_vars->guards[i] != -1) {
                                 GunshipMoby *o = (GunshipMoby *)((gunship_vars->guards[i] << 8) + moby_array);
                                 if (o->oclass == 0x2BC) {
-                                    GunshipGuardVars *g = o->vars;
-                                    if (g->f4 == 0 && g->f0 == 0 && random_integer_below(0x64) < 0x64
-                                        && is_point_inside_clip_volume(&hero.motion.pos, g->f8)
-                                        && is_point_inside_clip_volume(camera_pos, g->f8)) {
+                                    GunshipGuardVars *guard_vars = o->vars;
+                                    if (guard_vars->f4 == 0 && guard_vars->f0 == 0 && random_integer_below(0x64) < 0x64
+                                        && is_point_inside_clip_volume(&hero.motion.pos, guard_vars->f8)
+                                        && is_point_inside_clip_volume(camera_pos, guard_vars->f8)) {
                                         out[k] = gunship_vars->guards[i];
                                         k++;
                                     }
@@ -3234,7 +3244,7 @@ void bomber_jet_update(GunshipMoby *bomber_jet_moby) {
 }
 f32 FUN_001f99c0(f32);
 
-f32 FUN_L01_002f81c8(f32 *pos, f32 *vel, f32 target, f32 accel, f32 damp, f32 range) {
+f32 FUN_L01_002f81c8(f32 *pos, f32 *vel, f32 target, f32 velocity_adjustment_scale, f32 damp, f32 range) {
     f32 velocity_adjustment;
     f32 f;
 
@@ -3246,7 +3256,7 @@ f32 FUN_L01_002f81c8(f32 *pos, f32 *vel, f32 target, f32 accel, f32 damp, f32 ra
     if (range < velocity_adjustment) {
         velocity_adjustment = range;
     }
-    velocity_adjustment = velocity_adjustment * accel / range;
+    velocity_adjustment = velocity_adjustment * velocity_adjustment_scale / range;
     if (target < *pos) {
         *vel = *vel - velocity_adjustment;
     } else {
@@ -3303,7 +3313,7 @@ void water_lily_update(HoverMoby *water_lily) {
     HoverVars *v;
     struct Hero *pl;
     HoverVec old;
-    HoverVec tgt;
+    HoverVec collision_adjusted_position;
     HoverVec step;
     HoverVec vector_scratch;
     f32 hero_separation_angle;
@@ -3312,7 +3322,7 @@ void water_lily_update(HoverMoby *water_lily) {
 
     old.q = water_lily->pos.q;
     v = water_lily->pvars;
-    tgt.q = old.q;
+    collision_adjusted_position.q = old.q;
     if (v == 0) {
         return;
     }
@@ -3336,9 +3346,9 @@ void water_lily_update(HoverMoby *water_lily) {
                 water_lily->pos.v.y += hero.motion.pos.f[1];
             }
         }
-        FUN_L00_00258490(water_lily, &tgt, &water_lily->pos, 3, 0.1f, D_L01_00161C00, 600.0f, 1.5707964f);
-        water_lily->pos.v.x = tgt.v.x;
-        water_lily->pos.v.y = tgt.v.y;
+        FUN_L00_00258490(water_lily, &collision_adjusted_position, &water_lily->pos, 3, 0.1f, D_L01_00161C00, 600.0f, 1.5707964f);
+        water_lily->pos.v.x = collision_adjusted_position.v.x;
+        water_lily->pos.v.y = collision_adjusted_position.v.y;
         water_lily->pos.v.z = old.v.z;
         if (FUN_001f9b48(&old, &water_lily->pos) > D_L01_00161BFC * frame_time_macro) {
             fast_vec_sub(&vector_scratch, &water_lily->pos, &old);
@@ -3397,15 +3407,17 @@ extern float fast_sin(float) __asm__("FUN_001f9de0");
 extern void spawn_debris_chunk(void *, void *, u32, s32, f32, f32, f32, f32, s32) __asm__("FUN_L01_002f8530");
 extern void *mine_debris(void *, void *, u32, u32, f32, s32, u32) __asm__("FUN_L00_0026bed0");
 
-void FUN_L01_002f8c58(SteamMoby *steam_moby) {
+void update_rising_particle_and_debris_emitter(SteamMoby *steam_moby) __asm__("FUN_L01_002f8c58");
+
+void update_rising_particle_and_debris_emitter(SteamMoby *steam_moby) {
     SteamVars *steam_vars;
     SteamColors colors;
-    SteamVec vel;
+    SteamVec particle_initial_velocity;
     SteamVec pos;
     SteamVec puff;
     SteamParticle *debris_particle;
     f32 spawn_radius_or_vertical_velocity_increment;
-    f32 ang;
+    f32 spawn_offset_angle_radians;
     f32 size;
     s32 life;
     s32 i;
@@ -3424,15 +3436,15 @@ void FUN_L01_002f8c58(SteamMoby *steam_moby) {
         pos.q = 0;
         pos.f[0] = random_float_between(frame_time_macro * -0.5f, frame_time_macro * 0.5f);
         pos.f[1] = random_float_between(frame_time_macro * -0.5f, frame_time_macro * 0.5f);
-        vel.q = pos.q;
+        particle_initial_velocity.q = pos.q;
         spawn_radius_or_vertical_velocity_increment = random_float_between(0.0f, 0.25f);
-        ang = random_angle_radians();
-        pos.f[0] = fast_cos(ang) * spawn_radius_or_vertical_velocity_increment;
-        pos.f[1] = fast_sin(ang) * spawn_radius_or_vertical_velocity_increment;
+        spawn_offset_angle_radians = random_angle_radians();
+        pos.f[0] = fast_cos(spawn_offset_angle_radians) * spawn_radius_or_vertical_velocity_increment;
+        pos.f[1] = fast_sin(spawn_offset_angle_radians) * spawn_radius_or_vertical_velocity_increment;
         pos.f[2] = 0.0f;
         fast_vec_add(&pos, &pos, &steam_moby->pos);
         pos.f[2] += steam_vars->height;
-        spawn_debris_chunk(&pos, &vel, colors.c[random_integer_below(3)],
+        spawn_debris_chunk(&pos, &particle_initial_velocity, colors.c[random_integer_below(3)],
                          random_int_between(0xB4, 0x12C), 0.05f, 1.0f, 1.0f, 0.75f, 0);
     }
     for (i = 0; i < 2; i++) {
@@ -3441,20 +3453,20 @@ void FUN_L01_002f8c58(SteamMoby *steam_moby) {
         puff.f[0] = random_float_between(frame_time_macro * -0.5f, frame_time_macro * 0.5f);
         puff.f[1] = random_float_between(frame_time_macro * -0.5f, frame_time_macro * 0.5f);
         puff.f[2] = random_float_between(frame_time_macro * 0.0f, frame_time_macro * 3.0f);
-        vel.q = puff.q;
+        particle_initial_velocity.q = puff.q;
         spawn_radius_or_vertical_velocity_increment = random_float_between(0.0f, 0.25f);
-        ang = random_angle_radians();
-        puff.f[0] = fast_cos(ang) * spawn_radius_or_vertical_velocity_increment;
-        puff.f[1] = fast_sin(ang) * spawn_radius_or_vertical_velocity_increment;
+        spawn_offset_angle_radians = random_angle_radians();
+        puff.f[0] = fast_cos(spawn_offset_angle_radians) * spawn_radius_or_vertical_velocity_increment;
+        puff.f[1] = fast_sin(spawn_offset_angle_radians) * spawn_radius_or_vertical_velocity_increment;
         puff.f[2] = 0.0f;
         fast_vec_add(&puff, &puff, &steam_moby->pos);
         spawn_radius_or_vertical_velocity_increment *= frame_time_macro;
         spawn_radius_or_vertical_velocity_increment *= 8.0f;
         puff.f[2] += steam_vars->height;
-        vel.f[2] += spawn_radius_or_vertical_velocity_increment;
+        particle_initial_velocity.f[2] += spawn_radius_or_vertical_velocity_increment;
         size = random_float_between(70000.0f, 140000.0f);
         life = scale_game_frames(0xB4);
-        debris_particle = mine_debris(&puff, &vel, 0x0F081020, 0x00081020, size, life,
+        debris_particle = mine_debris(&puff, &particle_initial_velocity, 0x0F081020, 0x00081020, size, life,
                              colors.c[random_integer_below(3)]);
         if (debris_particle != 0) {
             debris_particle->floor_z = steam_moby->pos.f[2] - 0.5f;
@@ -3485,7 +3497,9 @@ void follow_camera_set_distance(s32, f32, f32) __asm__("FUN_L00_002e8450");
 void follow_camera_set_height(f32, f32) __asm__("FUN_L00_002e84b8");
 void follow_camera_set_offset_scale(s32, f32, f32) __asm__("FUN_L00_002e84f0");
 
-void FUN_L01_002f9000(Obj *falling_rock_moby) {
+void apply_falling_rock_camera_overrides(Obj *falling_rock_moby) __asm__("FUN_L01_002f9000");
+
+void apply_falling_rock_camera_overrides(Obj *falling_rock_moby) {
     u8 rotated_vector[16];
     u8 *camera_record;
 
@@ -3557,7 +3571,7 @@ extern s32 D_0014C190[][64];
 extern s32 moby_killed[] __asm__("D_L01_001BA950");
 extern s32 cutscene_active __asm__("D_L01_0015F404");
 extern void clear_u64_value(void *) __asm__("FUN_001f99f8");
-void FUN_L01_002f9000(Obj *obj);
+void apply_falling_rock_camera_overrides(Obj *obj) __asm__("FUN_L01_002f9000");
 extern void FUN_L00_002eac18(s32);
 extern int hero_set_state(int, int) __asm__("FUN_L01_0023cf98");
 
@@ -3627,7 +3641,7 @@ void falling_rock_update(CapMoby *falling_rock) {
         }
         break;
     case FALLING_ROCK_STATE_WAIT_BEFORE_FALL:
-        FUN_L01_002f9000((Obj *)falling_rock);
+        apply_falling_rock_camera_overrides((Obj *)falling_rock);
         if (fast_dec_timer_s16(&falling_rock_vars->rise)) {
             clear_u64_value(&falling_rock_vars->rot);
             falling_rock_vars->hold = scale_game_frames(0x2D);
@@ -3637,7 +3651,7 @@ void falling_rock_update(CapMoby *falling_rock) {
     case FALLING_ROCK_STATE_FALLING: {
         CapVec3 old;
 
-        FUN_L01_002f9000((Obj *)falling_rock);
+        apply_falling_rock_camera_overrides((Obj *)falling_rock);
         falling_rock->pos.f[2] -= 0.0f;
         qcopy(&old, &falling_rock->pos);
         falling_rock_vars->rot.f[2] -= frame_time_sq * 30.0f;

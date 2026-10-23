@@ -527,13 +527,13 @@ extern void subtract_vector_xyz(void *out, void *a, void *b) __asm__("FUN_001f9a
 void FUN_L08_002d3d78(char *moby) {
     char *data = *(char **)(moby + 0x78);
     float movement_length = vector_length_xyz((float *)(data + 0x40)) - frame_time_sq * 6.0f;
-    float lim = frame_time * 3.0f;
+    float movement_length_limit = frame_time * 3.0f;
     float target_height;
     float vertical_step;
     float probe_position_or_correction[4];
     float *velocity_ptr;
-    if (lim < movement_length) {
-        movement_length = lim;
+    if (movement_length_limit < movement_length) {
+        movement_length = movement_length_limit;
     } else if (movement_length < 0.0f) {
         movement_length = 0.0f;
     }
@@ -546,13 +546,13 @@ void FUN_L08_002d3d78(char *moby) {
         target_height += *(float *)(data + 0x200);
     vertical_step = target_height - *(float *)(moby + 0x18);
     {
-        float l2 = frame_time * 3.0f;
-        if (l2 < vertical_step) {
-            vertical_step = l2;
+        float vertical_step_limit = frame_time * 3.0f;
+        if (vertical_step_limit < vertical_step) {
+            vertical_step = vertical_step_limit;
         } else {
-            l2 = -l2;
-            if (vertical_step < l2)
-                vertical_step = l2;
+            vertical_step_limit = -vertical_step_limit;
+            if (vertical_step < vertical_step_limit)
+                vertical_step = vertical_step_limit;
         }
     }
     *(float *)(data + 0x48) = vertical_step;
@@ -576,11 +576,13 @@ void FUN_L08_002d3d78(char *moby) {
 
 /* Ported from rac1-decomp (src/overlays/shared/vendor_002D3DF8.c: func_L08_002D5358), where it is exact; names translated to the US level program. */
 
-extern void *FUN_L00_002dbe20(void *);
+extern void *cancel_suck_cannon_suction(void *) __asm__("FUN_L00_002dbe20");
 void blend_moby_animation(MobyAnim *arg0, int arg1, int arg2, int arg3) __asm__("FUN_00212f90");
 
-void *FUN_L08_002d4050(char *moby) {
-    void *result = FUN_L00_002dbe20(moby);
+void *enter_scoutbot_return_home_state(char *moby) __asm__("FUN_L08_002d4050");
+
+void *enter_scoutbot_return_home_state(char *moby) {
+    void *result = cancel_suck_cannon_suction(moby);
     char *scoutbot_data = *(char **)(moby + 0x78);
     moby[0x20] = 3;
     *(float *)(scoutbot_data + 0x200) = 4.0f;
@@ -793,8 +795,8 @@ extern float D_L08_00161D20 __attribute__((sda));
 typedef struct { unsigned int words[4]; } Vec_002e8210 __attribute__((aligned(16)));
 
 extern float D_L08_00174660[4];
-void FUN_L08_002e8210(char *moby);
-void FUN_L08_002e8210(char *moby) {
+void update_homing_projectile(char *moby) __asm__("FUN_L08_002e8210");
+void update_homing_projectile(char *moby) {
     char *position_ptr = moby + 0x10;
     char *data = *(char **)(moby + 0x78);
     float position_copy[4] __attribute__((aligned(16)));
@@ -905,7 +907,9 @@ extern int D_L08_001E8310[];
 extern void FUN_L00_001fde98(int, int, int, void *, int);
 extern void FUN_L08_00258090(void *, int, int, void *);
 
-void FUN_L08_002f0b40(int pair_index) {
+void draw_scrolled_mesh_batch(int pair_index) __asm__("FUN_L08_002f0b40");
+
+void draw_scrolled_mesh_batch(int pair_index) {
     int i;
     for (i = 0; i < 13; i++) {
         FUN_L08_00258090(D_L08_001E8360, D_L08_001E82A0[i], D_L08_001E2858[i], &D_L08_001E8348[pair_index]);
@@ -938,27 +942,30 @@ extern float convert_integer_to_float(int) __asm__("func_001FA6C0");
 extern int truncate_float_to_s32(float) __asm__("FUN_001fa6d0");
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
-void FUN_L08_002f0f68(int **tabs, int table_count, int *counts, int flat, float r, float g, float b,
+void scale_rgba_tables(int **tabs, int table_count, int *counts, int flat, float r, float g, float b,
+                      float alpha_scale) __asm__("FUN_L08_002f0f68");
+
+void scale_rgba_tables(int **tabs, int table_count, int *counts, int flat, float r, float g, float b,
                       float alpha_scale) {
     int i, j;
     for (i = 0; i < table_count; i++) {
         for (j = 0; j < counts[i]; j++) {
             int packed_rgba = tabs[i][j];
-            int c0 = packed_rgba & 0xFF;
-            int c1 = (packed_rgba & 0xFF00) >> 8;
-            int c2 = ((unsigned)packed_rgba >> 16) & 0xFF;
-            int c3 = (unsigned)packed_rgba >> 24;
+            int red_channel = packed_rgba & 0xFF;
+            int green_channel = (packed_rgba & 0xFF00) >> 8;
+            int blue_channel = ((unsigned)packed_rgba >> 16) & 0xFF;
+            int alpha_channel = (unsigned)packed_rgba >> 24;
             float fr, fg, fb, fa;
             if (flat == 0) {
-                fr = r * convert_integer_to_float(c0);
-                fg = g * convert_integer_to_float(c1);
-                fb = b * convert_integer_to_float(c2);
-                fa = alpha_scale * convert_integer_to_float(c3);
+                fr = r * convert_integer_to_float(red_channel);
+                fg = g * convert_integer_to_float(green_channel);
+                fb = b * convert_integer_to_float(blue_channel);
+                fa = alpha_scale * convert_integer_to_float(alpha_channel);
             } else {
                 fr = r * 255.0f;
                 fg = g * 255.0f;
                 fb = b * 255.0f;
-                fa = alpha_scale * convert_integer_to_float(c3);
+                fa = alpha_scale * convert_integer_to_float(alpha_channel);
             }
             tabs[i][j] = (func_001FA898_r(fa) << 24) + (func_001FA898_r(fb) << 16) +
                          (func_001FA898_r(fg) << 8) + func_001FA898_r(fr);
@@ -971,7 +978,9 @@ void FUN_L08_002f0f68(int **tabs, int table_count, int *counts, int flat, float 
 extern float frame_delta_time __asm__("D_0015ED7C");
 extern float fast_sin(float) __asm__("FUN_001f9de0");
 
-void FUN_L08_002f1158(float *out, float *ph, float first_phase_rate, float second_phase_rate, float scale) {
+void advance_wrapped_sine_pair(float *out, float *ph, float first_phase_rate, float second_phase_rate, float scale) __asm__("FUN_L08_002f1158");
+
+void advance_wrapped_sine_pair(float *out, float *ph, float first_phase_rate, float second_phase_rate, float scale) {
     ph[0] += first_phase_rate * frame_delta_time;
     if (ph[0] > 1.0f) {
         ph[0] -= 2.0f;
@@ -1056,7 +1065,9 @@ extern f32 D_L08_00161FA0 __attribute__((sda));
 extern f32 D_L08_00161FA4 __attribute__((sda));
 extern f32 D_L08_00161FA8 __attribute__((sda));
 
-void FUN_L08_002f5830(char *moby) {
+void update_spark_emitter(char *moby) __asm__("FUN_L08_002f5830");
+
+void update_spark_emitter(char *moby) {
     f32 spark_motion_primary[4], spark_motion_secondary[4], spark_position[4], spark_motion_offset[4], spark_rotation_matrix[16];
     char *spark_data;
     s32 spark_frame_count, spark_second_frame_count, spark_third_frame_count;

@@ -10,7 +10,9 @@ extern char D_L12_001CBF40[];
 extern int D_L12_0015FFD8; /* no foreign declaration */
 extern short *D_L12_001ABCC0[];
 
-void FUN_L12_002bf6d0(struct Moby *moby) {
+void copy_moby_z_to_group_records(struct Moby *moby) __asm__("FUN_L12_002bf6d0");
+
+void copy_moby_z_to_group_records(struct Moby *moby) {
     short *group_index_cursor = D_L12_001ABCC0[moby->group];
     int base = D_L12_0015FFD8;
     do {
@@ -26,19 +28,19 @@ void FUN_L12_002bf6d0(struct Moby *moby) {
 
 /* Register this level's vendor data set. */
 
-extern void FUN_L01_002b91c8(char *, int);
+extern void render_water_grids(char *, int) __asm__("FUN_L01_002b91c8");
 
 void FUN_L12_002bf748(void) {
-    FUN_L01_002b91c8(D_L12_001CBF40, 0x11);
+    render_water_grids(D_L12_001CBF40, 0x11);
 }
 #include "eetypes.h"
 
 
-extern int FUN_L00_002dbb20(void *);
+extern int store_moby_in_suck_cannon(void *) __asm__("FUN_L00_002dbb20");
 
 /* Moby state 8 while FUN_L00_002dbb20 reports a hit, back to 1 when it stops. */
 int FUN_L12_002e1758(struct Moby *a) {
-    int r = FUN_L00_002dbb20(a);
+    int r = store_moby_in_suck_cannon(a);
     if (r == 0) {
         if (a->state == 0x8)
             a->state = 1;

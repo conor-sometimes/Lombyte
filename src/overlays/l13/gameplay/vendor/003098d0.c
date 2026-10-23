@@ -44,14 +44,16 @@ extern void draw_quad_packet(void *, void *, s32) __asm__("FUN_001f7d30");
 /* Draws the beam as 15 textured quads between consecutive points of the
    moby's point list (data + 0x210), each twice: once with the odd corners
    pulled toward the centre (data + 0x1F0) and once raised by 0.25. */
-void FUN_L13_003098d0(struct Moby *moby) {
+void draw_point_table_quads(struct Moby *moby) __asm__("FUN_L13_003098d0");
+
+void draw_point_table_quads(struct Moby *moby) {
     char *data = (char *)moby->pvars;
     QuadPacket pk[2];
-    f32 mat[4][4];
+    f32 identity_matrix[4][4];
     f32 corner_inset_offset[4];
     s32 i;
     s32 j;
-    s32 off;
+    s32 source_point_byte_offset;
     f32 *corner_position;
     u64 regs;
 
@@ -71,15 +73,15 @@ void FUN_L13_003098d0(struct Moby *moby) {
     pk[0].tag[0] = 0;
     pk[1].tag[3] = regs;
     pk[0].tag[3] = regs;
-    set_identity_matrix(mat);
+    set_identity_matrix(identity_matrix);
     do {
         D_L13_001D9B70[1][1] = D_L13_001D9B70[3][1];
         D_L13_001D9B70[3][1] = random_float_between_alt(0.0f, 0.2f);
         for (j = 0; j < 4; j++) {
             corner_position = pk[0].pos[j];
-            off = (i + j / 2) * 16;
+            source_point_byte_offset = (i + j / 2) * 16;
             /* &data[...] (not data + off + ...) keeps retail's off + data add. */
-            qcopy(corner_position, &data[off + 0x210]);
+            qcopy(corner_position, &data[source_point_byte_offset + 0x210]);
             /* The colour call in both arms: retail merges the two calls and
                leaves the address add in each arm. */
             if (j & 1) {
@@ -87,10 +89,10 @@ void FUN_L13_003098d0(struct Moby *moby) {
                 normalize_vector_xyz(corner_inset_offset, corner_inset_offset, 0.5f);
                 vector_subtract(corner_position, corner_position, corner_inset_offset);
                 corner_position[2] -= 0.125f;
-                pk[0].col[j] = fast_tween_color(*(f32 *)(data + off + 0x21C), D_L13_00161EA8,
+                pk[0].col[j] = fast_tween_color(*(f32 *)(data + source_point_byte_offset + 0x21C), D_L13_00161EA8,
                                                 D_L13_00161EAC);
             } else {
-                pk[0].col[j] = fast_tween_color(*(f32 *)(data + off + 0x21C), D_L13_00161EA0,
+                pk[0].col[j] = fast_tween_color(*(f32 *)(data + source_point_byte_offset + 0x21C), D_L13_00161EA0,
                                                 D_L13_00161EA4);
             }
             pk[0].uv[j][0] = D_L13_001D9B70[j][0];
@@ -98,7 +100,7 @@ void FUN_L13_003098d0(struct Moby *moby) {
             pk[1].uv[j][0] = D_L13_001D9B70[j][0];
             pk[1].uv[j][1] = D_L13_001D9B70[j][1];
         }
-        draw_quad_packet(pk, mat, 0);
+        draw_quad_packet(pk, identity_matrix, 0);
         for (j = 0; j < 4; j++) {
             corner_position = pk[0].pos[j];
             if (j & 1) {
@@ -106,7 +108,7 @@ void FUN_L13_003098d0(struct Moby *moby) {
             }
         }
         i++;
-        draw_quad_packet(pk, mat, 0);
+        draw_quad_packet(pk, identity_matrix, 0);
     } while (i < 15);
     vu1_add_g_sregister(0x47, 0x5360B);
 }
@@ -139,7 +141,9 @@ extern void lerp_vector(void *, void *, void *, float) __asm__("FUN_001f9a40");
 extern void scale_vector_xyz(void *out, void *a, f32 s) __asm__("FUN_001f9a68");
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
-void FUN_L13_00309bc8(struct Moby *moby) {
+void spawn_point_table_sparks(struct Moby *moby) __asm__("FUN_L13_00309bc8");
+
+void spawn_point_table_sparks(struct Moby *moby) {
     char *data = (char *)moby->pvars;
     int i, next_point_index;
     for (i = 0; i < 15; i = next_point_index) {
@@ -191,8 +195,8 @@ void FUN_L13_00309bc8(struct Moby *moby) {
 /* Register this level's vendor data set. */
 
 extern char D_L13_001D9BC0[];
-extern void FUN_L01_002b91c8(char *, int);
+extern void render_water_grids(char *, int) __asm__("FUN_L01_002b91c8");
 
 void FUN_L13_0030a460(void) {
-    FUN_L01_002b91c8(D_L13_001D9BC0, 0x16);
+    render_water_grids(D_L13_001D9BC0, 0x16);
 }

@@ -14,9 +14,11 @@ typedef struct {
     unsigned char *p;
 } Grid_270248;
 extern Grid_270248 D_L07_00184270;
-extern int FUN_L00_00249d80(int);
+extern int ensure_menu_cache_entry(int) __asm__("FUN_L00_00249d80");
 
-void FUN_L07_00270248(int x, int y0, int width, int height) {
+void clear_bit_grid_rectangle(int x, int y0, int width, int height) __asm__("FUN_L07_00270248");
+
+void clear_bit_grid_rectangle(int x, int y0, int width, int height) {
     int y = y0;
     for (; y < y0 + height; y++) {
         int rowbase = (y >> 5) << 4;
@@ -26,7 +28,7 @@ void FUN_L07_00270248(int x, int y0, int width, int height) {
             if (*p != 0) {
                 int bit = 1 << (i & 7);
                 if (*p & bit) {
-                    FUN_L00_00249d80((i >> 5) + rowbase);
+                    ensure_menu_cache_entry((i >> 5) + rowbase);
                     *p = *p & ~bit;
                 }
             }

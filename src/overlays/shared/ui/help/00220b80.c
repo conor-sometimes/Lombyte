@@ -46,7 +46,7 @@ void FUN_L02_00220b80(void) {
 
 /* The FUN_L00_00233xxx helpers work in the hero's gravity frame (hero byte
    0x20B3: 0 = world z up, otherwise the frame of the hero's moby). */
-extern void FUN_L00_00233f80(s32, void *, void *);
+extern void update_hero_attachment(s32, void *, void *) __asm__("FUN_L00_00233f80");
 extern f32 gravity_length_xy(void *) __asm__("FUN_L00_002339d0");
 extern f32 gravity_z(void *) __asm__("FUN_L00_00233a78");
 extern void gravity_set_z(void *, void *, f32) __asm__("FUN_L00_00233b20");
@@ -63,11 +63,13 @@ extern void subtract_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a28");
 extern void scale_vector_xyz(void *, void *, f32) __asm__("FUN_001f9a68");
 extern void clear_vector(void *) __asm__("FUN_001f99f8");
 
-extern void FUN_L00_002137a8(void);
-extern void FUN_L02_002216a0(void);
-extern void FUN_L00_00212ff0(void);
+extern void resolve_hero_collisions_with_history(void) __asm__("FUN_L00_002137a8");
+extern void update_hero_ground_contact(void) __asm__("FUN_L02_002216a0");
+extern void correct_hero_ground_penetration(void) __asm__("FUN_L00_00212ff0");
 
-void FUN_L02_002226d8(void)
+void integrate_hero_movement(void) __asm__("FUN_L02_002226d8");
+
+void integrate_hero_movement(void)
 {
     Vec4 old_pos;
     Vec4 movement_vector_scratch;
@@ -77,7 +79,7 @@ void FUN_L02_002226d8(void)
     f32 saved_platform_delta_w;
 
     qcopy(&old_pos, &hero.motion.pos);
-    FUN_L00_00233f80(hero.unk4F8, &hero.motion.platform_delta, &hero.motion.rot);
+    update_hero_attachment(hero.unk4F8, &hero.motion.platform_delta, &hero.motion.rot);
 
     /* cap the speed; states 0x22 and 0x14 cap the horizontal part and the fall speed */
     if (hero.state.current == 0x22 || hero.state.current == HERO_STATE_WRENCH_SLAM) {
@@ -113,12 +115,12 @@ void FUN_L02_002226d8(void)
     hero.coll_hit_moby = 0;
 
     if (vector_length_xyz(&hero.motion.platform_delta) <= 0.0001f) {
-        FUN_L00_002137a8();
-        FUN_L02_002216a0();
+        resolve_hero_collisions_with_history();
+        update_hero_ground_contact();
         subtract_vector_xyz(&hero.motion.displacement, &hero.motion.pos, &old_pos);
-        FUN_L00_00212ff0();
+        correct_hero_ground_penetration();
     } else {
-        FUN_L02_002216a0();
+        update_hero_ground_contact();
     }
 
     /* movement direction, scaled by the velocity along it (never negative) */
@@ -168,10 +170,10 @@ void FUN_L02_002226d8(void)
         saved_platform_delta_w = hero.motion.platform_delta.f[3];
         clear_vector(&hero.motion.platform_delta);
         hero.motion.platform_delta.f[3] = saved_platform_delta_w;
-        FUN_L00_002137a8();
-        FUN_L02_002216a0();
+        resolve_hero_collisions_with_history();
+        update_hero_ground_contact();
         subtract_vector_xyz(&hero.motion.displacement, &hero.motion.pos, &old_pos);
-        FUN_L00_00212ff0();
+        correct_hero_ground_penetration();
     }
     subtract_vector_xyz(&hero.motion.platform_carry, &hero.motion.pos, &movement_vector_scratch);
     {
@@ -366,11 +368,11 @@ extern u32 pad_pressed_within(u32 mask, s32 n, s32 *out) __asm__("FUN_L00_00266d
 extern s32 hero_slot_item_id(s32) __asm__("FUN_L00_0020d498");
 extern void FUN_L00_0020e4c8(void);
 extern s32 FUN_L00_0020fe30(void);
-extern s32 FUN_L00_00211360(struct Moby *);
+extern s32 is_wrench_moby(struct Moby *) __asm__("FUN_L00_00211360");
 extern s32 FUN_L00_00216de8(s32, s32);
-extern void FUN_L00_00217658(void);
-extern void FUN_L00_00221ee0(void);
-extern void FUN_L00_00222158(void);
+extern void launch_hero_wrench(void) __asm__("FUN_L00_00217658");
+extern void select_hero_grapple_swing_target(void) __asm__("FUN_L00_00221ee0");
+extern void select_hero_grapple_target(void) __asm__("FUN_L00_00222158");
 extern s32 get_ammo(s32) __asm__("FUN_L00_00233e98");
 extern s32 voice_is_playing(struct Moby *, s32) __asm__("FUN_L00_0028d8c0");
 extern void FUN_L00_0029a6b0(s32);
@@ -383,7 +385,9 @@ extern void FUN_L00_0029a6b0(s32);
  * it handles the 0x81 state on button 8 (D_L02_0015F674 counts the window down)
  * or clears hero.unk22CA. Returns nonzero when the hero state changed.
  */
-s32 FUN_L02_0022ee00(void)
+s32 process_hero_item_action_input(void) __asm__("FUN_L02_0022ee00");
+
+s32 process_hero_item_action_input(void)
 {
     enum {
         HERO_ITEM_WRENCH = 8,
@@ -431,13 +435,13 @@ s32 FUN_L02_0022ee00(void)
             (hero.state.control_mode == 4 && hero.unk418 != 0)) {
             if (hero.on_slip_ground == 0 && pad_pressed_within(buttons, scale_game_frames(7), &out0) != 0) {
                 moby = hero.items[0].moby;
-                if (moby != NULL && FUN_L00_00211360(moby) != 0 && moby->state == 0) {
+                if (moby != NULL && is_wrench_moby(moby) != 0 && moby->state == 0) {
                     if ((controller_state.held & 0xA) ||
                         ((hero.state.current == HERO_STATE_LOOK || hero.state.current == 0x1E) &&
                          scale_game_frames(0x14) < hero.state_timer)) {
                         if ((hero.state.current == HERO_STATE_LOOK || hero.state.current == 0x1E) &&
                             scale_game_frames(0x14) < hero.state_timer) {
-                            FUN_L00_00217658();
+                            launch_hero_wrench();
                         } else {
                             hero_set_state(HERO_STATE_CROUCH_SWING, 1);
                         }
@@ -493,8 +497,8 @@ s32 FUN_L02_0022ee00(void)
         break;
 
     case HERO_ITEM_BUFFERED_OR_HELD_ACTIVATE:
-        FUN_L00_00221ee0();
-        FUN_L00_00222158();
+        select_hero_grapple_swing_target();
+        select_hero_grapple_target();
         window = scale_game_frames(5);
         if (hero.air_frames.s != 0) {
             window = scale_game_frames(8);

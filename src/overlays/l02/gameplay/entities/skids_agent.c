@@ -62,7 +62,9 @@ extern s32 level_game_mode_macro __asm__("D_L02_0015F5C4") __attribute__((sectio
 extern WatcherReward D_L02_0016CE60;
 extern char D_L02_00161D00[];
 extern void FUN_L02_002e0cd8(struct Moby *);
-extern void FUN_L02_002e1fb8(struct Moby *);
+void update_skid_mcmarx_relocation_sequence(struct Moby *moby) __asm__("FUN_L02_002e1fb8");
+
+extern void update_skid_mcmarx_relocation_sequence(struct Moby *) __asm__("FUN_L02_002e1fb8");
 extern void initialize_moby_grounding(struct Moby *) __asm__("FUN_L02_0025c758");
 extern void delete_moby(struct Moby *) __asm__("FUN_0020c828");
 extern void watcher_init(struct Moby *, WatcherVars *) __asm__("FUN_L00_002668a0");
@@ -109,7 +111,7 @@ extern u8 big_head_cheat_enabled __asm__("D_0015EDB0");
 extern struct Moby *create_moby(s32) __asm__("FUN_0020c4f8");
 extern void initialize_npc_dialogue(struct Moby *, char *) __asm__("FUN_L00_002668a0");
 extern s32 update_npc_dialogue(struct Moby *, char *) __asm__("FUN_L00_00266448");
-extern void FUN_L02_00298c68(int);
+extern void start_indexed_disc_stream(int) __asm__("FUN_L02_00298c68");
 extern void approach_two_stage(f32 *, f32 *, f32, f32, f32, f32) __asm__("FUN_00213f38");
 extern f32 approach_value(f32 *p, f32 target, f32 maxstep) __asm__("FUN_00213ed8");
 extern void lerp_vector(void *out, void *a, void *b, f32 t) __asm__("FUN_001f9a40");
@@ -211,7 +213,7 @@ void skids_agent_update(struct Moby *moby) {
                     (*(struct Moby **)(data + 0x178))->flags |= 1;
                     (*(struct Moby **)(data + 0x178))->visible = 0;
                 }
-                FUN_L02_00298c68(2);
+                start_indexed_disc_stream(2);
                 moby->state = 5;
             }
         } else if (talk_camera.placed == 0) {
@@ -288,7 +290,7 @@ void skids_agent_update(struct Moby *moby) {
     {
         Vec4 target;
         Vec4 head;
-        Vec4 dir;
+        Vec4 head_to_target_delta;
         s32 look_enabled;
         f32 rotation_step;
         f32 rotation_limit;
@@ -333,9 +335,9 @@ void skids_agent_update(struct Moby *moby) {
         if (look_enabled) {
             qcopy(&head, &moby->pos);
             head.f[2] += 1.0f;
-            vec_sub(&dir, &target, &head);
-            yaw = angle_sub(angle_atan2(dir.f[0], dir.f[1]), moby->rot.z);
-            pitch = -angle_atan2(vec_len_xy(&dir), dir.f[2]);
+            vec_sub(&head_to_target_delta, &target, &head);
+            yaw = angle_sub(angle_atan2(head_to_target_delta.f[0], head_to_target_delta.f[1]), moby->rot.z);
+            pitch = -angle_atan2(vec_len_xy(&head_to_target_delta), head_to_target_delta.f[2]);
             if (yaw > 1.5707964f)
                 yaw = 1.5707964f;
             else if (yaw < -1.5707964f)
@@ -373,7 +375,7 @@ void skid_mcmarx_update(struct Moby *moby) {
     s32 tracking;
 
     FUN_L02_002e0cd8(moby);
-    FUN_L02_002e1fb8((char *)moby);
+    update_skid_mcmarx_relocation_sequence((char *)moby);
     switch (moby->state) {
     case SKID_MCMARX_INITIALIZE:
         if (D_0013D506) {
@@ -502,11 +504,11 @@ extern float fa580_n(float, float) __asm__("FUN_001fa580");
 extern void FUN_L00_00216f90_n(void *, void *, int, int) __asm__("FUN_L00_00216f90");
 extern int FUN_001ff308_n(int, int, void *, void *, void *, void *, int) __asm__("FUN_001ff308");
 extern void FUN_L00_0023a760(void);
-extern void FUN_L02_0023ccc8(void);
-extern void FUN_L02_0023cda8(void);
+extern void update_hud_counter_transition(void) __asm__("FUN_L02_0023ccc8");
+extern void draw_hud_counter(void) __asm__("FUN_L02_0023cda8");
 
 /* Three-state controller (data+0x180): 0 waits for its trigger, 1 runs timed effects until released, then moves the moby to its spawn point, sets the two linked mobys' flags and enters state 2. */
-void FUN_L02_002e1fb8(struct Moby *moby) {
+void update_skid_mcmarx_relocation_sequence(struct Moby *moby) {
     char *data = (char *)moby->pvars;
     float fx_pos[4] __attribute__((aligned(16)));
     float fx_rot[4] __attribute__((aligned(16)));
@@ -559,8 +561,8 @@ void FUN_L02_002e1fb8(struct Moby *moby) {
     } else if (*(int *)(data + 0x180) == 0) {
         if (FUN_00214720_n(&hero.motion.pos, *(int *)(data + 0x148)) != 0) {
             *(int *)(data + 0x180) = 1;
-            *(int *)(data + 0x164) = FUN_001ff308_n(0x15, 0x7D0, FUN_L00_0023a760, FUN_L02_0023ccc8, FUN_L02_0023cda8, data + 0x14C, 100);
-            *(int *)(data + 0x160) = FUN_001ff308_n(0x17, 0x7D1, FUN_L00_0023a760, FUN_L02_0023ccc8, FUN_L02_0023cda8, data + 0x150, 7);
+            *(int *)(data + 0x164) = FUN_001ff308_n(0x15, 0x7D0, FUN_L00_0023a760, update_hud_counter_transition, draw_hud_counter, data + 0x14C, 100);
+            *(int *)(data + 0x160) = FUN_001ff308_n(0x17, 0x7D1, FUN_L00_0023a760, update_hud_counter_transition, draw_hud_counter, data + 0x150, 7);
         }
     }
 }
@@ -704,7 +706,7 @@ extern char D_L02_001F3D90[];
 extern char D_L02_001F3DD0[];
 extern char D_L02_001F3E10[];
 extern char D_L02_001F3E80[];
-extern void FUN_L02_002a4818(float, float, float, float, int, int, int, int, int, int, void *);
+extern void begin_animated_frame_rendering(float, float, float, float, int, int, int, int, int, int, void *) __asm__("FUN_L02_002a4818");
 extern void FUN_L02_002a47f8_c(void) __asm__("FUN_L02_002a47f8");
 extern int in_clip_2ea048(void *, int) __asm__("FUN_00214720");
 extern void draw_2ea048(void *) __asm__("FUN_00201f58");
@@ -714,7 +716,7 @@ extern void draw_2ea048(void *) __asm__("FUN_00201f58");
 void FUN_L02_002ea048(struct Moby *moby) {
     int *clip_volume_indices = (int *)moby->pvars;
 
-    FUN_L02_002a4818(0.0f, 260080.0f, 255.0f, 0.0f, 15, 15, 25, 30, 40, 64, D_L02_001F3E80);
+    begin_animated_frame_rendering(0.0f, 260080.0f, 255.0f, 0.0f, 15, 15, 25, 30, 40, 64, D_L02_001F3E80);
     if (D_L02_0015F608 != 0 || (clip_volume_indices[0] != -1 && in_clip_2ea048(D_L02_001673C0, clip_volume_indices[0]))) {
         draw_2ea048(D_L02_001F3C00);
     }

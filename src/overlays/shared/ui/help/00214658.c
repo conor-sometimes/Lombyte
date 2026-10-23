@@ -191,9 +191,11 @@ typedef struct {
     float x229C;
 } S_214ed8;
 void FUN_L00_002118c8(int, float);
-char *FUN_L00_0020d8f8(float, float, float, float);
+char *find_best_hero_heading_target(float, float, float, float) __asm__("FUN_L00_0020d8f8");
 float fast_arc_tan(float, float) __asm__("FUN_001f9e90");
-void FUN_L00_00214ed8(float a, float b, float c) {
+void update_hero_target_heading(float a, float b, float c) __asm__("FUN_L00_00214ed8");
+
+void update_hero_target_heading(float a, float b, float c) {
     struct Hero *g = &hero;
     float r;
     char *heading_target;
@@ -206,7 +208,7 @@ void FUN_L00_00214ed8(float a, float b, float c) {
         g->unkA58 = 1;
         g->unkA54 = 0;
     }
-    heading_target = FUN_L00_0020d8f8(a, r, b, c);
+    heading_target = find_best_hero_heading_target(a, r, b, c);
     if (heading_target != 0 && (g->unkA54 == 0 || g->unkA58 != 0)) {
         g->unkA5C = fast_arc_tan(*(float *)(heading_target + 0x10) - g->motion.pos.f[0], *(float *)(heading_target + 0x14) - g->motion.pos.f[1]);
         g->unkA54 = heading_target;
@@ -285,8 +287,8 @@ extern f32 FUN_001f99c0_215b68(f32) __asm__("FUN_001f99c0");
 #define X D_L00_0017A680_215b68
 
 void FUN_L00_00215b68(void) {
-    f32 t, r, negated_scaled_input, v, clamp_bound, u, unclamped_negated_value, b, unclamped_magnitude;
-    s32 st;
+    f32 t, clamped_speed_ratio, negated_scaled_input, v, clamp_bound, u, unclamped_negated_value, b, unclamped_magnitude;
+    s32 control_mode;
 
     if (hero.state.current == 0x44) {
         t = hero.motion.unk188 * 0.5f;
@@ -295,15 +297,15 @@ void FUN_L00_00215b68(void) {
         else if (t < -0.7f)
             t = -0.7f;
         t = t * FUN_001f99c0_215b68(t) * 1.25f;
-        r = hero.motion.unk164 / (frame_time * 3.0f);
+        clamped_speed_ratio = hero.motion.unk164 / (frame_time * 3.0f);
         negated_scaled_input = -t;
         X.f1240 = negated_scaled_input * 0.3f;
-        if (1.0f < r)
-            r = 1.0f;
-        if (r < 0.0f)
-            r = 0.0f;
+        if (1.0f < clamped_speed_ratio)
+            clamped_speed_ratio = 1.0f;
+        if (clamped_speed_ratio < 0.0f)
+            clamped_speed_ratio = 0.0f;
         X.f10E8 = t;
-        X.f1240 = X.f1240 * r;
+        X.f1240 = X.f1240 * clamped_speed_ratio;
         X.f10E0 = negated_scaled_input * 0.35f;
         X.f1198 = t * 1.35f;
         X.f1194 = FUN_001f99c0_215b68(t) * 0.25f;
@@ -341,8 +343,8 @@ void FUN_L00_00215b68(void) {
         X.f1190 = FUN_001f99c0_215b68(t) * 0.16f;
         return;
     }
-    st = hero.state.control_mode;
-    if (st == 2 || st == 4) {
+    control_mode = hero.state.control_mode;
+    if (control_mode == 2 || control_mode == 4) {
         u = hero.motion.unk188;
         if (1.4f < u)
             u = 1.4f;
@@ -374,7 +376,9 @@ extern f32 absolute_float(f32) __asm__("FUN_001f99c0");
 
 /* In hero state 2, sets the lean values from motion.unk188 (clamped to
    +-1.4); needs the moby in item slot 3. */
-void FUN_L00_00215ef8(void)
+void update_hero_lean_and_sway_parameters(void) __asm__("FUN_L00_00215ef8");
+
+void update_hero_lean_and_sway_parameters(void)
 {
     struct Hero *hero_state = &hero;
     f32 scale;
@@ -418,7 +422,9 @@ void transpose_rotation_matrix(void *, void *) __asm__("FUN_001fa2d8");
 void transform_vector(void *, void *, void *) __asm__("FUN_001f9d20");
 float square_root(float) __asm__("FUN_001f9988");
 float fast_arc_tan(float, float) __asm__("FUN_001f9e90");
-void FUN_L00_00216078(Vec4 *input_vector, float *out) {
+void compute_rotated_vector_angles(Vec4 *input_vector, float *out) __asm__("FUN_L00_00216078");
+
+void compute_rotated_vector_angles(Vec4 *input_vector, float *out) {
     Vec4 rotation_matrix[4];
     Vec4 transposed_rotation_matrix[4];
     Vec4 transformed_vector;
@@ -448,7 +454,7 @@ void mmul_216130(void *, void *, void *) __asm__("FUN_001fa378");
 void xform_216130(void *, void *, void *) __asm__("FUN_001f9d20");
 float smooth_216130(float *, void *, float, float, float, float, int) __asm__("FUN_L00_0025bc98");
 void set_216130(void *, void *) __asm__("FUN_00214598");
-void FUN_L00_00216130(V_216130 *v, M_216130 *working_matrix, void *rotation_output, float pitch_smoothing_parameter, float b, float c) {
+void FUN_L00_00216130(V_216130 *reference_vector, M_216130 *working_matrix, void *rotation_output, float pitch_smoothing_parameter, float b, float c) {
     M_216130 y_rotation_matrix;
     M_216130 z_rotation_matrix;
     V_216130 r;
@@ -463,9 +469,9 @@ void FUN_L00_00216130(V_216130 *v, M_216130 *working_matrix, void *rotation_outp
         d->q[2] = hero_matrix_source->q[2];
         d->q[3] = hero_matrix_source->q[3];
     }
-    d = dot_vectors_xyz(v, &working_matrix->r[2]);
+    d = dot_vectors_xyz(reference_vector, &working_matrix->r[2]);
     pitch = atan2_216130(d, seg_sqrt(1.0f - d * d));
-    cross_vectors_xyz(&x, v, &working_matrix->r[2]);
+    cross_vectors_xyz(&x, reference_vector, &working_matrix->r[2]);
     if (x.f[2] < 0.99f) {
         roll = atan2_216130(x.f[0], x.f[1]);
         r.f[0] = 0.0f;
@@ -583,31 +589,31 @@ void FUN_L00_002165b8(void) {
         HERO_TILT_APPLY_REFERENCE_ORIENTATION = 1,
         HERO_TILT_USE_NEGATED_REFERENCE_VECTOR = 2
     };
-    struct Hero *g = &hero;
+    struct Hero *hero_state = &hero;
     float tilt_targets[2];
-    int effective_tilt_mode, st, k;
-    effective_tilt_mode = g->unk20B3;
-    if (g->unk1F8) {
+    int effective_tilt_mode, current_hero_state, k;
+    effective_tilt_mode = hero_state->unk20B3;
+    if (hero_state->unk1F8) {
         effective_tilt_mode = 1;
     }
     switch (effective_tilt_mode) {
     case HERO_TILT_RETURN_TO_ZERO:
-        st = g->state.current;
-        if ((u32)(st - 0x25) < 2) {
+        current_hero_state = hero_state->state.current;
+        if ((u32)(current_hero_state - 0x25) < 2) {
             return;
         }
-        k = g->state.control_mode;
+        k = hero_state->state.control_mode;
         if (k == 0x11 || k == 0x15 || k == 0x16) {
             return;
         }
-        if (st == 0x77 || st == 0x31 || st == 0x2D || st == 0x2C) {
+        if (current_hero_state == 0x77 || current_hero_state == 0x31 || current_hero_state == 0x2D || current_hero_state == 0x2C) {
             return;
         }
         tilt_targets[0] = 0.0f;
         tilt_targets[1] = 0.0f;
-        FUN_L00_0025bc98_2165b8(&g->motion.rot, &g->motion.unkA0, 0, -tilt_targets[0], frame_scale_sq * 0.015f,
+        FUN_L00_0025bc98_2165b8(&hero_state->motion.rot, &hero_state->motion.unkA0, 0, -tilt_targets[0], frame_scale_sq * 0.015f,
                                 frame_scale_sq * 0.3f, frame_time * 5.2359877f);
-        FUN_L00_0025bc98_2165b8(&g->motion.rot.f[1], &g->motion.unkA0.f[1], 0, -tilt_targets[1], frame_scale_sq * 0.015f,
+        FUN_L00_0025bc98_2165b8(&hero_state->motion.rot.f[1], &hero_state->motion.unkA0.f[1], 0, -tilt_targets[1], frame_scale_sq * 0.015f,
                                 frame_scale_sq * 0.3f, frame_time * 5.2359877f);
         break;
     case HERO_TILT_APPLY_REFERENCE_ORIENTATION:
@@ -621,7 +627,9 @@ void gravity_set_z(void *, void *, float) __asm__("FUN_L00_00233b20");
 void FUN_L00_00233ba0(void *, void *, float);
 void add_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a10");
 void clear_u64_value(void *) __asm__("FUN_001f99f8");
-void FUN_L00_00216710(float x) {
+void reduce_and_apply_hero_planar_velocity_addend(float x) __asm__("FUN_L00_00216710");
+
+void reduce_and_apply_hero_planar_velocity_addend(float x) {
     char *planar_velocity_addend = (&hero.motion.unk150);
     float planar_length = gravity_length_xy(planar_velocity_addend);
     if (0.001f < planar_length) {
@@ -658,13 +666,15 @@ extern void fast_vec_sub(void *, void *, void *) __asm__("FUN_001f9a28");
 extern void fast_vec_normalize(void *, void *, f32) __asm__("FUN_001f9bf8");
 extern f32 FUN_001f9e90_c(f32, f32) __asm__("FUN_001f9e90");
 extern void fast_vec_scale(void *, void *, f32) __asm__("FUN_001f9a68");
-extern void FUN_L00_00212318(s32);
+extern void clip_hero_velocity_against_probed_surfaces(s32) __asm__("FUN_L00_00212318");
 extern f32 FUN_001f99c0(f32);
 
-void FUN_L00_002167d0(void) {
+void update_hero_planar_movement_velocity(void) __asm__("FUN_L00_002167d0");
+
+void update_hero_planar_movement_velocity(void) {
     struct Hero *hero_state;
     struct Hero *slope_hero_state;
-    Vec4 *r;
+    Vec4 *hero_velocity;
     V4 target_velocity, target_velocity_before_impulse, saved_move_impulse, xy_velocity_scratch, slope_velocity_delta;
     f32 f20, f21, f22, impulse_step_factor, b, base_impulse_step, frame_duration, impulse_gate_or_target_length, target_speed_y, k;
 
@@ -743,8 +753,8 @@ void FUN_L00_002167d0(void) {
     if (f21 < fast_vec_length(&xy_velocity_scratch)) {
         fast_vec_normalize(&xy_velocity_scratch, &xy_velocity_scratch, f21);
     }
-    r = &hero.motion.velocity;
-    FUN_001f9a10_c(r, &hero.motion.unk130, &xy_velocity_scratch);
+    hero_velocity = &hero.motion.velocity;
+    FUN_001f9a10_c(hero_velocity, &hero.motion.unk130, &xy_velocity_scratch);
     slope_hero_state = &hero;
     if (0.0872664601f < slope_hero_state->ground_slope.f) {
         f21 = FUN_001f9e90_c(slope_hero_state->unk270.f[0], slope_hero_state->unk270.f[1]);
@@ -756,12 +766,12 @@ void FUN_L00_002167d0(void) {
         xy_velocity_scratch.f[0] = fast_cos(f21) * f20;
         xy_velocity_scratch.f[1] = fast_sin(f21) * f20;
         xy_velocity_scratch.f[2] = 0.0f;
-        fast_vec_sub(&slope_velocity_delta, &xy_velocity_scratch, r);
+        fast_vec_sub(&slope_velocity_delta, &xy_velocity_scratch, hero_velocity);
         slope_velocity_delta.f[2] = 0.0f;
         if (f22 < fast_vec_length(&slope_velocity_delta)) {
             fast_vec_normalize(&slope_velocity_delta, &slope_velocity_delta, f22);
         }
-        FUN_001f9a10_c(r, r, &slope_velocity_delta);
+        FUN_001f9a10_c(hero_velocity, hero_velocity, &slope_velocity_delta);
     }
     qcopy(&xy_velocity_scratch, &hero.motion.velocity);
     xy_velocity_scratch.f[2] = 0.0f;
@@ -771,7 +781,7 @@ void FUN_L00_002167d0(void) {
     if (0.0f < k) {
         hero_state->unk3B0 = hero_state->unk3B0 / (k * (frame_time * 5.9f));
     }
-    FUN_L00_00212318(0);
+    clip_hero_velocity_against_probed_surfaces(0);
     if (hero_state->unk3B4.f < DEG_TO_RAD && 0.0872664601f < hero_state->ground_pitch.f) {
         fast_vec_scale(&hero.motion.velocity, &hero.motion.velocity, fast_cos(hero_state->ground_pitch.f));
     }
@@ -835,7 +845,7 @@ void FUN_L00_00216e48(int voice_slot_index, int a, int b) {
 
 void FUN_L00_00216ec0_00216ec0(s32, s32, s32) __asm__("FUN_L00_00216ec0");
 
-void FUN_L00_00216ec0_00216ec0(s32 voice_entry_index, s32 b, s32 voice_allocation_argument) {
+void FUN_L00_00216ec0_00216ec0(s32 voice_entry_index, s32 voice_delay_timer, s32 voice_allocation_argument) {
     struct Hero *base;
     s16 *current_slot;
     s32 slots_examined = 0;
@@ -846,7 +856,7 @@ void FUN_L00_00216ec0_00216ec0(s32 voice_entry_index, s32 b, s32 voice_allocatio
         if (current_slot[0] == 0) {
             current_slot[0] = 1;
             current_slot[3] = voice_allocation_argument;
-            current_slot[2] = b;
+            current_slot[2] = voice_delay_timer;
             current_slot[1] = voice_entry_index;
             return;
         }
@@ -860,7 +870,9 @@ extern int fast_dec_timer_s16(void *) __asm__("FUN_001f9770");
 extern int FUN_L00_00216de8();
 
 /* For each of eight timers that fast_dec_timer reports as 2, clears a field and calls 00216de8. */
-void FUN_L00_00216f10(void) {
+void update_hero_delayed_voice_requests(void) __asm__("FUN_L00_00216f10");
+
+void update_hero_delayed_voice_requests(void) {
     char *slot_timer_base = (char *)&hero.unk21D8[0][2];
     short *slot_voice_argument_base = (short *)(&hero.unk21D8[0][3]);
     int i;
@@ -948,7 +960,9 @@ int FUN_L00_001efc70_217118(void *, void *, int, void *, int) __asm__("FUN_L00_0
 float FUN_L00_00233d30_217118(void *) __asm__("FUN_L00_00233d30");
 void FUN_L00_00213de8_217118(float) __asm__("FUN_L00_00213de8");
 
-void FUN_L00_00217118(float velocity_scale, float planar_length_threshold) {
+void stop_hero_motion_without_forward_support(float velocity_scale, float planar_length_threshold) __asm__("FUN_L00_00217118");
+
+void stop_hero_motion_without_forward_support(float velocity_scale, float planar_length_threshold) {
     OvlQuad collision_query_position[1];
     OvlQuad collision_query_second_position[1];
     unsigned char *P = (&hero.motion.velocity);
@@ -1036,7 +1050,7 @@ extern void FUN_L00_00269958(void *, void *, int, int, int, int, int,
                                     int);
 
 void FUN_L00_00217450(void) {
-    V_217450 pos[1];
+    V_217450 randomized_position[1];
     V_217450 out;
     int scaled_frame_count;
     int i;
@@ -1053,18 +1067,18 @@ void FUN_L00_00217450(void) {
         random_integer_4_to_7 = truncate_float_to_s32(random_float_between(4200.0f, 7350.0f) / 1000.0f);
         b = truncate_float_to_s32(random_float_between(21000.0f, 31500.002f) / 1000.0f);
         vector_magnitude = random_float_between(frame_time * 0.15f, frame_time * 0.7f);
-        qcopy(pos, position_source);
+        qcopy(randomized_position, position_source);
         if (current_level_index != 6) {
-            pos[0].f[2] = *(float *)(g + 0x2F4);
+            randomized_position[0].f[2] = *(float *)(g + 0x2F4);
         }
         i--;
         azimuth_angle = random_angle_radians();
         elevation_angle = random_float_between(0.34906584f, 1.3962634f);
         r = random_float_between(0.05f, *(float *)(g + 0x234) + 0.2f);
         FUN_00214db0_217450(&out, vector_magnitude, azimuth_angle, elevation_angle);
-        pos[0].f[0] += FUN_001f9dc8_217450(azimuth_angle) * r;
-        pos[0].f[1] += FUN_001f9de0_217450(azimuth_angle) * r;
-        FUN_L00_00269958(pos, &out, 0x7000C0F0, 0x70F0, scaled_frame_count, random_integer_4_to_7, b, 1);
+        randomized_position[0].f[0] += FUN_001f9dc8_217450(azimuth_angle) * r;
+        randomized_position[0].f[1] += FUN_001f9de0_217450(azimuth_angle) * r;
+        FUN_L00_00269958(randomized_position, &out, 0x7000C0F0, 0x70F0, scaled_frame_count, random_integer_4_to_7, b, 1);
     } while (i >= 0);
     if (!azimuth_angle) {
     }
@@ -1082,7 +1096,7 @@ typedef struct {
 } ThrowPvars_217658;
 
 extern f32 player_camera[] __asm__("D_L00_00166C80");
-extern int FUN_L00_00211360(void *);
+extern int is_wrench_moby(void *) __asm__("FUN_L00_00211360");
 extern void FUN_L00_00233660(void *, f32, f32, f32);
 extern float FUN_001f9e90_c2(float, float) __asm__("FUN_001f9e90");
 extern float fast_add_rotations(float, float) __asm__("FUN_001fa580");
@@ -1094,14 +1108,16 @@ extern void rotmat_e(void *, void *) __asm__("FUN_001fa030");
 extern void multiply_matrix3x3(void *, void *, void *) __asm__("FUN_001fa328");
 extern void copy_matrix_rotation(void *, void *) __asm__("FUN_001fa298");
 extern void matrix_to_euler(void *, void *) __asm__("FUN_00214598");
-extern void FUN_L00_00262500(void *, char *);
-extern void FUN_L00_00262528(char *, int, int);
+extern void initialize_moby_transform_history(void *, char *) __asm__("FUN_L00_00262500");
+extern void create_moby_transform_history_entry(char *, int, int) __asm__("FUN_L00_00262528");
 extern void blend_moby_animation(void *, s32, s32, s32) __asm__("FUN_00212f90");
 
 /* Launches the equipped gadget moby: aims it at its target (or along the camera),
  * builds its orientation matrix and starts its animation/sound. */
-void FUN_L00_00217658(void);
-void FUN_L00_00217658(void) {
+void launch_hero_wrench(void) __asm__("FUN_L00_00217658");
+
+void launch_hero_wrench(void) __asm__("FUN_L00_00217658");
+void launch_hero_wrench(void) {
     f32 aim_origin_or_euler_angles[4];
     f32 delta[4];
     f32 item_rotation_matrix[12];
@@ -1120,7 +1136,7 @@ void FUN_L00_00217658(void) {
     if (aimed) {
         target = hero.items[0].moby;
         has_target = 0;
-        if (target != NULL && FUN_L00_00211360(target)) {
+        if (target != NULL && is_wrench_moby(target)) {
             tpv = (ThrowPvars_217658 *)target->pvars;
             if (tpv->unk7E) {
                 has_target = 1;
@@ -1136,7 +1152,7 @@ void FUN_L00_00217658(void) {
         }
     }
     item = hero.items[0].moby;
-    if (!FUN_L00_00211360(item)) {
+    if (!is_wrench_moby(item)) {
         return;
     }
     hero.items[0].unk1A = 1;
@@ -1169,9 +1185,9 @@ void FUN_L00_00217658(void) {
     matrix_to_euler(out_mat, &item->rot);
     launched_item_vars->unk64 = 0;
     launched_item_vars->unk60 = frame_time * 23.0f;
-    FUN_L00_00262500(item, hero.unk17B0);
-    FUN_L00_00262528(hero.unk17B0, 0x30, 3);
-    FUN_L00_00262528(hero.unk17B0, 0x17, 5);
+    initialize_moby_transform_history(item, hero.unk17B0);
+    create_moby_transform_history_entry(hero.unk17B0, 0x30, 3);
+    create_moby_transform_history_entry(hero.unk17B0, 0x17, 5);
     blend_moby_animation(item, 6, 0, scale_game_frames(5));
 }
 

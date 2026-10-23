@@ -22,35 +22,37 @@ extern void FUN_L00_0020b930(void);
 extern int hero_set_state(int, int) __asm__("FUN_L16_0021e398");
 float absolute_float(float input) __asm__("func_001F99C0");
 
-void FUN_L16_002097a0(void) {
-    struct Hero *g = &hero;
-    int keep = g->unk12ED;
-    int st = g->ground_type;
+void apply_hero_ground_material_effects(void) __asm__("FUN_L16_002097a0");
+
+void apply_hero_ground_material_effects(void) {
+    struct Hero *hero_data = &hero;
+    int keep = hero_data->unk12ED;
+    int saved_ground_type = hero_data->ground_type;
     int level_index;
-    fast_mem_zero16(&g->ground_type, 0x10);
-    g->unk12ED = keep;
-    g->ground_type = -1;
-    g->unk20A9 = 0;
-    g->unk308 = 0;
-    if (st == -1)
+    fast_mem_zero16(&hero_data->ground_type, 0x10);
+    hero_data->unk12ED = keep;
+    hero_data->ground_type = -1;
+    hero_data->unk20A9 = 0;
+    hero_data->unk308 = 0;
+    if (saved_ground_type == -1)
         return;
-    if (st == 2) {
-        if (g->frames_off_ground.s == 0 || g->ground_distance < 0.3f) {
-            g->unk12E7 = 1;
-            if (g->vehicle_mode == 0) {
-                char *item_moby = (char *)g->items[1].moby;
+    if (saved_ground_type == 2) {
+        if (hero_data->frames_off_ground.s == 0 || hero_data->ground_distance < 0.3f) {
+            hero_data->unk12E7 = 1;
+            if (hero_data->vehicle_mode == 0) {
+                char *item_moby = (char *)hero_data->items[1].moby;
                 if (item_moby != 0 && *(short *)(item_moby + 0xA6) == 0xAD)
-                    g->unk308 = 1;
+                    hero_data->unk308 = 1;
             }
         }
     }
-    if (st == 0xE) {
+    if (saved_ground_type == 0xE) {
         struct Hero *q = &hero;
         q->base_condition = 1;
         q->unk22A4 = 0.2f;
         q->water_surface_z = q->ground_z.f + 0.2f;
     }
-    if (st == 0) {
+    if (saved_ground_type == 0) {
         struct Hero *q = &hero;
         float water_depth = q->water_surface_z - q->ground_z.f;
         q->unk22A4 = water_depth;
@@ -75,39 +77,39 @@ void FUN_L16_002097a0(void) {
             }
         }
     }
-    if (st == 0xB) {
+    if (saved_ground_type == 0xB) {
         struct Hero *q = &hero;
         q->selector_11 = 1;
     }
-    if (st == 0x5) {
+    if (saved_ground_type == 0x5) {
         struct Hero *q = &hero;
         q->unk12E8 = 1;
     }
-    if (st == 0x6) {
+    if (saved_ground_type == 0x6) {
         struct Hero *q = &hero;
         q->unk12E9 = 1;
     }
-    if (st == 0x2) {
+    if (saved_ground_type == 0x2) {
         struct Hero *q = &hero;
         q->unk12E7 = 1;
     }
-    if (st == 0x4) {
+    if (saved_ground_type == 0x4) {
         struct Hero *q = &hero;
         q->unk12E3 = 1;
     }
-    if (st == 0xD) {
+    if (saved_ground_type == 0xD) {
         struct Hero *q = &hero;
         q->selector_13 = 1;
     }
-    if (st == 0x8) {
+    if (saved_ground_type == 0x8) {
         struct Hero *q = &hero;
         q->on_slip_ground = 1;
     }
-    if (st == 0x9) {
+    if (saved_ground_type == 0x9) {
         struct Hero *q = &hero;
         q->unk12EE = 1;
     }
-    if (st == 0xC) {
+    if (saved_ground_type == 0xC) {
         struct Hero *q = &hero;
         q->on_slip_ground = 1;
     }
@@ -147,7 +149,9 @@ extern void fast_vec_add(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void fast_vec_normalize(void *, void *, float) __asm__("FUN_001f9bf8");
 extern void FUN_L00_0025f730(void *a, float x);
 
-void FUN_L16_0020f8b0(void) {
+void compose_and_limit_hero_velocity(void) __asm__("FUN_L16_0020f8b0");
+
+void compose_and_limit_hero_velocity(void) {
     char normalized_vector[16];
     char *accumulated_vector = D_0013E533 + 0x158D;
     char *normalization_source;
@@ -181,7 +185,7 @@ void fast_vec_sub(void *, void *, void *) __asm__("FUN_001f9a28");
 f32 FUN_001f9ab0_c(void *, void *) __asm__("FUN_001f9ab0");
 void FUN_001f9a68_c(void *, void *, f32) __asm__("FUN_001f9a68");
 void FUN_001f9bf8_c(void *, void *, f32) __asm__("FUN_001f9bf8");
-void FUN_L00_00216078(void *, void *);
+void compute_rotated_vector_angles(void *, void *) __asm__("FUN_L00_00216078");
 void FUN_L00_002335c8(void *, f32, f32, f32);
 void FUN_L00_002334d0(void *, void *, f32);
 f32 FUN_001f99c0(f32);
@@ -190,7 +194,9 @@ extern CollisionHit HH __asm__("D_L16_00174240") __attribute__((section(".data")
 #define HI(o) (*(s32 *)(D_L16_00174240 + (o)))
 #define HF(o) (*(f32 *)(D_L16_00174240 + (o)))
 
-void FUN_L16_0020ffb0(void) {
+void update_hero_ground_contact(void) __asm__("FUN_L16_0020ffb0");
+
+void update_hero_ground_contact(void) {
     V_u collision_ray_endpoint, ground_probe_endpoint, ground_offset_or_angles, side_probe_endpoint, unused_side_probe_endpoint, probe_surface_angles, normalized_hit_normal;
     f32 f;
     s32 collision_sound_class;
@@ -199,7 +205,7 @@ void FUN_L16_0020ffb0(void) {
     u8 *hit_moby_record;
 
     s32 k;
-    f32 g;
+    f32 ground_probe_start_offset;
 
     hero.unk270.f[2] = 1.0f;
     hero.air_frames.u++;
@@ -218,11 +224,11 @@ void FUN_L16_0020ffb0(void) {
     k = 0;
     if (hero.unk20B3)
         k = 1;
-    g = hero.unk234 * 2.2f;
+    ground_probe_start_offset = hero.unk234 * 2.2f;
     if (hero.state.control_mode == 2) {
-        g = hero.unk234 * 2.9f;
+        ground_probe_start_offset = hero.unk234 * 2.9f;
     }
-    hero_get_collision_ray_endpoints(&ground_probe_endpoint, &collision_ray_endpoint, k, g, -48.0f);
+    hero_get_collision_ray_endpoints(&ground_probe_endpoint, &collision_ray_endpoint, k, ground_probe_start_offset, -48.0f);
     if (collision_line(&ground_probe_endpoint, &collision_ray_endpoint, 2, (s32)hero.moby, 0) == 0) {
         goto tail;
     }
@@ -329,7 +335,7 @@ d1:
     if (!(hero.ground_distance < 0.25f)) {
         return;
     }
-    FUN_L00_00216078((u8 *)&hero.unk270, &ground_offset_or_angles);
+    compute_rotated_vector_angles((u8 *)&hero.unk270, &ground_offset_or_angles);
     if (-0.78539819f < ground_offset_or_angles.f[1] && ground_offset_or_angles.f[1] < 0.78539819f) {
         hero.ground_pitch.f = ground_offset_or_angles.f[1];
     }
@@ -350,7 +356,7 @@ d1:
                 hero.unk2C0.f[i] = 0.0f;
             }
             sceVu0Normalize(&normalized_hit_normal, (u8 *)&HH.normal_x);
-            FUN_L00_00216078(&normalized_hit_normal, &probe_surface_angles);
+            compute_rotated_vector_angles(&normalized_hit_normal, &probe_surface_angles);
             if (-0.78539819f < probe_surface_angles.f[1] && probe_surface_angles.f[1] < 0.78539819f) {
                 hero.unk2C8.f[i] = probe_surface_angles.f[1];
             }
@@ -384,7 +390,9 @@ extern s32 coll2_2133a8(void *, s32, f32, s32, f32) __asm__("FUN_L00_001f19a0");
 extern s32 FUN_L00_001f3170(void *, f32);
 extern void vscl_2133a8(void *, void *, f32) __asm__("FUN_001f9bf8");
 extern u128_2133a8 D_L16_00174270[] __attribute__((section(".data")));
-s32 FUN_L16_00210b60(s32 mode) {
+s32 resolve_hero_position_collisions(s32 mode) __asm__("FUN_L16_00210b60");
+
+s32 resolve_hero_position_collisions(s32 mode) {
     V_2133a8 old;
     V_2133a8 collision_position_offset;
     V_2133a8 resolved_position_delta;
@@ -532,22 +540,24 @@ extern float forward_component(void *) __asm__("FUN_L00_00213350");
 extern float gravity_length_xy(float *v) __asm__("FUN_L00_002339d0");
 extern float gravity_z(float *) __asm__("FUN_L00_00233a78");
 extern void set_vector_length_xy(void *, void *, float) __asm__("FUN_001f9c48");
-extern void FUN_L00_00212ff0(void);
-extern void FUN_L00_002137a8(void);
+extern void correct_hero_ground_penetration(void) __asm__("FUN_L00_00212ff0");
+extern void resolve_hero_collisions_with_history(void) __asm__("FUN_L00_002137a8");
 extern void gravity_flatten(float *, float *) __asm__("FUN_L00_002338d0");
 extern void gravity_set_z(float *, float *, float) __asm__("FUN_L00_00233b20");
 extern void FUN_L00_00233ba0(float *, float *, float);
-extern void FUN_L00_00233f80(int, void *, void *);
+extern void update_hero_attachment(int, void *, void *) __asm__("FUN_L00_00233f80");
 extern void add_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void clear_u64_value(void *) __asm__("func_001F99F8");
 extern void normalize_vector_xyz(void *, void *, f32) __asm__("FUN_001f9bf8");
 extern void scale_vector_xyz(void *, void *, float) __asm__("FUN_001f9a68");
 extern void subtract_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a28");
 s32 collision_line(void *, void *, s32, s32, s32) __asm__("FUN_001efa68");
-void FUN_L16_0020ffb0(void);
+void update_hero_ground_contact(void) __asm__("FUN_L16_0020ffb0");
 extern char D_0013F430[] __attribute__((section(".sdata")));
 
-void FUN_L16_00211098(void) {
+void integrate_hero_motion(void) __asm__("FUN_L16_00211098");
+
+void integrate_hero_motion(void) {
     V previous;
     V work;
     V plane;
@@ -568,7 +578,7 @@ void FUN_L16_00211098(void) {
 
     qcopy(previous.f, position);
     player = (L16MovementPlayer *)((char *)position - 0x80);
-    FUN_L00_00233f80(player->physics_mode, (char *)position + 0x70, (char *)position + 0x10);
+    update_hero_attachment(player->physics_mode, (char *)position + 0x70, (char *)position + 0x10);
     /* Limit the velocity by state and mode. Inside an arm `position` moves on to the velocity; it is formed again below. */
     if (player->state == 34 || player->state == 20) {
         float limit;
@@ -650,12 +660,12 @@ void FUN_L16_00211098(void) {
     contact_player->contact_flag = 0;
     contact_player->contact_state = 0;
     if (vector_length_xyz((char *)position + 0x70) <= 0.0001f) {
-        FUN_L00_002137a8();
-        FUN_L16_0020ffb0();
+        resolve_hero_collisions_with_history();
+        update_hero_ground_contact();
         subtract_vector_xyz((char *)position + 0x80, position, previous.f);
-        FUN_L00_00212ff0();
+        correct_hero_ground_penetration();
     } else {
-        FUN_L16_0020ffb0();
+        update_hero_ground_contact();
     }
     delta = (float *)(&hero.motion.unk110);
     new_position = (float *)((char *)delta - 0x90);
@@ -699,10 +709,10 @@ void FUN_L16_00211098(void) {
         saved = motion_player->contact[3];
         clear_u64_value(contact);
         motion_player->contact[3] = saved;
-        FUN_L00_002137a8();
-        FUN_L16_0020ffb0();
+        resolve_hero_collisions_with_history();
+        update_hero_ground_contact();
         subtract_vector_xyz(external, new_position, previous.f);
-        FUN_L00_00212ff0();
+        correct_hero_ground_penetration();
     }
     subtract_vector_xyz((char *)delta + 0x30, new_position, work.f);
     motion_player->frame_delta[3] = motion_player->contact[3];

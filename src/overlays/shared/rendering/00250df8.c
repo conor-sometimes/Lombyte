@@ -121,16 +121,16 @@ void FUN_L00_00257470(unsigned char *moby, int flags, int trajectory_target_inde
     D_L00_001BA5D0_257470.a[*(short *)(moby + 0xB2)] = moby[0xB0] + 2;
     k = moby[0xB0];
     {
-        unsigned int u = k & 0xFF;
-        if (k == 0xFF || (D_L00_0015FC88_257470[u] != 0xFF && D_0014C050_257470[lvl][u] == 0xFF)) {
+        unsigned int moby_lookup_index = k & 0xFF;
+        if (k == 0xFF || (D_L00_0015FC88_257470[moby_lookup_index] != 0xFF && D_0014C050_257470[lvl][moby_lookup_index] == 0xFF)) {
             D_L00_001BB230_257470.a[*(short *)(moby + 0xB2)] = k + 2;
         }
     }
     if ((signed char)moby[0xB1] >= 0) {
-        int n1 = *(short *)(moby + 0xB6);
-        amount_delta = n1 - D_0014D590_257470[D_0015ED84_257470b][moby[0xB1]][1];
+        int delta_base_amount = *(short *)(moby + 0xB6);
+        amount_delta = delta_base_amount - D_0014D590_257470[D_0015ED84_257470b][moby[0xB1]][1];
         {
-            int x = (n1 + 1) / 2 < amount_delta ? amount_delta : 0;
+            int x = (delta_base_amount + 1) / 2 < amount_delta ? amount_delta : 0;
             if (x) {
                 amt = x;
             }

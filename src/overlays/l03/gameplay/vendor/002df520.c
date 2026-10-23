@@ -49,7 +49,9 @@ extern s32 allocate_voice_for_bank_entry(s32, s32, s32) __asm__("FUN_0022db10");
 extern void queue_dialogue_message(s32, s32) __asm__("FUN_L00_00263d40");
 
 /* Kerwan tutorial hint triggers: plays help messages and counts usage stats while the hero is inside the moby's clip volumes. */
-void FUN_L03_002df520(u8 *moby) {
+void update_kerwan_tutorial_hints(u8 *moby) __asm__("FUN_L03_002df520");
+
+void update_kerwan_tutorial_hints(u8 *moby) {
     enum {
         TUTORIAL_HINTS_INITIALIZE = 0,
         TUTORIAL_HINTS_UPDATE = 1
@@ -240,7 +242,9 @@ extern int scale_game_frames(int) __asm__("FUN_001f96f8");
 extern void FUN_L00_0026ced0(void *, void *, int, int, float, int);
 
 /* Starts the cutscene, then during mode 3 (frames 900-10000) emits two particle beams from the listed moby. */
-void FUN_L03_002e01d0(char *owner_moby) {
+void update_kerwan_cutscene_effects(char *owner_moby) __asm__("FUN_L03_002e01d0");
+
+void update_kerwan_cutscene_effects(char *owner_moby) {
     enum {
         CUTSCENE_EFFECTS_INITIALIZE = 0,
         CUTSCENE_EFFECTS_UPDATE = 1
@@ -294,7 +298,9 @@ extern void normalize_vector_xyz(void *out, void *a, f32 len) __asm__("FUN_001f9
 extern void subtract_vector_xyz(void *out, void *a, void *b) __asm__("FUN_001f9a28");
 
 /* places the camera behind the hero and rebuilds its orientation axes */
-void FUN_L03_002eb7e0(char *camera) {
+void rebuild_hero_relative_camera_transform(char *camera) __asm__("FUN_L03_002eb7e0");
+
+void rebuild_hero_relative_camera_transform(char *camera) {
     char *camera_data = *(char **)(camera + 0x70);
     float *camera_target_data = (float *)(camera_data + 0xB0);
     float *camera_offset_direction = (float *)(camera_data + 0xF0);
@@ -325,7 +331,9 @@ extern void clear_u64_value_eb978(void *) __asm__("FUN_001f99f8");
 extern void euler_rotation_basis(void *, void *) __asm__("FUN_001fa030");
 extern s32 D_L03_00167074 NOT_SDA;
 /* vendor camera init: aims the camera data at the hero, resets its blend state and places it (FUN_L03_002eb7e0) */
-void FUN_L03_002eb978(void *camera_instance) {
+void initialize_hero_relative_camera(void *camera_instance) __asm__("FUN_L03_002eb978");
+
+void initialize_hero_relative_camera(void *camera_instance) {
     char *camera = camera_instance;
     char *camera_config = *(char **)((char *)D_L03_0015EF50 + *(s16 *)(camera + 0x84) * 32 + 0x1C);
     char *target;
@@ -376,7 +384,7 @@ void FUN_L03_002eb978(void *camera_instance) {
     camera_rotation_angles[3] = 0.0f;
     euler_rotation_basis(mtx, camera_rotation_angles);
     qcopy(camera_back_direction_data, mtx);
-    FUN_L03_002eb7e0(camera);
+    rebuild_hero_relative_camera_transform(camera);
     *(s16 *)(camera + 0x7E) = 0;
     D_L03_00167074 = 0x78;
 }
@@ -384,18 +392,18 @@ void FUN_L03_002eb978(void *camera_instance) {
 extern void func_L00_001FF4B0_ebb00(void *, void *, float) __asm__("FUN_001f9bf8");
 extern float func_001EC120_ebb00(void *, float, float, float, float, float) __asm__("FUN_001ebd78");
 extern void func_001F9BD8_ebb00(void *, void *, void *) __asm__("FUN_001f9a10");
-void FUN_L03_002ebb00(void *arg) {
-    char *camera = arg;
+void FUN_L03_002ebb00(void *camera_instance) {
+    char *camera = camera_instance;
     char *camera_data = *(char **)(camera + 0x70);
     char *camera_offset_params = camera_data + 0xD0;
     char *camera_back_direction_data = camera_data + 0xF0;
-    struct Hero *g = &hero;
+    struct Hero *hero_for_height_update = &hero;
     float camera_back_offset[4];
     float gravity_offset[4];
     float camera_position[4];
     struct Hero *hero_ptr;
-    if (g->unk2284 != 0x50 || g->state.current == 0x11) {
-        *(float *)(camera_back_direction_data + 0x34) = g->motion.pos.f[2];
+    if (hero_for_height_update->unk2284 != 0x50 || hero_for_height_update->state.current == 0x11) {
+        *(float *)(camera_back_direction_data + 0x34) = hero_for_height_update->motion.pos.f[2];
     }
     func_L00_001FF4B0_ebb00(gravity_offset, &hero.gravity_dir, -*(float *)(camera_offset_params + 0x10));
     func_L00_001FF4B0_ebb00(camera_back_offset, camera_back_direction_data, -*(float *)camera_offset_params);
@@ -471,7 +479,9 @@ extern void FUN_L03_002ebb00_u(void *) __asm__("FUN_L03_002ebb00");
 extern void FUN_L03_002ebc58_u(void *) __asm__("FUN_L03_002ebc58");
 void no_op_main_callback(void *) __asm__("FUN_001e93e8");
 
-void FUN_L03_002ebdb0(void *camera) {
+void update_camera_position_and_orientation(void *camera) __asm__("FUN_L03_002ebdb0");
+
+void update_camera_position_and_orientation(void *camera) {
     FUN_L03_002ebb00_u(camera);
     no_op_main_callback(camera);
     FUN_L03_002ebc58_u(camera);
@@ -480,7 +490,9 @@ void FUN_L03_002ebdb0(void *camera) {
 
 extern int is_point_inside_clip_volume_alt(void *, int) __asm__("FUN_00214720");
 
-void FUN_L03_002ebde8(char *moby) {
+void update_camera_state_outside_clip_volume(char *moby) __asm__("FUN_L03_002ebde8");
+
+void update_camera_state_outside_clip_volume(char *moby) {
     char *entry = (char *)((*(short *)(moby + 0x84) << 5) + D_L03_0015EF50);
     char *sub = *(char **)(entry + 0x1C);
     int value = *(int *)(sub + 0xC);

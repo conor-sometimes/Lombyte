@@ -408,7 +408,7 @@ extern char D_L08_00162308[];
 extern char *D_L08_001600EC;
 extern unsigned char *D_L08_0015FFD8;
 extern void FUN_L08_003063f0_c(void *) __asm__("FUN_L08_003063f0");
-extern void FUN_L08_002e1698(void *);
+extern void request_batalia_cannon_mount(void *) __asm__("FUN_L08_002e1698");
 extern void FUN_L00_00299460(int);
 extern void FUN_L08_002a1880(int);
 extern void hero_respawn(void) __asm__("FUN_L00_00211250");
@@ -447,7 +447,7 @@ void the_plumber_batalia_update(L14WatchMoby *moby) {
             char *camera_record = D_L08_001600EC + watch_data->i48 * 128;
             jet_reset_camera(camera_record + 0x30, camera_record + 0x70);
             moby->state = 2;
-            FUN_L08_002e1698(D_L08_0015FFD8 + watch_data->i50 * 256);
+            request_batalia_cannon_mount(D_L08_0015FFD8 + watch_data->i50 * 256);
         }
         if (watch_data->sub == 3) {
             FUN_L08_002a1880(1);
@@ -577,7 +577,9 @@ typedef struct {
     s32 state;
 } VendorEventData;
 
-void FUN_L08_00307540(struct Moby *moby) {
+void update_batalia_item_triggers_and_help(struct Moby *moby) __asm__("FUN_L08_00307540");
+
+void update_batalia_item_triggers_and_help(struct Moby *moby) {
     enum {
         VENDOR_EVENT_WAIT_FOR_ARMING = 0,
         VENDOR_EVENT_ARMED = 1
@@ -693,7 +695,9 @@ extern s32 scale_game_frames(s32) __asm__("func_001F96F8");
 extern struct G08c D_L08_0016D060_c __asm__("D_L08_0016D060");
 extern void cutscene_set_camera_target(int) __asm__("FUN_L00_002637f8");
 
-void FUN_L08_003084d8(struct Moby *moby) {
+void update_batalia_selected_moby_effects(struct Moby *moby) __asm__("FUN_L08_003084d8");
+
+void update_batalia_selected_moby_effects(struct Moby *moby) {
     enum {
         MOBY_INITIALIZE = 0,
         MOBY_ACTIVE = 1
@@ -731,9 +735,11 @@ extern float random_float_between_alt(float, float) __asm__("FUN_002132a8");
 extern void fast_vec_add(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void transform_vector_by_basis(void *, void *, void *) __asm__("FUN_001f9cf8");
 extern void euler_rotation_basis(void *, void *) __asm__("FUN_001fa030");
-extern void FUN_L08_0027fe00(float *, float *, int, float);
+extern void spawn_effect_with_initial_motion(float *, float *, int, float) __asm__("FUN_L08_0027fe00");
 
-void FUN_L08_00308c90(struct Moby *moby) {
+void spawn_batalia_moby_effects_with_random_motion(struct Moby *moby) __asm__("FUN_L08_00308c90");
+
+void spawn_batalia_moby_effects_with_random_motion(struct Moby *moby) {
     char *data = (char *)moby->pvars;
     float effect_position[4];
     float rotation_basis[12];
@@ -753,7 +759,7 @@ void FUN_L08_00308c90(struct Moby *moby) {
         effect_direction[2] = random_float_between_alt(*(float *)(data + 0x20) * frame_time,
                                         *(float *)(data + 0x24) * frame_time);
         effect_direction[3] = 0;
-        FUN_L08_0027fe00(effect_position, effect_direction, *(int *)(data + 0x10), *(float *)(data + 0xC));
+        spawn_effect_with_initial_motion(effect_position, effect_direction, *(int *)(data + 0x10), *(float *)(data + 0xC));
     }
 }
 #define NOT_SDA
@@ -778,7 +784,9 @@ extern void FUN_L08_00258090(void *, float *, int, void *);
 
 float *D_L08_001623D0[2] = {D_L08_001EF7D0, D_L08_001EF978};
 float *D_L08_001623D8[2] = {D_L08_001EFB20, D_L08_001EFC40};
-void FUN_L08_00308f68(int x) {
+void queue_batalia_offset_textured_batches(int x) __asm__("FUN_L08_00308f68");
+
+void queue_batalia_offset_textured_batches(int x) {
     int i;
     int *element_counts = D_L08_001623C8;
     float **float_pair_tables = D_L08_001623D8;
@@ -812,17 +820,19 @@ extern short D_L08_00162380 __attribute__((sda));
 int D_L08_001623C4 = 0;
 extern int *D_L08_001623E8[2] __attribute__((sda));
 extern int D_L08_001623C8[2] __attribute__((sda));
-extern void FUN_L08_002f0dc8(void);
-extern void FUN_L08_00309030(void);
-extern void FUN_L08_002f0f68(void *, int, void *, float, float, float, float, int);
-extern void FUN_L08_002f1158(void *, float, float, float, void *);
+extern void draw_layered_mesh_effect(void) __asm__("FUN_L08_002f0dc8");
+extern void queue_batalia_textured_batch_passes(void) __asm__("FUN_L08_00309030");
+extern void scale_rgba_tables(void *, int, void *, float, float, float, float, int) __asm__("FUN_L08_002f0f68");
+extern void advance_wrapped_sine_pair(void *, float, float, float, void *) __asm__("FUN_L08_002f1158");
 extern void FUN_L08_002f12a0(int);
 extern void FUN_L08_002f1378(int);
 extern void enqueue_callback_list_1(void (*)(void), void *) __asm__("FUN_001f4600");
 extern void subtract_vector_xyz(void *, void *, void *);
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
-void FUN_L08_003097b0(struct Moby *moby) {
+void update_batalia_textured_effect(struct Moby *moby) __asm__("FUN_L08_003097b0");
+
+void update_batalia_textured_effect(struct Moby *moby) {
     enum {
         MOBY_INITIALIZE = 0,
         MOBY_ACTIVE = 1
@@ -835,9 +845,9 @@ void FUN_L08_003097b0(struct Moby *moby) {
     switch (moby->state) {
     case MOBY_INITIALIZE:
         if (D_L08_001623C4 == 0) {
-            FUN_L08_002f0f68(D_L08_001F8528, 8, D_L08_001F4C60, 0.5f, 0.5f, 0.65f, 0.5f, 1);
-            FUN_L08_002f0f68(D_L08_001623E8, 2, D_L08_001623C8, 0.5f, 0.5f, 0.5f, 1.0f, 1);
-            FUN_L08_002f0f68(D_L08_001F4C48, 6, D_L08_001F01C8, 0.25f, 0.25f, 0.25f, 1.0f, 1);
+            scale_rgba_tables(D_L08_001F8528, 8, D_L08_001F4C60, 0.5f, 0.5f, 0.65f, 0.5f, 1);
+            scale_rgba_tables(D_L08_001623E8, 2, D_L08_001623C8, 0.5f, 0.5f, 0.5f, 1.0f, 1);
+            scale_rgba_tables(D_L08_001F4C48, 6, D_L08_001F01C8, 0.25f, 0.25f, 0.25f, 1.0f, 1);
             D_L08_001623C4 = 1;
         }
         moby->state = 1;
@@ -870,7 +880,7 @@ void FUN_L08_003097b0(struct Moby *moby) {
             distance = vector_length_xyz(position_delta);
             if (distance <= 84.0f) {
                 FUN_L08_002f12a0(0);
-                FUN_L08_002f1158(D_L08_001F8550, 0.52f, 0.62f, 0.06f, &D_L08_001623F0_e[8]);
+                advance_wrapped_sine_pair(D_L08_001F8550, 0.52f, 0.62f, 0.06f, &D_L08_001623F0_e[8]);
                 FUN_L08_002f12a0(2);
                 if (distance < 20.0f) {
                     *(unsigned char *)&D_L08_001623F0 = 0xFF;
@@ -884,7 +894,7 @@ void FUN_L08_003097b0(struct Moby *moby) {
             FUN_L08_002f1378(0);
             FUN_L08_002f1378(0);
             FUN_L08_002f1378(1);
-            enqueue_callback_list_1(FUN_L08_00309030, moby);
+            enqueue_callback_list_1(queue_batalia_textured_batch_passes, moby);
         }
         break;
     }

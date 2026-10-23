@@ -50,12 +50,14 @@ extern void subtract_vector_xyz(void *, void *, void *);
 extern void moby_point_position(void *, s32, void *) __asm__("FUN_L00_0024f7c8");
 extern void FUN_L00_00258278(struct Moby *, f32, f32 *, f32, f32, f32);
 extern void cart_burst(void *, void *, s32, f32, f32) __asm__("FUN_L00_0025f090");
-extern struct Moby *FUN_L08_002de3e0(void *, struct Moby *, void *, f32, f32);
-extern void FUN_L08_002e9558(struct Moby *);
-extern void FUN_L08_002e9758(struct Moby *);
-extern void FUN_L08_002e9a18(struct Moby *);
+extern struct Moby *spawn_class_1b3_projectile(void *, struct Moby *, void *, f32, f32) __asm__("FUN_L08_002de3e0");
+extern void spawn_joint_linked_moby_parts(struct Moby *) __asm__("FUN_L08_002e9558");
+extern void process_linked_moby_part_hits(struct Moby *) __asm__("FUN_L08_002e9758");
+extern void update_commando_parts(struct Moby *) __asm__("FUN_L08_002e9a18");
 
-void FUN_L08_002e9b70(struct Moby *moby) {
+void update_path_following_moby_swarm(struct Moby *moby) __asm__("FUN_L08_002e9b70");
+
+void update_path_following_moby_swarm(struct Moby *moby) {
     enum {
         SWARM_INITIALIZE = 0,
         SWARM_FOLLOW_PRIMARY_PATH = 1,
@@ -102,7 +104,7 @@ void FUN_L08_002e9b70(struct Moby *moby) {
         vars->fire_timer = truncate_float_to_s32(multiply_global_factor_ed64(random_float_between(300.0f, 600.0f)));
         moby->flags |= 0x4000;
         qcopy(&moby->pos, &vars->follow[1].path->points[0]);
-        FUN_L08_002e9558(moby);
+        spawn_joint_linked_moby_parts(moby);
         moby->state = 2;
         moby->rot.z = fast_arc_tan(vars->follow[1].path->points[1].f[0] - moby->pos.x,
                                    vars->follow[1].path->points[1].f[1] - moby->pos.y);
@@ -123,8 +125,8 @@ void FUN_L08_002e9b70(struct Moby *moby) {
             normalize_vector_xyz(&step, &step, D_L08_00161D34 * frame_time);
         }
         add_vector_xyz(&moby->pos, &moby->pos, &step);
-        FUN_L08_002e9758(moby);
-        FUN_L08_002e9a18(moby);
+        process_linked_moby_part_hits(moby);
+        update_commando_parts(moby);
         if (moby->command == 0) {
             break;
         }
@@ -140,7 +142,7 @@ void FUN_L08_002e9b70(struct Moby *moby) {
             yaw = -0.34f;
         }
         normalize_vector_xyz(&velocity, &step, (D_L08_00161D34 + D_L08_00161D34) * frame_time);
-        shot = FUN_L08_002de3e0(&muzzle, target, &velocity, pitch, yaw);
+        shot = spawn_class_1b3_projectile(&muzzle, target, &velocity, pitch, yaw);
         shot->scale = shot->pclass->scale / 5.0f;
         target_vars = (SwarmTargetVars *)target->pvars;
         for (slot = 0; slot < 8; slot++) {
@@ -172,7 +174,7 @@ void FUN_L08_002e9b70(struct Moby *moby) {
             normalize_vector_xyz(&step, &step, D_L08_00161D34 * frame_time);
         }
         add_vector_xyz(&moby->pos, &moby->pos, &step);
-        FUN_L08_002e9a18(moby);
+        update_commando_parts(moby);
         if (!tick_countdown_32_alt(&vars->fire_timer)) {
             break;
         }
@@ -181,7 +183,7 @@ void FUN_L08_002e9b70(struct Moby *moby) {
         pitch = random_float_between(-0.5235988f, -0.2617994f);
         yaw = random_angle_radians();
         normalize_vector_xyz(&velocity, &step, (D_L08_00161D34 + D_L08_00161D34) * frame_time);
-        bolt = FUN_L08_002de3e0(&muzzle, NULL, &velocity, pitch, yaw);
+        bolt = spawn_class_1b3_projectile(&muzzle, NULL, &velocity, pitch, yaw);
         if (bolt != NULL) {
             bolt->rot.z = vars->parts[3].moby->rot.z;
             bolt->state = 5;
@@ -195,7 +197,7 @@ void FUN_L08_002e9b70(struct Moby *moby) {
         path = vars->follow[0].path;
         qcopy(&moby->pos, &path->points[0]);
         moby->rot.z = fast_arc_tan(path->points[1].f[0] - moby->pos.x, path->points[1].f[1] - moby->pos.y);
-        FUN_L08_002e9a18(moby);
+        update_commando_parts(moby);
         break;
     }
     case SWARM_DISPERSE_AND_REMOVE:
@@ -220,7 +222,9 @@ extern char *D_L08_0015FFD8_g __asm__("D_L08_0015FFD8");
 extern int FUN_0022da68_c(int, int, char *) __asm__("FUN_0022da68");
 extern void FUN_00213ed8_c(char *, float, float) __asm__("FUN_00213ed8");
 
-void FUN_L08_002ea398(char *moby)
+void update_moby_height_from_driver(char *moby) __asm__("FUN_L08_002ea398");
+
+void update_moby_height_from_driver(char *moby)
 {
     enum {
         POSITION_BASELINE_INITIALIZE = 0,
@@ -280,10 +284,12 @@ extern int scale_game_frames(int) __asm__("FUN_001f96f8");
 
 /* Swings the gate to its driver's progress, fading a creak in while it
  * moves and out when it stops, and latches its flag once fully open. */
-void FUN_L08_002ea4c0(struct Moby *moby) {
+void update_swing_gate_from_driver(struct Moby *moby) __asm__("FUN_L08_002ea4c0");
+
+void update_swing_gate_from_driver(struct Moby *moby) {
     SwingGateVars *vars = (SwingGateVars *)moby->pvars;
     f32 progress = *(f32 *)D_L08_0015FFD8[vars->driver].pvars;
-    Vec4 mat[4];
+    Vec4 gate_rotation_matrix[4];
     Vec4 gate_position_offset;
     f32 yaw;
 
@@ -325,8 +331,8 @@ void FUN_L08_002ea4c0(struct Moby *moby) {
                                               0x400 / scale_game_frames(60));
         }
     }
-    euler_rotation_matrix(mat, &moby->rot);
-    transform_vector(&gate_position_offset, &gate_position_offset, mat);
+    euler_rotation_matrix(gate_rotation_matrix, &moby->rot);
+    transform_vector(&gate_position_offset, &gate_position_offset, gate_rotation_matrix);
     add_vector_xyz(&moby->pos, &vars->home, &gate_position_offset);
     if (progress == 1.0f && moby->oclass == 0x1D4) {
         D_0013D388[vars->flag + 0x30] = 1;
@@ -348,12 +354,14 @@ extern int D_L08_00161E00 __attribute__((sda));
 extern unsigned char D_L08_00161E08_u __asm__("D_L08_00161E08");
 extern int get_effect_texture_alt(int) __asm__("FUN_001f44b8");
 extern void font_queue_vu_state(void) __asm__("FUN_001f76a0");
-extern void FUN_L08_002f0b40(int);
+extern void draw_scrolled_mesh_batch(int) __asm__("FUN_L08_002f0b40");
 extern void FUN_L08_002f0c18(int);
-extern void FUN_L08_002f0cf0(int);
+extern void emit_pair_offset_render_batch(int) __asm__("FUN_L08_002f0cf0");
 void vu1_add_g_sregister(s32 a0, s64 a1) __asm__("FUN_00233980");
 
-void FUN_L08_002f0dc8(void) {
+void draw_layered_mesh_effect(void) __asm__("FUN_L08_002f0dc8");
+
+void draw_layered_mesh_effect(void) {
     vu1_add_g_sregister(0x42, 0x8000000044L);
     vu1_add_g_sregister(8, 0);
     vu1_add_g_sregister(0x14, 0xFF9000000260L);
@@ -361,12 +369,12 @@ void FUN_L08_002f0dc8(void) {
     font_queue_vu_state();
     vu1_add_g_sregister(6, get_effect_texture_alt(0x3A));
     vu1_add_g_sregister(0x42, (long)D_L08_00161DD0 << 32 | 0x44);
-    FUN_L08_002f0b40(0);
+    draw_scrolled_mesh_batch(0);
     vu1_add_g_sregister(6, get_effect_texture_alt(0x3B));
     vu1_add_g_sregister(0x42, (long)((D_L08_00161DD4 * D_L08_00161E08_u) >> 8) << 32 | 0x62);
-    FUN_L08_002f0b40(1);
+    draw_scrolled_mesh_batch(1);
     vu1_add_g_sregister(0x42, (long)((D_L08_00161DD8 * D_L08_00161E08_u) >> 8) << 32 | 0x68);
-    FUN_L08_002f0b40(2);
+    draw_scrolled_mesh_batch(2);
     vu1_add_g_sregister(6, get_effect_texture_alt(0x3C));
     vu1_add_g_sregister(0x42, (long)D_L08_00161DF0 << 32 | 0x48);
     FUN_L08_002f0c18(0);
@@ -374,7 +382,7 @@ void FUN_L08_002f0dc8(void) {
     FUN_L08_002f0c18(1);
     vu1_add_g_sregister(6, get_effect_texture_alt(0x3D));
     vu1_add_g_sregister(0x42, (long)D_L08_00161E00 << 32 | 0x48);
-    FUN_L08_002f0cf0(0);
+    emit_pair_offset_render_batch(0);
 }
 
 /* Ported from rac1-decomp (src/overlays/l08_batalia/vendor_002EAF48.c: func_L08_0030AC70), where it is exact; names translated to the US level program. */
@@ -401,9 +409,9 @@ extern short D_L08_00161DC0 __attribute__((sda));
 extern short D_L08_00161E04 __attribute__((sda));
 extern s32 D_L08_001DDF20[];
 extern s32 D_L08_001DB518[];
-extern void FUN_L08_002f0dc8(void);
-extern void FUN_L08_002f0f68(void *, int, void *, float, float, float, float, int);
-extern void FUN_L08_002f1158(void *, float, float, float, void *);
+extern void draw_layered_mesh_effect(void) __asm__("FUN_L08_002f0dc8");
+extern void scale_rgba_tables(void *, int, void *, float, float, float, float, int) __asm__("FUN_L08_002f0f68");
+extern void advance_wrapped_sine_pair(void *, float, float, float, void *) __asm__("FUN_L08_002f1158");
 extern void FUN_L08_002f12a0(int);
 extern void FUN_L08_002f1378(int);
 extern void enqueue_callback_list_1(void (*)(void), void *) __asm__("FUN_001f4600");
@@ -411,7 +419,9 @@ extern void subtract_vector_xyz(void *, void *, void *);
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
 extern Pair D_L08_00161E20[] __attribute__((section(".sdata")));
-void FUN_L08_002f1548(struct Moby *moby) {
+void update_layered_mesh_effect(struct Moby *moby) __asm__("FUN_L08_002f1548");
+
+void update_layered_mesh_effect(struct Moby *moby) {
     enum {
         DRAW_ELEMENTS_INITIALIZE = 0,
         DRAW_ELEMENTS_UPDATE = 1
@@ -424,9 +434,9 @@ void FUN_L08_002f1548(struct Moby *moby) {
     switch (moby->state) {
     case DRAW_ELEMENTS_INITIALIZE:
         if (*(int *)&D_L08_00161E04 == 0) {
-            FUN_L08_002f0f68(D_L08_001E8310, 0xD, D_L08_001E2858, 0.5f, 0.5f, 0.65f, 0.5f, 1);
-            FUN_L08_002f0f68(D_L08_001DDF20, 8, D_L08_001DB518, 0.5f, 0.5f, 0.5f, 1.0f, 1);
-            FUN_L08_002f0f68(D_L08_001E2828, 0xB, D_L08_001DDF40, 0.25f, 0.25f, 0.25f, 1.0f, 1);
+            scale_rgba_tables(D_L08_001E8310, 0xD, D_L08_001E2858, 0.5f, 0.5f, 0.65f, 0.5f, 1);
+            scale_rgba_tables(D_L08_001DDF20, 8, D_L08_001DB518, 0.5f, 0.5f, 0.5f, 1.0f, 1);
+            scale_rgba_tables(D_L08_001E2828, 0xB, D_L08_001DDF40, 0.25f, 0.25f, 0.25f, 1.0f, 1);
             *(int *)&D_L08_00161E04 = 1;
         }
         moby->state = 1;
@@ -459,7 +469,7 @@ void FUN_L08_002f1548(struct Moby *moby) {
             distance = vector_length_xyz(distance_vector);
             if (distance <= 84.0f) {
                 FUN_L08_002f12a0(0);
-                FUN_L08_002f1158(D_L08_001E8350, 0.52f, 0.62f, 0.06f, (void *)&D_L08_00161E28);
+                advance_wrapped_sine_pair(D_L08_001E8350, 0.52f, 0.62f, 0.06f, (void *)&D_L08_00161E28);
                 FUN_L08_002f12a0(2);
                 if (distance < 20.0f) {
                     *(unsigned char *)&D_L08_00161E08 = 0xFF;
@@ -473,7 +483,7 @@ void FUN_L08_002f1548(struct Moby *moby) {
             FUN_L08_002f1378(0);
             FUN_L08_002f1378(0);
             FUN_L08_002f1378(1);
-            enqueue_callback_list_1(FUN_L08_002f0dc8, moby);
+            enqueue_callback_list_1(draw_layered_mesh_effect, moby);
         }
         break;
     }
@@ -500,7 +510,9 @@ extern void FUN_L00_0025e450_44c0(char *, void *, char *, f32, f32, s32, s32, s3
                          f32, f32, f32, f32, s32, f32, s32, s32, s32, u8) __asm__("FUN_L00_0025e450");
 
 extern f32 D_L08_00161F70 __attribute__((sda));
-void FUN_L08_002f44c0(struct Moby *moby)
+void update_path_following_moby_with_fade(struct Moby *moby) __asm__("FUN_L08_002f44c0");
+
+void update_path_following_moby_with_fade(struct Moby *moby)
 {
     enum {
         PATH_FOLLOWER_INITIALIZE_HEIGHT_OFFSET = 0,
@@ -603,7 +615,9 @@ extern f32 convert_integer_to_float(s32) __asm__("func_001FA6C0");
 extern s32 truncate_float_to_s32_u(f32) __asm__("FUN_001fa6d0");
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
-float FUN_L08_002f5d98(float x, char *sample_ring_data) {
+float interpolate_sample_ring(float x, char *sample_ring_data) __asm__("FUN_L08_002f5d98");
+
+float interpolate_sample_ring(float x, char *sample_ring_data) {
     float sample_position = x * 8.0f;
     int i = func_001FA898_r(sample_position);
     float fr = sample_position - convert_integer_to_float(i);
@@ -683,7 +697,7 @@ extern void fast_vec_scale(void *, void *, f32) __asm__("FUN_001f9a68");
 extern void fast_vec_cross(void *, void *, void *) __asm__("FUN_001f9ad8");
 extern void fast_draw_quad_real(void *, void *, s32) __asm__("FUN_001f7d30");
 extern void FUN_L00_0026ced0(void *, void *, u32, u32, s32, f32);
-extern void FUN_L08_0027b450(struct Moby *, void *, void *, s32, s32, s32, s32, s32, f32);
+extern void spawn_colored_effect(struct Moby *, void *, void *, s32, s32, s32, s32, s32, f32) __asm__("FUN_L08_0027b450");
 
 /* The draw helper reads this contiguous 0x90-byte packet. */
 typedef struct {
@@ -814,7 +828,7 @@ void FUN_L08_002f5e58(struct Moby *m) {
             next_b = phase_b + step_b;
             subtract_vector_xyz(&across, &edge[1], &edge[0]);
             fast_vec_scale(&across, &across, inv_x);
-            noise_y = FUN_L08_002f5d98(y, (char *)d);
+            noise_y = interpolate_sample_ring(y, (char *)d);
             k = i * stride;
             weight = (f32 *)((char *)grid + k + 12);
             for (j = 0; j <= b[8]; j++) {
@@ -825,7 +839,7 @@ void FUN_L08_002f5e58(struct Moby *m) {
                 c = fast_sin(a);
                 t = f[0x16] * c;
                 base = time * phase + t;
-                noise_x = FUN_L08_002f5d98(x, (char *)d);
+                noise_x = interpolate_sample_ring(x, (char *)d);
                 base = base + (noise_x * f[0x34] + noise_y * f[0x35] + bend * f[0x36]);
                 shape = height_a * x + height_b * (1.0f-x);
                 a = normalize_angle(base + phase_a + f[0xb] * x + f[0xd] * y);
@@ -941,7 +955,7 @@ void FUN_L08_002f5e58(struct Moby *m) {
             red = b[0xec]; green = b[0xed]; blue = b[0xee];
             {
                 s32 temp = (u8)truncate_float_to_s32_u(convert_integer_to_float(b[0xef])*a);
-                FUN_L08_0027b450(m, &offset, &velocity, lifetime, red, green, blue, temp, t);
+                spawn_colored_effect(m, &offset, &velocity, lifetime, red, green, blue, temp, t);
             }
         } while (i < b[0xf2]);
     }
@@ -996,10 +1010,12 @@ void FUN_L08_002f5e58(struct Moby *m) {
 }
 #endif
 
-void FUN_L08_002f70a0(struct Moby *moby) {
+void update_flickering_mesh_effect(struct Moby *moby) __asm__("FUN_L08_002f70a0");
+
+void update_flickering_mesh_effect(struct Moby *moby) {
     FlickerLightVars *light_vars;
     Vec4 pos;
-    f32 view, dist, fade;
+    f32 view, draw_fade_distance, fade;
     s32 hidden;
     PointLight *point_light_slot;
     Vec4f *at;
@@ -1036,18 +1052,18 @@ void FUN_L08_002f70a0(struct Moby *moby) {
     }
     moby->scale = moby->pclass->scale * (light_vars->size_x > light_vars->size_y ? light_vars->size_x : light_vars->size_y) * 0.25f;
     view = convert_integer_to_float(moby->draw_dist);
-    dist = FUN_001f9b48(at, D_L08_001675C0);
+    draw_fade_distance = FUN_001f9b48(at, D_L08_001675C0);
     fade = view - light_vars->fade_range;
     if (fade < 0.0f)
         fade = 0.0f;
-    if (view < dist) {
+    if (view < draw_fade_distance) {
         light_vars->intensity = 0.0f;
         hidden = 1;
     } else {
-        if (fade < dist) {
-            dist -= fade;
-            dist /= light_vars->fade_range;
-            fade = 1.0f - dist;
+        if (fade < draw_fade_distance) {
+            draw_fade_distance -= fade;
+            draw_fade_distance /= light_vars->fade_range;
+            fade = 1.0f - draw_fade_distance;
         } else
             fade = 1.0f;
         light_vars->intensity = fade;

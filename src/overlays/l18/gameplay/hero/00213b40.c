@@ -16,35 +16,37 @@ extern void FUN_L00_0020b930(void);
 extern int hero_set_state(int, int) __asm__("FUN_L18_00227dd0");
 float absolute_float(float input) __asm__("func_001F99C0");
 
-void FUN_L18_00213b40(void) {
-    struct Hero *g = &hero;
-    int keep = g->unk12ED;
-    int st = g->ground_type;
+void apply_hero_ground_type_effects(void) __asm__("FUN_L18_00213b40");
+
+void apply_hero_ground_type_effects(void) {
+    struct Hero *hero_state = &hero;
+    int keep = hero_state->unk12ED;
+    int saved_ground_type = hero_state->ground_type;
     int collision_check_selector;
-    fast_mem_zero16(&g->ground_type, 0x10);
-    g->unk12ED = keep;
-    g->ground_type = -1;
-    g->unk20A9 = 0;
-    g->unk308 = 0;
-    if (st == -1)
+    fast_mem_zero16(&hero_state->ground_type, 0x10);
+    hero_state->unk12ED = keep;
+    hero_state->ground_type = -1;
+    hero_state->unk20A9 = 0;
+    hero_state->unk308 = 0;
+    if (saved_ground_type == -1)
         return;
-    if (st == 2) {
-        if (g->frames_off_ground.s == 0 || g->ground_distance < 0.3f) {
-            g->unk12E7 = 1;
-            if (g->vehicle_mode == 0) {
-                char *item_moby = ((char *)g->items[1].moby);
+    if (saved_ground_type == 2) {
+        if (hero_state->frames_off_ground.s == 0 || hero_state->ground_distance < 0.3f) {
+            hero_state->unk12E7 = 1;
+            if (hero_state->vehicle_mode == 0) {
+                char *item_moby = ((char *)hero_state->items[1].moby);
                 if (item_moby != 0 && *(short *)(item_moby + 0xA6) == 0xAD)
-                    g->unk308 = 1;
+                    hero_state->unk308 = 1;
             }
         }
     }
-    if (st == 0xE) {
+    if (saved_ground_type == 0xE) {
         struct Hero *q = &hero;
         *(char *)&q->base_condition = 1;
         q->unk22A4 = 0.2f;
         q->water_surface_z = q->ground_z.f + 0.2f;
     }
-    if (st == 0) {
+    if (saved_ground_type == 0) {
         struct Hero *q = &hero;
         float water_depth = q->water_surface_z - q->ground_z.f;
         q->unk22A4 = water_depth;
@@ -58,7 +60,7 @@ void FUN_L18_00213b40(void) {
     } else {
         collision_check_selector = current_level_index;
     }
-    if (st == 3) {
+    if (saved_ground_type == 3) {
         struct Hero *q = &hero;
         *(char *)&q->selector_3 = 1;
         collision_check_selector = D_0015ED84_d;
@@ -74,27 +76,27 @@ void FUN_L18_00213b40(void) {
             }
         }
     }
-    if (st == 0xB) {
+    if (saved_ground_type == 0xB) {
         struct Hero *q = &hero;
         *(char *)&q->selector_11 = 1;
     }
-    if (st == 0x2) {
+    if (saved_ground_type == 0x2) {
         struct Hero *q = &hero;
         *(char *)&q->unk12E7 = 1;
     }
-    if (st == 0x4) {
+    if (saved_ground_type == 0x4) {
         struct Hero *q = &hero;
         *(char *)&q->unk12E3 = 1;
     }
-    if (st == 0x8) {
+    if (saved_ground_type == 0x8) {
         struct Hero *q = &hero;
         *(char *)&q->on_slip_ground = 1;
     }
-    if (st == 0x9) {
+    if (saved_ground_type == 0x9) {
         struct Hero *q = &hero;
         *(char *)&q->unk12EE = 1;
     }
-    if (st == 0xC) {
+    if (saved_ground_type == 0xC) {
         struct Hero *q = &hero;
         *(char *)&q->on_slip_ground = 1;
     }
@@ -177,14 +179,16 @@ void FUN_001f99f8_210ce8(void *) __asm__("FUN_001f99f8");
 void FUN_L00_00210c80_210ce8(void *, s32, f32, f32) __asm__("FUN_L00_00210c80");
 
 extern T_210ce8 D_L18_00178B00[];
-s32 FUN_L18_00218a90(s32 arg) {
+s32 process_hero_hurt_response(s32 apply_hurt_response) __asm__("FUN_L18_00218a90");
+
+s32 process_hero_hurt_response(s32 apply_hurt_response) {
     u8 *hero_moby_bytes;
-    T_210ce8 *tbl;
+    T_210ce8 *response_record;
     u8 *mob;
     s32 flag;
     s32 id;
-    f32 horizontal_response_scale, b, response_frame_time;
-    V_210ce8 v;
+    f32 horizontal_response_scale, vertical_response_scale, response_frame_time;
+    V_210ce8 response_motion_delta;
 
     if (hero.state.control_mode == 0x14) {
         return 0;
@@ -206,46 +210,46 @@ s32 FUN_L18_00218a90(s32 arg) {
     if (hero_moby_bytes[0xA4] == 0xFF) {
         return 0;
     }
-    tbl = &D_L18_00178B00[hero_moby_bytes[0xA4]];
-    if (tbl->p34 != hero_moby_bytes) {
+    response_record = &D_L18_00178B00[hero_moby_bytes[0xA4]];
+    if (response_record->p34 != hero_moby_bytes) {
         return 0;
     }
     if (hero.vehicle_mode == 2) {
-        if (!(tbl->i24 & 2)) {
+        if (!(response_record->i24 & 2)) {
             return 0;
         }
-    } else if ((tbl->i24 ^ 1) & 1) {
+    } else if ((response_record->i24 ^ 1) & 1) {
         return 0;
     }
     D_0013DF88[D_0015ED84_210ce8]++;
-    hero.unk2280 = (struct Moby *)tbl->p20;
+    hero.unk2280 = (struct Moby *)response_record->p20;
     D_0015EEA8++;
     if (hero.state.control_mode == 0xF) {
         hero.unk5BE = 1;
         return 0;
     }
     if (hero.vehicle_mode == 2) {
-        hero.unk1630 -= FUN_001fa6d0_210ce8(tbl->f2C);
+        hero.unk1630 -= FUN_001fa6d0_210ce8(response_record->f2C);
         if (hero.unk1630 < 0) {
             hero.unk1630 = 0;
         }
     }
-    if (arg == 0) {
+    if (apply_hurt_response == 0) {
         return 1;
     }
     FUN_L00_00206c08_210ce8();
     flag = 0;
-    if (tbl->i30 & 1) {
-        qcopy(&v, &tbl->v10);
-        if (*(f32 *)((u8 *)tbl + 0x1C) == 5627.9248046875f) {
+    if (response_record->i30 & 1) {
+        qcopy(&response_motion_delta, &response_record->v10);
+        if (*(f32 *)((u8 *)response_record + 0x1C) == 5627.9248046875f) {
             flag = 1;
         }
-    } else if (tbl->p20 != 0) {
-        FUN_001f9a28_210ce8(&v, &hero.motion.pos, tbl->p20 + 0x10);
+    } else if (response_record->p20 != 0) {
+        FUN_001f9a28_210ce8(&response_motion_delta, &hero.motion.pos, response_record->p20 + 0x10);
     } else {
-        v.f[0] = FUN_001f9dc8_210ce8(FUN_001fa580_210ce8(hero.motion.rot.f[2], 3.1415927f));
-        v.f[1] = FUN_001f9de0_210ce8(FUN_001fa580_210ce8(hero.motion.rot.f[2], 3.1415927f));
-        v.i[2] = 0;
+        response_motion_delta.f[0] = FUN_001f9dc8_210ce8(FUN_001fa580_210ce8(hero.motion.rot.f[2], 3.1415927f));
+        response_motion_delta.f[1] = FUN_001f9de0_210ce8(FUN_001fa580_210ce8(hero.motion.rot.f[2], 3.1415927f));
+        response_motion_delta.i[2] = 0;
     }
     switch (hero.vehicle_mode) {
     case HERO_VEHICLE_MODE_ON_FOOT:
@@ -296,34 +300,34 @@ s32 FUN_L18_00218a90(s32 arg) {
         }
         response_frame_time = frame_time;
         horizontal_response_scale = response_frame_time * 5.7f;
-        b = response_frame_time * 2.4f;
+        vertical_response_scale = response_frame_time * 2.4f;
         if (hero.unk12E7 != 0) {
             horizontal_response_scale = 0.0f;
-            b = response_frame_time * 1.7f;
+            vertical_response_scale = response_frame_time * 1.7f;
         }
-        FUN_L00_00210c80_210ce8(&v, flag, horizontal_response_scale, b);
-        if (flag != 0 && tbl->b28 == 4) {
-            v.f[2] += v.f[2];
+        FUN_L00_00210c80_210ce8(&response_motion_delta, flag, horizontal_response_scale, vertical_response_scale);
+        if (flag != 0 && response_record->b28 == 4) {
+            response_motion_delta.f[2] += response_motion_delta.f[2];
         }
         break;
-    case 2:
-        if ((tbl->i24 & 4) || hero.unk1630 <= 0) {
+    case HERO_VEHICLE_MODE_GIANT_CLANK:
+        if ((response_record->i24 & 4) || hero.unk1630 <= 0) {
             hero_set_state(0x5D, 1);
             FUN_L00_002a9be0_210ce8();
             if (hero.air_frames.s == 0) {
-                FUN_L00_00210c80_210ce8(&v, flag, frame_time * 7.0f,
+                FUN_L00_00210c80_210ce8(&response_motion_delta, flag, frame_time * 7.0f,
                                         frame_time * 3.5f);
                 break;
             }
         }
-        FUN_001f99f8_210ce8(&v);
+        FUN_001f99f8_210ce8(&response_motion_delta);
         break;
     case 3:
         hero_set_state(0x56, 1);
-        FUN_L00_00210c80_210ce8(&v, flag, frame_time * 5.0f, frame_time * 2.4f);
+        FUN_L00_00210c80_210ce8(&response_motion_delta, flag, frame_time * 5.0f, frame_time * 2.4f);
         break;
     }
-    FUN_001f9a10_210ce8(&hero.motion.velocity, &hero.motion.velocity, &v);
-    FUN_001f9a10_210ce8(&hero.motion.displacement, &hero.motion.displacement, &v);
+    FUN_001f9a10_210ce8(&hero.motion.velocity, &hero.motion.velocity, &response_motion_delta);
+    FUN_001f9a10_210ce8(&hero.motion.displacement, &hero.motion.displacement, &response_motion_delta);
     return 1;
 }

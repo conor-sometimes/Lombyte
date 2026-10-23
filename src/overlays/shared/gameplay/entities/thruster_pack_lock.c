@@ -15,7 +15,9 @@
 extern int D_L11_0015FFD8; /* no foreign declaration */
 extern short *D_L11_001AC240[];
 
-void FUN_L11_0030e690(char *moby) {
+void synchronize_linked_moby_heights(char *moby) __asm__("FUN_L11_0030e690");
+
+void synchronize_linked_moby_heights(char *moby) {
     short *moby_index_cursor = D_L11_001AC240[*(unsigned char *)(moby + 0x21)];
     int base = D_L11_0015FFD8;
     do {
@@ -188,7 +190,11 @@ extern int ftoi(float) __asm__("FUN_001fa6d0");
 extern float fast_sin(float) __asm__("FUN_001f9de0");
 extern float fast_cos(float) __asm__("FUN_001f9dc8");
 
-void FUN_L11_00310cf8(float x, float y, float width, float height, float angle, int texture_width,
+void append_rotated_textured_screen_quad(float x, float y, float width, float height, float angle, int texture_width,
+                       int texture_height, long texture, int z_and_fog, int red, int green, int blue,
+                       int alpha) __asm__("FUN_L11_00310cf8");
+
+void append_rotated_textured_screen_quad(float x, float y, float width, float height, float angle, int texture_width,
                        int texture_height, long texture, int z_and_fog, int red, int green, int blue,
                        int alpha) {
     float vertical[4];
@@ -311,13 +317,13 @@ void FUN_L11_00311048(unsigned char red, unsigned char green, unsigned char blue
     float quad_size;
     texture = get_effect_texture(0x42);
     quad_size = scale * 20.0f;
-    FUN_L11_00310cf8(x, y, quad_size, quad_size, quad_rotation_angle, 0x3F, 0x3F, texture, 0xFFFFF3, red, green, blue, alpha);
+    append_rotated_textured_screen_quad(x, y, quad_size, quad_size, quad_rotation_angle, 0x3F, 0x3F, texture, 0xFFFFF3, red, green, blue, alpha);
     quad_rotation_angle = fast_add_rotations(quad_rotation_angle, 1.5707964f);
-    FUN_L11_00310cf8(x, y, quad_size, quad_size, quad_rotation_angle, 0x3F, 0x3F, texture, 0xFFFFF3, red, green, blue, alpha);
+    append_rotated_textured_screen_quad(x, y, quad_size, quad_size, quad_rotation_angle, 0x3F, 0x3F, texture, 0xFFFFF3, red, green, blue, alpha);
     quad_rotation_angle = fast_add_rotations(quad_rotation_angle, 1.5707964f);
-    FUN_L11_00310cf8(x, y, quad_size, quad_size, quad_rotation_angle, 0x3F, 0x3F, texture, 0xFFFFF3, red, green, blue, alpha);
+    append_rotated_textured_screen_quad(x, y, quad_size, quad_size, quad_rotation_angle, 0x3F, 0x3F, texture, 0xFFFFF3, red, green, blue, alpha);
     quad_rotation_angle = fast_add_rotations(quad_rotation_angle, 1.5707964f);
-    FUN_L11_00310cf8(x, y, quad_size, quad_size, quad_rotation_angle, 0x3F, 0x3F, texture, 0xFFFFF3, red, green, blue, alpha);
+    append_rotated_textured_screen_quad(x, y, quad_size, quad_size, quad_rotation_angle, 0x3F, 0x3F, texture, 0xFFFFF3, red, green, blue, alpha);
 }
 /* Projects a world point to screen and stores its x and y in 1/16 units, y plus an offset. */
 /* Ported from rac1-decomp (src/overlays/shared/vendor_002C99E0.c: func_L11_003126D8), where it is exact; names translated to the US level program. */
@@ -326,7 +332,9 @@ extern s32 truncate_float_to_s32(f32) __asm__("FUN_001fa6d0");
 extern void project_to_screen(f32 *, void *) __asm__("FUN_001f2070");
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
-void FUN_L11_00311210(void *pt, int *outx, int *outy, int yoff) {
+void project_world_point_to_screen_pixels(void *pt, int *outx, int *outy, int yoff) __asm__("FUN_L11_00311210");
+
+void project_world_point_to_screen_pixels(void *pt, int *outx, int *outy, int yoff) {
     float projected_point[4];
     int *screen_extent_data;
     project_to_screen(projected_point, pt);
@@ -344,14 +352,16 @@ extern float random_float_between_alt(float, float) __asm__("FUN_002132a8");
 extern f32 D_L11_00161FF4_gp __asm__("D_L11_00161FF4") __attribute__((sda));
 extern void moby_point_position(void *, int, void *) __asm__("FUN_L00_0024f7c8");
 extern void FUN_L00_0025f8e0(float *v, float s);
-extern void FUN_L01_0028a7a8(void *, float *, float *, void *, int);
+extern void spawn_type_74_particle(void *, float *, float *, void *, int) __asm__("FUN_L01_0028a7a8");
 
 extern short D_L11_001621C8 __attribute__((sda));
 extern short D_L11_001621D8 __attribute__((sda));
 extern short D_L11_001621E8 __attribute__((sda));
 extern short D_L11_001621F8 __attribute__((sda));
 extern short D_L11_00162208 __attribute__((sda));
-void FUN_L11_003112b8(void *moby, char *particle_emission_data) {
+void emit_type_74_particles_from_moby_joints(void *moby, char *particle_emission_data) __asm__("FUN_L11_003112b8");
+
+void emit_type_74_particles_from_moby_joints(void *moby, char *particle_emission_data) {
     int i;
     for (i = 1; i < 3; i++) {
         float initial_particle_velocity[4];
@@ -379,15 +389,15 @@ void FUN_L11_003112b8(void *moby, char *particle_emission_data) {
         initial_particle_velocity[0] =
             -((random_float_between_alt(6.0f, 7.0f) + *(float *)(particle_emission_data + 0xC4) * 2.0f) * frame_time) *
             scale;
-        FUN_L01_0028a7a8(moby, first_particle_position, initial_particle_velocity, &D_L11_001621C8, 1);
+        spawn_type_74_particle(moby, first_particle_position, initial_particle_velocity, &D_L11_001621C8, 1);
         initial_particle_velocity[0] =
             -((random_float_between_alt(6.0f, 7.0f) + *(float *)(particle_emission_data + 0xC4) * 3.0f) * frame_time) *
             scale;
-        FUN_L01_0028a7a8(moby, second_particle_position, initial_particle_velocity, &D_L11_001621D8, 1);
+        spawn_type_74_particle(moby, second_particle_position, initial_particle_velocity, &D_L11_001621D8, 1);
         initial_particle_velocity[0] =
             -((random_float_between_alt(6.0f, 7.0f) + *(float *)(particle_emission_data + 0xC4) * 4.0f) * frame_time) *
             scale;
-        FUN_L01_0028a7a8(moby, third_particle_position, initial_particle_velocity, &D_L11_001621E8, 1);
+        spawn_type_74_particle(moby, third_particle_position, initial_particle_velocity, &D_L11_001621E8, 1);
         if (*(float *)(particle_emission_data + 0xC4) > 0.5f) {
             FUN_L00_0025f8e0(first_particle_position, *(float *)(particle_emission_data + 0xC4) * 0.02f + 0.01f);
             FUN_L00_0025f8e0(second_particle_position, *(float *)(particle_emission_data + 0xC4) * 0.02f + 0.01f);
@@ -395,23 +405,23 @@ void FUN_L11_003112b8(void *moby, char *particle_emission_data) {
             initial_particle_velocity[0] = -((random_float_between_alt(6.0f, 7.0f) + *(float *)(particle_emission_data + 0xC4) * 2.0f) *
                        frame_time) *
                      scale;
-            FUN_L01_0028a7a8(moby, first_particle_position, initial_particle_velocity, &D_L11_001621C8, 1);
+            spawn_type_74_particle(moby, first_particle_position, initial_particle_velocity, &D_L11_001621C8, 1);
             initial_particle_velocity[0] = -((random_float_between_alt(6.0f, 7.0f) + *(float *)(particle_emission_data + 0xC4) * 3.0f) *
                        frame_time) *
                      scale;
-            FUN_L01_0028a7a8(moby, second_particle_position, initial_particle_velocity, &D_L11_001621D8, 1);
+            spawn_type_74_particle(moby, second_particle_position, initial_particle_velocity, &D_L11_001621D8, 1);
             initial_particle_velocity[0] = -((random_float_between_alt(6.0f, 7.0f) + *(float *)(particle_emission_data + 0xC4) * 4.0f) *
                        frame_time) *
                      scale;
-            FUN_L01_0028a7a8(moby, third_particle_position, initial_particle_velocity, &D_L11_001621E8, 1);
+            spawn_type_74_particle(moby, third_particle_position, initial_particle_velocity, &D_L11_001621E8, 1);
             initial_particle_velocity[0] = -((random_float_between_alt(6.0f, 7.0f) + *(float *)(particle_emission_data + 0xC4) * 2.0f) *
                        frame_time) *
                      scale;
-            FUN_L01_0028a7a8(moby, first_particle_position, initial_particle_velocity, &D_L11_001621F8, 1);
+            spawn_type_74_particle(moby, first_particle_position, initial_particle_velocity, &D_L11_001621F8, 1);
             initial_particle_velocity[0] = -((random_float_between_alt(6.0f, 7.0f) + *(float *)(particle_emission_data + 0xC4) * 3.0f) *
                        frame_time) *
                      scale;
-            FUN_L01_0028a7a8(moby, joint_world_position, initial_particle_velocity, &D_L11_00162208, 1);
+            spawn_type_74_particle(moby, joint_world_position, initial_particle_velocity, &D_L11_00162208, 1);
         }
     }
 }
@@ -539,18 +549,20 @@ void enqueue_callback_list_1(int arg0, int arg1) __asm__("FUN_001f4600");
 extern void f49(void *, void *) __asm__("FUN_001f4600");
 extern void FUN_L11_003192c8_c(void) __asm__("FUN_L11_003192c8");
 
-void FUN_L11_00319670(char *moby) {
+void update_moby_trail_points(char *moby) __asm__("FUN_L11_00319670");
+
+void update_moby_trail_points(char *moby) {
     char *trail_data = *(char **)(moby + 0x78);
     float first_trail_offset[4];
     float second_trail_offset[4];
     int current_frame;
     if ((level_frame & 3) == 0) {
-        int cnt;
-        float lim = *(float *)&D_L11_001623F0_d;
-        cnt = *(int *)(trail_data + 0x2C0);
+        int trail_segment_count;
+        float trail_segment_limit = *(float *)&D_L11_001623F0_d;
+        trail_segment_count = *(int *)(trail_data + 0x2C0);
         *(int *)(trail_data + 0x2C4) = (*(int *)(trail_data + 0x2C4) + 1) % 16;
-        if ((float)cnt < lim) {
-            *(int *)(trail_data + 0x2C0) = cnt + 1;
+        if ((float)trail_segment_count < trail_segment_limit) {
+            *(int *)(trail_data + 0x2C0) = trail_segment_count + 1;
         }
     }
     *(OvlQuad *)first_trail_offset = 0;
@@ -594,13 +606,15 @@ extern void queue_dialogue_message(int, int) __asm__("FUN_L00_00263d40");
 extern void blend_moby_animation(void *, int, int, int) __asm__("FUN_00212f90");
 s32 allocate_voice_for_bank_entry(s32 arg1, s32 arg0, s32 arg2) __asm__("FUN_0022db10");
 
-void FUN_L11_0031a1c0(char *moby) {
+void update_moby_hit_stats_and_state(char *moby) __asm__("FUN_L11_0031a1c0");
+
+void update_moby_hit_stats_and_state(char *moby) {
     char *moby_vars = *(char **)(moby + 0x78);
     char *info = find_moby_hit(moby, 0x330000, 0);
-    struct Hero *g;
+    struct Hero *player_hero;
     ((unsigned char *)moby)[0xA4] = 0xFF;
-    g = &hero;
-    if (g->state.current != 0x32) {
+    player_hero = &hero;
+    if (player_hero->state.current != 0x32) {
         *(unsigned short *)(moby + 0x34) &= 0xEFFF;
     } else {
         *(unsigned short *)(moby + 0x34) |= 0x1000;
@@ -662,7 +676,9 @@ extern int ftoi_g(float) __asm__("FUN_001fa6d0");
 
 extern u128_ad0 D_L11_001608E0;
 extern u128_ad0 D_L11_001608F0;
-void FUN_L11_00310ad0(short *pts, int point_count, float x0, float y0, unsigned int col, unsigned long long prim, float scale) {
+void append_scaled_screen_triangle_strip(short *pts, int point_count, float x0, float y0, unsigned int col, unsigned long long prim, float scale) __asm__("FUN_L11_00310ad0");
+
+void append_scaled_screen_triangle_strip(short *pts, int point_count, float x0, float y0, unsigned int col, unsigned long long prim, float scale) {
     int packet_qword_count = (point_count + 1) / 2 + 3;
     unsigned long long *vertex_payload;
     int x, y;
@@ -716,7 +732,9 @@ extern float advance_accelerated_scalar(float *, float *, float, float, float, f
 #include "rnc/gameplay/entities/moby.h"
 #define MOBY(p) ((struct Moby *)(p))
 
-void FUN_L11_0031a438(char *moby) {
+void update_moby_path_transform(char *moby) __asm__("FUN_L11_0031a438");
+
+void update_moby_path_transform(char *moby) {
     char *moby_vars = (char *)MOBY(moby)->pvars;
     int i = *(int *)(moby_vars + 0x64);
     char *table = *(char **)(path_table + *(int *)(moby_vars + 0x60) * 4);

@@ -130,14 +130,14 @@ extern G_259a88 D_L00_00173E40_259a88 __asm__("D_L00_00173E40") __attribute__((s
 extern T_259a88 D_L00_00178100_259a88[] __asm__("D_L00_00178100") __attribute__((section(".data")));
 void FUN_001f99f8_259a88(void *) __asm__("FUN_001f99f8");
 void FUN_L00_00259a88(unsigned char *m, L_259a88 *src);
-void FUN_L00_00259a88(unsigned char *owner_moby, L_259a88 *src) {
+void FUN_L00_00259a88(unsigned char *owner_moby, L_259a88 *hit_descriptor) {
     L_259a88 hit_descriptor_copy;
     int i = D_L00_00173E40_259a88.idx;
     T_259a88 *hit_record;
-    ((u128_259a88 *)&hit_descriptor_copy)[0] = ((u128_259a88 *)src)[0];
-    ((u128_259a88 *)&hit_descriptor_copy)[1] = ((u128_259a88 *)src)[1];
-    ((u128_259a88 *)&hit_descriptor_copy)[2] = ((u128_259a88 *)src)[2];
-    src = &hit_descriptor_copy;
+    ((u128_259a88 *)&hit_descriptor_copy)[0] = ((u128_259a88 *)hit_descriptor)[0];
+    ((u128_259a88 *)&hit_descriptor_copy)[1] = ((u128_259a88 *)hit_descriptor)[1];
+    ((u128_259a88 *)&hit_descriptor_copy)[2] = ((u128_259a88 *)hit_descriptor)[2];
+    hit_descriptor = &hit_descriptor_copy;
     if (owner_moby[0xA4] != 0xFF) {
         T_259a88 *existing_hit = &D_L00_00178100_259a88[owner_moby[0xA4]];
         if (existing_hit->owner == owner_moby && hit_descriptor_copy.f < existing_hit->f)
@@ -145,14 +145,14 @@ void FUN_L00_00259a88(unsigned char *owner_moby, L_259a88 *src) {
     }
     hit_record = &D_L00_00178100_259a88[i];
     FUN_001f99f8_259a88(hit_record);
-    qcopy(&D_L00_00178100_259a88[i].b, &src->v);
-    hit_record->x = src->x;
-    hit_record->y = src->y;
-    hit_record->b0 = src->b0;
-    hit_record->b1 = src->b1;
-    hit_record->s = src->s;
-    hit_record->f = src->f;
-    hit_record->flag = src->flag;
+    qcopy(&D_L00_00178100_259a88[i].b, &hit_descriptor->v);
+    hit_record->x = hit_descriptor->x;
+    hit_record->y = hit_descriptor->y;
+    hit_record->b0 = hit_descriptor->b0;
+    hit_record->b1 = hit_descriptor->b1;
+    hit_record->s = hit_descriptor->s;
+    hit_record->f = hit_descriptor->f;
+    hit_record->flag = hit_descriptor->flag;
     hit_record->owner = owner_moby;
     hit_record->z = 0;
     owner_moby[0xA4] = i;
@@ -210,13 +210,13 @@ void FUN_001f9a10_00259d08(void *, void *, void *) __asm__("FUN_001f9a10");
 void FUN_001f9a28_00259d08(void *, void *, void *) __asm__("FUN_001f9a28");
 int FUN_001efa68_00259d08(void *, void *, int, void *, int) __asm__("FUN_001efa68");
 int sweep_hit_segment(void *a, void *b, void *c, void *d, void *e, int f, int n) __asm__("FUN_L00_00259d08");
-int sweep_hit_segment(void *first_endpoint_end, void *b, void *first_endpoint_start, void *second_endpoint_start, void *e, int f, int sample_count) {
+int sweep_hit_segment(void *first_endpoint_end, void *second_endpoint_end, void *first_endpoint_start, void *second_endpoint_start, void *e, int f, int sample_count) {
     V4_259d08 da, db, va, vb;
     float k, t;
     int i = 0;
     k = 1.0f / FUN_001fa6c0_00259d08(sample_count);
     FUN_001f9a28_00259d08(da, first_endpoint_end, first_endpoint_start);
-    FUN_001f9a28_00259d08(db, b, second_endpoint_start);
+    FUN_001f9a28_00259d08(db, second_endpoint_end, second_endpoint_start);
     t = k;
     for (; i < sample_count; i++) {
         FUN_001f9a68_00259d08(va, da, t);
@@ -449,14 +449,14 @@ typedef union {
 float fast_arc_tan(float, float) __asm__("FUN_001f9e90");
 float vector_length_xy(void *) __asm__("FUN_001f9b20");
 void trooper_knockback_arc(OvlQuad *v, float *ang, float *s1, float *s2) __asm__("FUN_L00_0025ab48");
-void trooper_knockback_arc(OvlQuad *input_vector, float *ang, float *xy_scaled_value, float *z_scaled_value) {
+void trooper_knockback_arc(OvlQuad *input_vector, float *output_xy_angle, float *xy_scaled_value, float *z_scaled_value) {
     U25ab48 input_vector_copy;
     input_vector_copy.q = *input_vector;
     if (input_vector_copy.f[3] != 5627.9248046875f) {
-        *ang = fast_arc_tan(input_vector_copy.f[0], input_vector_copy.f[1]);
+        *output_xy_angle = fast_arc_tan(input_vector_copy.f[0], input_vector_copy.f[1]);
         return;
     }
-    *ang = fast_arc_tan(input_vector_copy.f[0], input_vector_copy.f[1]);
+    *output_xy_angle = fast_arc_tan(input_vector_copy.f[0], input_vector_copy.f[1]);
     *xy_scaled_value *= vector_length_xy(&input_vector_copy);
     input_vector_copy.f[3] = 0;
     *z_scaled_value *= input_vector_copy.f[2];
@@ -724,7 +724,9 @@ extern void FUN_001f9a10_25b440(void *, void *, void *) __asm__("FUN_001f9a10");
 extern float FUN_001f96b0_25b440(float) __asm__("FUN_001f96b0");
 extern float FUN_00213508_25b440(void *, int, float) __asm__("FUN_00213508");
 
-int FUN_L00_0025b440(O_25b440 *moving_object, S_25b440 *arc_motion_state) {
+int update_arc_motion(O_25b440 *moving_object, S_25b440 *arc_motion_state) __asm__("FUN_L00_0025b440");
+
+int update_arc_motion(O_25b440 *moving_object, S_25b440 *arc_motion_state) {
     enum {
         CHECK_ARC_ENTRY_GATES = 0,
         INTEGRATE_ARC_MOTION = 1,
@@ -733,7 +735,7 @@ int FUN_L00_0025b440(O_25b440 *moving_object, S_25b440 *arc_motion_state) {
     };
     float motion_displacement[4];
     float prediction_time;
-    float g;
+    float ground_height;
 
     switch (arc_motion_state->state) {
     case CHECK_ARC_ENTRY_GATES:
@@ -765,9 +767,9 @@ int FUN_L00_0025b440(O_25b440 *moving_object, S_25b440 *arc_motion_state) {
     case DESCEND_TO_GROUND:
         moving_object->z += arc_motion_state->f10;
         arc_motion_state->f10 -= arc_motion_state->f1C;
-        g = FUN_00213508_25b440(moving_object->pos, 0, 0.5f);
-        if (moving_object->z <= g) {
-            moving_object->z = g;
+        ground_height = FUN_00213508_25b440(moving_object->pos, 0, 0.5f);
+        if (moving_object->z <= ground_height) {
+            moving_object->z = ground_height;
             arc_motion_state->state = 3;
         } else {
             motion_displacement[0] = FUN_001f9dc8_25b440(arc_motion_state->f18) * arc_motion_state->f14;

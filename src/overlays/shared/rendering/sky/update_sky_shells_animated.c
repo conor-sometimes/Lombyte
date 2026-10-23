@@ -96,7 +96,9 @@ void FUN_L00_002899a8_2899a8(void) {
 extern void FUN_001fa070_cf(void *) __asm__("FUN_001f9fc8");
 void FUN_001f9fc8_cf(void *, void *) __asm__("FUN_001fa070");
 
-void FUN_L00_00289a90(void) {
+void draw_sky_shells_with_fast_and_slow_rotation(void) __asm__("FUN_L00_00289a90");
+
+void draw_sky_shells_with_fast_and_slow_rotation(void) {
     enum {
         SKY_SHELL_FAST_ROTATION = 1,
         SKY_SHELL_SLOW_ROTATION = 2
@@ -131,7 +133,9 @@ void set_identity_matrix(void *) __asm__("FUN_001f9fc8");
 void sky_sprite_proc(void) __asm__("FUN_0022bba0");
 void FUN_00233980(int, long);
 void fun_001fa070(void *, void *) __asm__("FUN_001fa070");
-void FUN_L00_00289bd8(void) {
+void draw_sky_shells_with_particles_and_modulo_50000_rotation(void) __asm__("FUN_L00_00289bd8");
+
+void draw_sky_shells_with_particles_and_modulo_50000_rotation(void) {
     float v[4] __attribute__((aligned(16)));
     set_identity_matrix(D_L00_001BD7E0);
     sky_draw_shell(0);
@@ -152,7 +156,9 @@ void set_identity_matrix(void *) __asm__("FUN_001f9fc8");
 void sky_sprite_proc(void) __asm__("FUN_0022bba0");
 void FUN_00233980(int, long);
 void fun_001fa070(void *, void *) __asm__("FUN_001fa070");
-void FUN_L00_0028a208(void) {
+void draw_three_sky_shells_with_particles_and_modulo_50000_rotation(void) __asm__("FUN_L00_0028a208");
+
+void draw_three_sky_shells_with_particles_and_modulo_50000_rotation(void) {
     float v[4] __attribute__((aligned(16)));
     set_identity_matrix(D_L00_001BD7E0);
     sky_draw_shell(0);
@@ -176,7 +182,9 @@ extern u8 *D_L00_0016051C_c2 __asm__("D_L00_0016051C");
 extern s32 D_L00_0015F5CC_c __asm__("D_L00_0015F5CC");
 void set_identity_matrix(void *) __asm__("FUN_001f9fc8");
 void FUN_L00_001ffa90(void *, void *);
-void FUN_L00_0028a2f0(void) {
+void draw_sky_shells_with_modulo_40000_rotation(void) __asm__("FUN_L00_0028a2f0");
+
+void draw_sky_shells_with_modulo_40000_rotation(void) {
     V0028a2f0 shell_rotation;
     *(s16 *)(D_L00_0016051C_c2 + 4) = 0;
     set_identity_matrix(D_L00_001BD7E0);
@@ -191,7 +199,9 @@ void FUN_L00_0028a2f0(void) {
 extern int D_L00_0015F5CC;
 void set_identity_matrix(void *) __asm__("FUN_001f9fc8");
 void fun_001fa070(void *, void *) __asm__("FUN_001fa070");
-void FUN_L00_0028a3a8(void) {
+void draw_sky_shells_with_modulo_25000_rotation(void) __asm__("FUN_L00_0028a3a8");
+
+void draw_sky_shells_with_modulo_25000_rotation(void) {
     float shell_rotation[3];
     *(short *)(D_L00_0016051C + 4) = 0;
     set_identity_matrix(D_L00_001BD7E0);
@@ -213,7 +223,9 @@ extern char D_L00_001BD7E0_lui[] __asm__("D_L00_001BD7E0") __attribute__((sectio
 extern void FUN_001fa070_28a480(void *, void *) __asm__("FUN_001fa070");
 extern void FUN_001f9fc8_28a480(void *) __asm__("FUN_001f9fc8");
 
-void FUN_L00_0028a480(void) {
+void draw_sky_shells_with_scaled_phase_rotation(void) __asm__("FUN_L00_0028a480");
+
+void draw_sky_shells_with_scaled_phase_rotation(void) {
     enum {
         SKY_SHELL_DOUBLE_PHASE_ROTATION = 0,
         SKY_SHELL_QUINTUPLE_PHASE_ROTATION = 1,
@@ -261,7 +273,9 @@ void FUN_L00_0028a480(void) {
 void fun_001fa070(void *, void *) __asm__("FUN_001fa070");
 extern short D_L00_0015F6B0_s __asm__("D_L00_0015F5CC");
 
-void FUN_L00_0028a620(void) {
+void draw_sky_shells_with_slow_medium_and_fast_rotation(void) __asm__("FUN_L00_0028a620");
+
+void draw_sky_shells_with_slow_medium_and_fast_rotation(void) {
     enum {
         SKY_SHELL_SLOW_ROTATION = 1,
         SKY_SHELL_MEDIUM_ROTATION = 2,
@@ -304,7 +318,9 @@ extern void set_identity_matrix(void *) __asm__("FUN_001f9fc8");
 extern void sky_sprite_proc(void) __asm__("FUN_0022bba0");
 extern void vu1_add_g_sregister(s32 a0, s64 a1) __asm__("FUN_00233980");
 
-void FUN_L00_0028a920(void) {
+void draw_three_sky_shells_with_particles(void) __asm__("FUN_L00_0028a920");
+
+void draw_three_sky_shells_with_particles(void) {
     set_identity_matrix(D_L00_001BD7E0);
     sky_draw_shell(0);
     sky_draw_shell(1);
@@ -317,7 +333,9 @@ void FUN_L00_0028a920(void) {
 }
 void set_identity_matrix(void *) __asm__("FUN_001f9fc8");
 void fun_001fa070(void *, void *) __asm__("FUN_001fa070");
-void FUN_L00_0028a998(void) {
+void draw_three_sky_shells_with_modulo_50000_and_100000_rotation(void) __asm__("FUN_L00_0028a998");
+
+void draw_three_sky_shells_with_modulo_50000_and_100000_rotation(void) {
     float v[4] __attribute__((aligned(16)));
     set_identity_matrix(D_L00_001BD7E0);
     sky_draw_shell(0);
@@ -334,7 +352,9 @@ extern u8 *D_L00_0016051C_0028aa98 __asm__("D_L00_0016051C");
 void FUN_001f9fc8_0028aa98(void *) __asm__("FUN_001f9fc8");
 void FUN_0022bba0_0028aa98(void) __asm__("FUN_0022bba0");
 void FUN_00233980_0028aa98(s32, u64) __asm__("FUN_00233980");
-void FUN_L00_0028aa98(void) {
+void draw_two_sky_shells_with_particles(void) __asm__("FUN_L00_0028aa98");
+
+void draw_two_sky_shells_with_particles(void) {
     FUN_001f9fc8_0028aa98(D_L00_001BD7E0);
     sky_draw_shell(0);
     if (*(s16 *)(D_L00_0016051C_0028aa98 + 8) == 0)
@@ -348,7 +368,9 @@ void FUN_L00_0028aa98(void) {
 
 void set_identity_matrix(void *) __asm__("FUN_001f9fc8");
 void fun_001fa070(void *, void *) __asm__("FUN_001fa070");
-void FUN_L00_0028b080(void) {
+void draw_seven_sky_shells_with_modulo_40000_and_60000_rotation(void) __asm__("FUN_L00_0028b080");
+
+void draw_seven_sky_shells_with_modulo_40000_and_60000_rotation(void) {
     float v[4] __attribute__((aligned(16)));
     *(short *)(D_L00_0016051C + 4) = 0;
     sky_draw_shell(0);
@@ -380,7 +402,9 @@ void FUN_001f9a80_28b1a0(void *, void *, float) __asm__("FUN_001f9a80");
 
 extern float D_L00_001604C0 __attribute__((sda));
 extern OvlQuad D_L00_00160520 __attribute__((section(".sdata")));
-void FUN_L00_0028b1a0(void) {
+void draw_sky_shells_with_rotation_and_scaling(void) __asm__("FUN_L00_0028b1a0");
+
+void draw_sky_shells_with_rotation_and_scaling(void) {
     enum {
         SKY_SHELL_TRIPLE_SCALE = 1,
         SKY_SHELL_TWO_AND_A_HALF_SCALE = 2,

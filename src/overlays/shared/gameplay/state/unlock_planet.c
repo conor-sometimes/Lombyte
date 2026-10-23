@@ -92,7 +92,7 @@ int FUN_L00_0025fcb8(char *query_moby, char *target_output, float best) {
 extern int FUN_00214720_25ff38(void *, int) __asm__("FUN_00214720");
 extern int FUN_L00_00259740_25ff38(void *, void *, int) __asm__("FUN_L00_00259740");
 int FUN_L00_0025ff38(char *a, char *o, float best, int *list, int n, float *v, int nv);
-int FUN_L00_0025ff38(char *query_moby, char *target_output, float best, int *list, int exclusion_list_bound, float *v, int nv) {
+int FUN_L00_0025ff38(char *query_moby, char *target_output, float best, int *list, int exclusion_list_bound, float *target_region_vertices, int nv) {
     struct Hero *hero_data = &hero_lui;
     char *selected_moby;
     char *indexed_candidate;
@@ -117,8 +117,8 @@ int FUN_L00_0025ff38(char *query_moby, char *target_output, float best, int *lis
                 break;
             }
         }
-    } else if (v != 0 && nv > 0) {
-        if (FUN_L00_00259740_25ff38(&hero_lui.motion.pos, v, nv) == 0) {
+    } else if (target_region_vertices != 0 && nv > 0) {
+        if (FUN_L00_00259740_25ff38(&hero_lui.motion.pos, target_region_vertices, nv) == 0) {
             selected_moby = 0;
             target_selection_status = 2;
         }
@@ -141,8 +141,8 @@ int FUN_L00_0025ff38(char *query_moby, char *target_output, float best, int *lis
                     break;
                 }
             }
-        } else if (v != 0 && nv > 0) {
-            if (FUN_L00_00259740_25ff38(indexed_candidate + 0x10, v, nv) == 0) ok = 0;
+        } else if (target_region_vertices != 0 && nv > 0) {
+            if (FUN_L00_00259740_25ff38(indexed_candidate + 0x10, target_region_vertices, nv) == 0) ok = 0;
         }
         if (ok) {
             selected_moby = indexed_candidate;
@@ -168,8 +168,8 @@ int FUN_L00_0025ff38(char *query_moby, char *target_output, float best, int *lis
                     break;
                 }
             }
-        } else if (v != 0 && nv > 0) {
-            if (FUN_L00_00259740_25ff38(listed_candidate + 0x10, v, nv) == 0) ok = 0;
+        } else if (target_region_vertices != 0 && nv > 0) {
+            if (FUN_L00_00259740_25ff38(listed_candidate + 0x10, target_region_vertices, nv) == 0) ok = 0;
         }
         if (ok) {
             selected_moby = listed_candidate;
@@ -237,8 +237,10 @@ void FUN_00214598_002604f0(void *, void *) __asm__("FUN_00214598");
 void FUN_L00_00260668_002604f0(void *, void *, void *, void *, void *,
                                void *) __asm__("FUN_L00_00260668");
 void FUN_L00_0025f730_002604f0(void *, float) __asm__("FUN_L00_0025f730");
-int FUN_L00_002604f0(u8 *a, u8 *b, void *c, void *d, void *e, void *f);
-int FUN_L00_002604f0(u8 *comparison_object, u8 *reference_object, void *position, void *rotation, void *transformed_position, void *transformed_rotation) {
+int transform_attachment_pose(u8 *comparison_object, u8 *reference_object, void *position, void *rotation, void *transformed_position, void *transformed_rotation) __asm__("FUN_L00_002604f0");
+
+int transform_attachment_pose(u8 *a, u8 *b, void *c, void *d, void *e, void *f) __asm__("FUN_L00_002604f0");
+int transform_attachment_pose(u8 *comparison_object, u8 *reference_object, void *position, void *rotation, void *transformed_position, void *transformed_rotation) {
     float m2[16] __attribute__((aligned(16)));
     float m[16] __attribute__((aligned(16)));
     V4_2604f0 translation_adjustment;
@@ -440,7 +442,7 @@ extern void fast_vec_normalize(void *, void *, f32) __asm__("FUN_001f9bf8");
 extern void fast_vec_scale(void *, void *, f32) __asm__("FUN_001f9a68");
 extern int FUN_L00_002595a0(float *, float *, float, float, float);
 extern int FUN_L00_00261b48(int, void *, void *, void *);
-extern void FUN_L00_002a7438(void *, void *, void *, int, int, int);
+extern void spawn_bolt_by_value(void *, void *, void *, int, int, int) __asm__("FUN_L00_002a7438");
 
 void FUN_L00_00260a88(struct Moby *moby, int min_bolts, int max_bolts, int flags, int path_index)
 {
@@ -643,16 +645,16 @@ void FUN_L00_00260a88(struct Moby *moby, int min_bolts, int max_bolts, int flags
         }
         add_vector_xyz(velocity, velocity, base_velocity);
         if (fifties) {
-            FUN_L00_002a7438(moby, position, velocity, flags, 50, counted);
+            spawn_bolt_by_value(moby, position, velocity, flags, 50, counted);
             fifties--;
         } else if (twenties) {
-            FUN_L00_002a7438(moby, position, velocity, flags, 20, counted);
+            spawn_bolt_by_value(moby, position, velocity, flags, 20, counted);
             twenties--;
         } else if (fives) {
-            FUN_L00_002a7438(moby, position, velocity, flags, 5, counted);
+            spawn_bolt_by_value(moby, position, velocity, flags, 5, counted);
             fives--;
         } else {
-            FUN_L00_002a7438(moby, position, velocity, flags, 1, counted);
+            spawn_bolt_by_value(moby, position, velocity, flags, 1, counted);
             ones--;
         }
     }

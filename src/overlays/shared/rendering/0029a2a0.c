@@ -14,12 +14,14 @@ extern void *create_part(int) __asm__("FUN_L00_002678b8");
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
 extern unsigned char *D_L07_001B21CC NOT_SDA;
-unsigned char *FUN_L07_0029a2a0(char *pos, char *particle_motion_vector) {
+unsigned char *spawn_projectile_expiry_particle(char *particle_spawn_position, char *particle_motion_vector) __asm__("FUN_L07_0029a2a0");
+
+unsigned char *spawn_projectile_expiry_particle(char *particle_spawn_position, char *particle_motion_vector) {
     unsigned char *particle = create_part(0x33);
     if (particle != 0) {
         char *particle_vector = (char *)particle + 0x20;
         char *particle_position = (char *)particle + 0x10;
-        qcopy(particle_position, pos);
+        qcopy(particle_position, particle_spawn_position);
         qcopy(particle_vector, particle_motion_vector);
         *(int *)(particle + 4) = 0x5E806040;
         particle[9] = func_001FA898_r(4.0f) + 0x40;
@@ -43,8 +45,10 @@ extern void subtract_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a28");
 extern unsigned char *D_L07_001B21F4 __asm__("D_L07_001B21F4") __attribute__((section(".data")));
 extern float D_L07_00166E40[];
 
-unsigned char *FUN_L07_0029b8d8(void *m, short index, float amount, float factor);
-unsigned char *FUN_L07_0029b8d8(void *moby, short index, float amount, float factor) {
+unsigned char *spawn_moby_point_offset_particle(void *moby, short index, float amount, float factor) __asm__("FUN_L07_0029b8d8");
+
+unsigned char *spawn_moby_point_offset_particle(void *m, short index, float amount, float factor) __asm__("FUN_L07_0029b8d8");
+unsigned char *spawn_moby_point_offset_particle(void *moby, short index, float amount, float factor) {
     float moby_point_world_position[4];
     float position_offset[4];
     unsigned char *particle = create_part(0x3d);

@@ -12,14 +12,16 @@ extern int scale_game_frames(int) __asm__("FUN_001f96f8");
 extern void queue_animation_update(int, int, void *, void *, void *, void *, int) __asm__("FUN_001ff308");
 extern void FUN_L00_00236268(void);
 extern void FUN_L00_00236458(void);
-extern void FUN_L00_002365a8(void);
+extern void draw_hud_stars(void) __asm__("FUN_L00_002365a8");
 extern int ray_hits(void *, void *, int, void *, int) __asm__("FUN_001efa68");
 extern int hero_set_state(int, int) __asm__("FUN_L00_002223f8");
 /* The same function under a void-returning prototype, as an older
    declaration of it would have read; see the 0x33 call below. */
 extern void hero_set_state_v(int, int) __asm__("FUN_L00_002223f8");
 
-int FUN_L00_00227778(void) {
+int try_transition_hero_water_state(void) __asm__("FUN_L00_00227778");
+
+int try_transition_hero_water_state(void) {
     Vec4 start;
     Vec4 end;
     int decrement;
@@ -31,7 +33,7 @@ int FUN_L00_00227778(void) {
         } else {
             decrement = 10000 / (scale_game_frames(0x3C) * 15);
             queue_animation_update(4, 0x753F, FUN_L00_00236268,
-                FUN_L00_00236458, FUN_L00_002365a8, &hero.unk22A0, 10000);
+                FUN_L00_00236458, draw_hud_stars, &hero.unk22A0, 10000);
         }
         hero.unk22A0 -= decrement;
         if (hero.unk22A0 < 0)

@@ -23,7 +23,7 @@ extern void copy_memory_aligned(int, void *, unsigned short) __asm__("FUN_001f98
 extern s32 D_0014C190_257218[][64] __asm__("D_0014C190");
 void jet_reset_camera(OvlQuad *a, OvlQuad *b) __asm__("FUN_L00_00284e50");
 void jet_reset_camera(OvlQuad *saved_position, OvlQuad *saved_rotation) {
-    unsigned char *src;
+    unsigned char *save_candidate_cursor;
     int i;
     char *saved_state;
     struct Hero *hero_state;
@@ -35,8 +35,8 @@ void jet_reset_camera(OvlQuad *saved_position, OvlQuad *saved_rotation) {
 
     copy_memory_aligned((int)&D_L00_001BB280, &D_L00_001BA620, 0x404);
     lvl = current_level_index;
-    for (src = D_L00_001BA620.f, i = 0; i < 0x7FF; i++, src++) {
-        source_byte = *src;
+    for (save_candidate_cursor = D_L00_001BA620.f, i = 0; i < 0x7FF; i++, save_candidate_cursor++) {
+        source_byte = *save_candidate_cursor;
         if ((unsigned char)source_byte == 0)
             continue;
         if ((unsigned char)source_byte != 1 && D_0014C050[lvl][(unsigned char)source_byte - 2] != 0xFF)
@@ -84,7 +84,9 @@ extern void euler_rotation_basis(void *, void *) __asm__("FUN_001fa030");
 extern void init_camera_system(void) __asm__("FUN_L00_001ed280");
 extern void FUN_L00_002852c0(void);
 
-void FUN_L00_00285008(void) {
+void restore_or_clear_level_state(void) __asm__("FUN_L00_00285008");
+
+void restore_or_clear_level_state(void) {
     char *s = D_L00_001BB230;
     int i;
     short id;
@@ -170,7 +172,9 @@ typedef struct {
 extern int FUN_L00_002851c0_u(int, int) __asm__("FUN_L00_002851c0");
 extern void copy_memory_aligned(int, void *, unsigned short) __asm__("FUN_001f9838");
 
-void FUN_L00_00285208(int *entry_block) {
+void restore_moby_state_entries(int *entry_block) __asm__("FUN_L00_00285208");
+
+void restore_moby_state_entries(int *entry_block) {
     int i;
 
     for (i = 0; i < *entry_block; i++) {

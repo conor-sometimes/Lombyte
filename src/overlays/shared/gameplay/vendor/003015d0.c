@@ -44,10 +44,14 @@ extern int D_L14_001620D8_t; /* no foreign declaration */
 extern int fast_dec_timer_s16(void *) __asm__("FUN_001f9770");
 extern int fast_bsphere_check(void *, float) __asm__("FUN_001fa728");
 extern int scale_game_frames(int) __asm__("FUN_001f96f8");
-extern void FUN_L14_003017f8(char *);
-extern void FUN_L14_00301de8(char *);
-extern void FUN_L14_00301fa8(char *);
-extern void FUN_L14_00302538(char *);
+extern void start_vendor_beam_pulse(char *) __asm__("FUN_L14_003017f8");
+void update_vendor_beam_animation(char *moby) __asm__("FUN_L14_00301de8");
+
+extern void update_vendor_beam_animation(char *) __asm__("FUN_L14_00301de8");
+extern void draw_vendor_beam(char *) __asm__("FUN_L14_00301fa8");
+void apply_vendor_beam_damage(char *self) __asm__("FUN_L14_00302538");
+
+extern void apply_vendor_beam_damage(char *) __asm__("FUN_L14_00302538");
 extern void enqueue_callback_list_1(void (*)(void), void *) __asm__("FUN_001f4600");
 extern int D_L14_0016219C_s __asm__("D_L14_001620CC") __attribute__((sda));
 extern int D_L14_00162188_s __asm__("D_L14_001620B8") __attribute__((sda));
@@ -56,7 +60,9 @@ extern s32 D_L14_001620C8_gp __asm__("D_L14_001620C8") __attribute__((sda));
 extern int D_L14_001621A4_s __asm__("D_L14_001620D4") __attribute__((sda));
 
 extern int D_L14_001620D8 __attribute__((sda));
-void FUN_L14_003015d0(unsigned char *moby) {
+void update_vendor_beam(unsigned char *moby) __asm__("FUN_L14_003015d0");
+
+void update_vendor_beam(unsigned char *moby) {
     enum {
         BEAM_STATE_INITIALIZE = 0,
         BEAM_STATE_COUNTER_TRIGGERED_PULSES = 1,
@@ -80,7 +86,7 @@ void FUN_L14_003015d0(unsigned char *moby) {
     beam_state = moby[0x20];
     switch (beam_state) {
     case BEAM_STATE_INITIALIZE:
-        FUN_L14_003017f8((char *)moby);
+        start_vendor_beam_pulse((char *)moby);
         beam_vars->s10 = scale_game_frames(beam_vars->wC);
         moby[0x20] = 2;
         beam_vars->f624 = vector_length_xyz(&D_L14_001600EC[beam_vars->w0].axis[1]);
@@ -91,7 +97,7 @@ void FUN_L14_003015d0(unsigned char *moby) {
         if (D_L14_00162188_s != 0) {
             if (beam_vars->s12 == 0) {
                 D_L14_00162188_s = D_L14_00162188_s - 1;
-                FUN_L14_003017f8((char *)moby);
+                start_vendor_beam_pulse((char *)moby);
             }
         }
         break;
@@ -99,7 +105,7 @@ void FUN_L14_003015d0(unsigned char *moby) {
         if (fast_dec_timer_s16(&beam_vars->s10) != 0) {
             moby[0x20] = 3;
             beam_vars->s10 = scale_game_frames(beam_vars->s4);
-            FUN_L14_003017f8((char *)moby);
+            start_vendor_beam_pulse((char *)moby);
         }
         break;
     case BEAM_STATE_REPEAT_PULSES:
@@ -112,24 +118,24 @@ void FUN_L14_003015d0(unsigned char *moby) {
             }
             beam_vars->s10 = scale_game_frames(phase_duration_frames);
         } else if (beam_vars->s12 == 0) {
-            FUN_L14_003017f8((char *)moby);
+            start_vendor_beam_pulse((char *)moby);
         }
         break;
     }
     if (D_L14_001620D8 == 0) {
         if (vector_distance(moby + 0x10, &hero.motion.pos) < 10.0f) {
-            FUN_L14_00302538((char *)moby);
+            apply_vendor_beam_damage((char *)moby);
         }
     }
     if (beam_vars->s12 != 0) {
         if (D_L14_001621A0_s == 0) {
-            FUN_L14_00301de8((char *)moby);
+            update_vendor_beam_animation((char *)moby);
         }
         if (*(int *)&D_L14_001620C8_gp < beam_vars->s12) {
             if (D_L14_001621A4_s != 0) {
                 return;
             }
-            enqueue_callback_list_1(FUN_L14_00301fa8, moby);
+            enqueue_callback_list_1(draw_vendor_beam, moby);
         }
     }
 }
@@ -172,7 +178,7 @@ typedef struct {
 } VendorBeamVars;
 
 /* Ported from rac1-decomp (src/overlays/shared/vendor_002B2A28.c: func_L14_00302C80). */
-void FUN_L14_003017f8(char *moby) {
+void start_vendor_beam_pulse(char *moby) {
     VendorBeamVars *beam = *(VendorBeamVars **)(moby + 0x78);
     Vec4 path[32];
     Vec4 path_steps[32];
@@ -281,7 +287,7 @@ extern int D_L14_001620F8 __attribute__((sda));
 extern float convert_integer_to_float(int) __asm__("FUN_001fa6c0");
 extern int fast_tween_color(int, int, float) __asm__("FUN_001fa6e0");
 extern void add_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a10");
-void FUN_L14_00301de8(char *moby) {
+void update_vendor_beam_animation(char *moby) {
     char *vars = *(char **)(moby + 0x78);
     char *beam_point, *src;
     u8 *indices;
@@ -363,7 +369,7 @@ extern float D_L14_001E5FD0[4][2];
 #define EMPTY_SCOPES_4 { typedef int pad; } { typedef int pad; } { typedef int pad; } { typedef int pad; }
 
 /* Ported from rac1-decomp (src/overlays/shared/vendor_00303430.c: func_L14_00303430). */
-void FUN_L14_00301fa8(char *moby) {
+void draw_vendor_beam(char *moby) {
     VendorBeamVars *beam = *(VendorBeamVars **)(moby + 0x78);
     VendorBeamStripPacket packet[3];
     float world[16] __attribute__((aligned(16)));
@@ -499,12 +505,12 @@ extern f32 dot_vectors_xyz(void *, void *) __asm__("FUN_001f9ab0");
 extern int collision_line(void *, void *, int, void *, void *) __asm__("FUN_001efa68");
 
 /* Sweeps the beam's two end lines; anything they cross takes damage pushed away from the beam. */
-void FUN_L14_00302538(char *self) {
+void apply_vendor_beam_damage(char *self) {
     struct Moby *beam_moby = (struct Moby *)self;
     D1224 *beam_vars = (D1224 *)beam_moby->pvars;
     VendorBeamReq req;
-    Vec4 dir, to_hero, base, end_a, end_b, from, to, beam_radius_offset;
-    f32 dot, len;
+    Vec4 damage_push_direction, to_hero, base, end_a, end_b, from, to, beam_radius_offset;
+    f32 dot, collision_offset_length;
 
     if (beam_vars->radius == 0.0f)
         return;
@@ -518,25 +524,25 @@ void FUN_L14_00302538(char *self) {
     req.v[3] = 5627.925f;
     req.a = 3;
     req.oclass = beam_moby->oclass;
-    dir.f[0] = fast_cos(beam_moby->rot.z);
-    dir.f[1] = fast_sin(beam_moby->rot.z);
-    dir.f[2] = 0.0f;
+    damage_push_direction.f[0] = fast_cos(beam_moby->rot.z);
+    damage_push_direction.f[1] = fast_sin(beam_moby->rot.z);
+    damage_push_direction.f[2] = 0.0f;
     subtract_vector_xyz(&to_hero, &hero.motion.pos, &beam_moby->pos);
     to_hero.f[2] = 0.0f;
-    dot = dot_vectors_xyz(&dir, &to_hero);
+    dot = dot_vectors_xyz(&damage_push_direction, &to_hero);
     if (vector_length_xyz(&to_hero) != 0.0f) {
         if (dot < 0.0f)
-            scale_vector_xyz(&dir, &dir, -1.0f);
-        req.v[0] = dir.f[0];
-        req.v[1] = dir.f[1];
+            scale_vector_xyz(&damage_push_direction, &damage_push_direction, -1.0f);
+        req.v[0] = damage_push_direction.f[0];
+        req.v[1] = damage_push_direction.f[1];
     }
     qcopy_nc(&base, &D_L14_001600EC[beam_vars->w0].origin);
     if (beam_vars->s8) {
         add_vector_xyz(&end_a, &base, &D_L14_001600EC[beam_vars->w0].axis[1]);
         if (collision_line(&base, &end_a, 0, beam_moby, 0)) {
             subtract_vector_xyz(&from, D_L14_00174560, &base);
-            len = vector_length_xyz(&from);
-            scale_vector_xyz(&from, &from, len * 0.98f / len);
+            collision_offset_length = vector_length_xyz(&from);
+            scale_vector_xyz(&from, &from, collision_offset_length * 0.98f / collision_offset_length);
             add_vector_xyz(&beam_vars->end_a, &base, &from);
             beam_vars->s8 = 0;
         } else {
@@ -547,8 +553,8 @@ void FUN_L14_00302538(char *self) {
         subtract_vector_xyz(&end_b, &base, &D_L14_001600EC[beam_vars->w0].axis[1]);
         if (collision_line(&base, &end_b, 0, beam_moby, 0)) {
             subtract_vector_xyz(&from, D_L14_00174560, &base);
-            len = vector_length_xyz(&from);
-            scale_vector_xyz(&from, &from, len * 0.98f / len);
+            collision_offset_length = vector_length_xyz(&from);
+            scale_vector_xyz(&from, &from, collision_offset_length * 0.98f / collision_offset_length);
             add_vector_xyz(&beam_vars->end_b, &base, &from);
             beam_vars->sA = 0;
         } else {
@@ -579,11 +585,13 @@ void FUN_L14_00302538(char *self) {
 
 extern int D_L14_00162148[] __attribute__((section(".sdata")));
 extern int D_L14_001621D8[] __attribute__((section(".sdata")));
-extern void FUN_L00_002e20f8(int);
-extern void FUN_L00_002e2250(int, int);
-extern void FUN_L00_002e2af0(void);
+extern void release_beam_slot(int) __asm__("FUN_L00_002e20f8");
+extern void update_slot_panes_and_effects(int, int) __asm__("FUN_L00_002e2250");
+extern void draw_active_beam_slots(void) __asm__("FUN_L00_002e2af0");
 
-void FUN_L14_003039e0(unsigned char *moby) {
+void update_beam_slots(unsigned char *moby) __asm__("FUN_L14_003039e0");
+
+void update_beam_slots(unsigned char *moby) {
     enum {
         SLOT_UPDATE_STATE_INITIALIZE = 0,
         SLOT_UPDATE_STATE_PROCESS_SLOTS = 1
@@ -612,15 +620,15 @@ void FUN_L14_003039e0(unsigned char *moby) {
                     D_L14_001621D8[i] = 0;
                 }
             } else if (slot_state == 4) {
-                FUN_L00_002e20f8(i);
+                release_beam_slot(i);
             } else if (slot_state != 0) {
                 started_slot_count++;
-                FUN_L00_002e2250(D_L14_001621D8[i], i);
+                update_slot_panes_and_effects(D_L14_001621D8[i], i);
                 D_L14_00162148[i] = 4;
             }
         }
         if (started_slot_count != 0) {
-            enqueue_callback_list_1(FUN_L00_002e2af0, moby);
+            enqueue_callback_list_1(draw_active_beam_slots, moby);
         }
         break;
     }

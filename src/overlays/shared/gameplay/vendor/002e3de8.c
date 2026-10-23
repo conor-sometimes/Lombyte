@@ -15,7 +15,7 @@ extern float random_angle_radians(void) __asm__("FUN_00213308");
 extern float random_float_between_alt(float, float) __asm__("FUN_002132a8");
 extern int random_int_between(int, int) __asm__("FUN_L00_00257b90");
 extern void fast_vec_add(float *, float *, float *) __asm__("FUN_001f9a10");
-extern void FUN_L01_00287158(float *, float, float, int, int, int);
+extern void spawn_type_52_particle(float *, float, float, int, int, int) __asm__("FUN_L01_00287158");
 
 extern short D_L10_00161E58 __attribute__((sda));
 extern short D_L10_00161E5C __attribute__((sda));
@@ -26,7 +26,7 @@ extern short D_L10_00161E6C __attribute__((sda));
 extern short D_L10_00161E70 __attribute__((sda));
 void FUN_L10_002e3de8(char *moby) {
     float spawn_position[3];
-    int g, particle_data_value;
+    int particle_header_value, particle_data_value;
     float offset_angle_radians = random_angle_radians();
     float offset_radius = random_float_between_alt(0.0f, *(float *)&D_L10_00161E70);
     float particle_scale = random_float_between_alt(0.0f, *(float *)&D_L10_00161E60);
@@ -37,9 +37,9 @@ void FUN_L10_002e3de8(char *moby) {
     spawn_position[2] = 0.0f;
     fast_vec_add(spawn_position, spawn_position, (float *)(moby + 0x10));
     spawn_position[2] = spawn_position[2] + 0.025f;
-    g = *(int *)&D_L10_00161E58;
+    particle_header_value = *(int *)&D_L10_00161E58;
     particle_data_value = *(int *)&D_L10_00161E5C;
-    FUN_L01_00287158(spawn_position, particle_scale, random_particle_value, g, particle_data_value, random_divisor);
+    spawn_type_52_particle(spawn_position, particle_scale, random_particle_value, particle_header_value, particle_data_value, random_divisor);
 }
 
 #define NOT_SDA
@@ -56,11 +56,13 @@ void FUN_L10_002e3de8(char *moby) {
 extern float FUN_001f9b48(void *, void *);
 extern void transform_vector(void *, void *, void *) __asm__("FUN_001f9d20");
 extern void transpose_rotation_matrix(void *, void *) __asm__("FUN_001fa2d8");
-extern void FUN_L10_002e91b8(unsigned char *m);
+extern void draw_moby_animated_quad_layers(unsigned char *m) __asm__("FUN_L10_002e91b8");
 extern void enqueue_callback_list_1(void (*)(void), void *) __asm__("FUN_001f4600");
 extern void subtract_vector_xyz(void *, void *, void *);
 
-void FUN_L10_002e9028(unsigned char *moby) {
+void update_hero_flag_from_moby_local_box(unsigned char *moby) __asm__("FUN_L10_002e9028");
+
+void update_hero_flag_from_moby_local_box(unsigned char *moby) {
     enum {
         MOBY_UPDATE_INITIALIZE = 0,
         MOBY_UPDATE_ACTIVE = 1
@@ -91,7 +93,7 @@ void FUN_L10_002e9028(unsigned char *moby) {
                 hero.unk22CB = 0;
             }
         }
-        enqueue_callback_list_1(FUN_L10_002e91b8, moby);
+        enqueue_callback_list_1(draw_moby_animated_quad_layers, moby);
         break;
     }
 }
@@ -132,7 +134,7 @@ extern void fast_draw_quad_real(void *, void *, int);
     ((unsigned long)(a) | ((unsigned long)(b) << 2) | ((unsigned long)(k) << 4) | \
      ((unsigned long)(d) << 6) | ((unsigned long)(fix) << 32))
 
-void FUN_L10_002e91b8(unsigned char *moby) {
+void draw_moby_animated_quad_layers(unsigned char *moby) {
     TrailQuad first, second;
     float transform[12] __attribute__((aligned(16)));
     float position[4] __attribute__((aligned(16)));
@@ -293,7 +295,9 @@ extern int hero_set_state(int, int) __asm__("FUN_L00_002223f8");
 extern struct { char pad0[0x184]; char *source; } D_L10_00167100;
 extern VendorView_5f18 D_L10_0016CEC0;
 
-void FUN_L10_002f5b58(struct UpdateCam *path_camera) {
+void initialize_path_camera(struct UpdateCam *path_camera) __asm__("FUN_L10_002f5b58");
+
+void initialize_path_camera(struct UpdateCam *path_camera) {
     char *rec = *(char **)(D_L10_0015EF50 + path_camera->descriptor_index * 32 + 0x1C);
     VendorCamRun_5f18 *run;
     VendorCamStops_5f18 *stops;
@@ -565,7 +569,9 @@ void FUN_L10_002f5f18(struct UpdateCam *cam) {
 extern char *D_L10_0015EF50;
 extern int FUN_L10_002f5a78_u(char *, char *) __asm__("FUN_L10_002f5a78");
 
-int FUN_L10_002f65f8(char *descriptor_owner, char *comparison_object) {
+int evaluate_descriptor_eligibility(char *descriptor_owner, char *comparison_object) __asm__("FUN_L10_002f65f8");
+
+int evaluate_descriptor_eligibility(char *descriptor_owner, char *comparison_object) {
     unsigned char *descriptor_record = *(unsigned char **)(D_L10_0015EF50 + *(short *)(descriptor_owner + 0x84) * 32 + 0x1C);
     int x;
     int y;

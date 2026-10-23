@@ -98,7 +98,9 @@ void FUN_L00_002118c8_002293a8(s32, f32) __asm__("FUN_L00_002118c8");
 void FUN_L00_002325e0_002293a8(s32, s32) __asm__("FUN_L00_002325e0");
 void FUN_L00_0025f730_002293a8(void *, f32) __asm__("FUN_L00_0025f730");
 s32 FUN_L00_00205000_002293a8(s32) __asm__("FUN_L00_00205000");
-void FUN_L00_002293a8(void) {
+void update_hero_locomotion_state(void) __asm__("FUN_L00_002293a8");
+
+void update_hero_locomotion_state(void) {
     u8 *hero_byte_base, *hero_run_base, *hero_stop_idle_base;
     s32 animation_frames_or_id;
     hero_byte_base = D_0013F350_002293a8;
@@ -224,23 +226,23 @@ extern float fast_sin(float) __asm__("FUN_001f9de0");
 extern int collision_line(void *, void *, int, void *, int) __asm__("FUN_001efa68");
 
 int FUN_L00_00229910(void) {
-    struct Hero *g = &hero;
+    struct Hero *hero_ptr = &hero;
     V_229910_00229910 collision_line_start, collision_line_end;
     float height_delta;
-    if (g->motion.unk164 < g->unk234 / (float)FUN_001f96f8_00229910(20))
+    if (hero_ptr->motion.unk164 < hero_ptr->unk234 / (float)FUN_001f96f8_00229910(20))
         return 0;
-    if (0.52359879f < fast_difference_between_rotations(angle_atan2(g->motion.displacement.f[0],
-                                                                  g->motion.displacement.f[1]),
-                                            g->motion.rot.f[2]))
+    if (0.52359879f < fast_difference_between_rotations(angle_atan2(hero_ptr->motion.displacement.f[0],
+                                                                  hero_ptr->motion.displacement.f[1]),
+                                            hero_ptr->motion.rot.f[2]))
         return 0;
-    qcopy(&collision_line_start, &g->motion.pos);
-    collision_line_start.f[0] += fast_cos(g->motion.rot.f[2]) * g->unk234 * 0.75f;
-    collision_line_start.f[1] += fast_sin(g->motion.rot.f[2]) * g->unk234 * 0.75f;
+    qcopy(&collision_line_start, &hero_ptr->motion.pos);
+    collision_line_start.f[0] += fast_cos(hero_ptr->motion.rot.f[2]) * hero_ptr->unk234 * 0.75f;
+    collision_line_start.f[1] += fast_sin(hero_ptr->motion.rot.f[2]) * hero_ptr->unk234 * 0.75f;
     qcopy(&collision_line_end, &collision_line_start);
     collision_line_start.f[2] += 0.47f;
     collision_line_end.f[2] -= 1.0f;
-    if (collision_line(&collision_line_start, &collision_line_end, 2, ((void *)g->moby), 0)) {
-        height_delta = D_L00_00173E68_00229910 - g->motion.pos.f[2];
+    if (collision_line(&collision_line_start, &collision_line_end, 2, ((void *)hero_ptr->moby), 0)) {
+        height_delta = D_L00_00173E68_00229910 - hero_ptr->motion.pos.f[2];
         if (height_delta < 0.37f && -1.0f < height_delta)
             return 1;
     }
@@ -257,7 +259,9 @@ void FUN_L00_0020e698(void);
 extern int hero_set_state(int, int) __asm__("FUN_L00_002223f8");
 s32 scale_game_frames(s32) __asm__("FUN_001f96f8");
 void set_hero_animation(s32, s32, f32) __asm__("FUN_L00_002323b8");
-s32 FUN_L00_00229a98(void) {
+s32 try_start_hero_item_idle_animation(void) __asm__("FUN_L00_00229a98");
+
+s32 try_start_hero_item_idle_animation(void) {
     struct Hero *hero_ptr = &hero;
     s32 id, k;
     if (hero_ptr->unk20A8 == 0 || hero_ptr->unk20AA == 0 || hero_ptr->unk22C8 != 0)

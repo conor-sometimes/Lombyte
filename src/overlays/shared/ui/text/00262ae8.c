@@ -28,10 +28,12 @@ typedef struct {
     s32 unk7C;
 } HudElemX;
 extern s32 scale_game_frames(s32) __asm__("FUN_001f96f8");
-extern void FUN_L00_00235c80(void *);
+extern void initialize_numeric_hud_values_and_dimensions(void *) __asm__("FUN_L00_00235c80");
 extern s32 D_L05_0015FAFC;
 
-void FUN_L05_00262ae8(HudElemX *hud_element) {
+void initialize_trick_combo_hud(HudElemX *hud_element) __asm__("FUN_L05_00262ae8");
+
+void initialize_trick_combo_hud(HudElemX *hud_element) {
     s32 i;
     s32 *reset_slot;
     hud_element->unk7C = scale_game_frames(0xB4) + 0x1E;
@@ -42,7 +44,7 @@ void FUN_L05_00262ae8(HudElemX *hud_element) {
     for (; i >= 0; i--) {
         *reset_slot-- = -1;
     }
-    FUN_L00_00235c80(hud_element);
+    initialize_numeric_hud_values_and_dimensions(hud_element);
 }
 #include "rnc/gameplay/hero.h"
 
@@ -69,7 +71,9 @@ extern s32 D_L05_0015FAFC_macro __asm__("D_L05_0015FAFC") __attribute__((section
 extern s32 D_L05_0015FB00;
 extern u8 D_L05_0015F87C __attribute__((sda));
 
-void FUN_L05_00262b58(HudCounter *element) {
+void update_trick_combo_hud(HudCounter *element) __asm__("FUN_L05_00262b58");
+
+void update_trick_combo_hud(HudCounter *element) {
     enum {
         HUD_COUNTER_WAITING_FOR_COMBO = 0,
         HUD_COUNTER_TRACKING_COMBO = 1,
@@ -203,7 +207,7 @@ extern void font_print_center_large(s32, s32, u64, char *, s32) __asm__("FUN_001
 extern void draw_framed_text(s32, s32, s32, char *) __asm__("FUN_00201200");
 extern s32 hud_screen_position(char *, s32 *, s32 *) __asm__("FUN_L00_00235a70");
 extern s32 get_icon_frame(s32, s32) __asm__("FUN_001ff960");
-extern void FUN_L00_0023b6c0(s32, s32, s32, s32, s32, s32);
+extern void draw_cropped_hud_sprite(s32, s32, s32, s32, s32, s32) __asm__("FUN_L00_0023b6c0");
 extern void draw_hud_sprite(s32, s32, s32, s32, s32, s32) __asm__("FUN_001ffc30");
 
 extern s32 D_L05_0015FAE4 __attribute__((section(".sdata")));
@@ -230,7 +234,9 @@ extern s32 D_L05_0015F8C0 __attribute__((sda));
 extern s32 D_L05_0015F8C4 __attribute__((sda));
 extern s32 D_L05_0015F8C8 __attribute__((sda));
 
-s32 FUN_L05_00262f50(char *element) {
+s32 draw_trick_combo_hud(char *element) __asm__("FUN_L05_00262f50");
+
+s32 draw_trick_combo_hud(char *element) {
     u8 *state_bytes = (u8 *)(element + 0x70);
     char text[0x80];
     s32 pose_ids[4];
@@ -334,7 +340,7 @@ s32 FUN_L05_00262f50(char *element) {
     hud_screen_position(element, &x, &y);
     bar_width = (*(s32 *)(element + 0x74) * 0xDD) / *(s32 *)(element + 0x8) + 0x1B;
     fill_icon = get_icon_frame(0x7558, 1);
-    FUN_L00_0023b6c0(fill_icon, x, y, bar_width, 0x40, 0x80);
+    draw_cropped_hud_sprite(fill_icon, x, y, bar_width, 0x40, 0x80);
     frame_icon = get_icon_frame(0x7558, 0);
     draw_hud_sprite(frame_icon, x, y, 0x100, 0x40, 0x80);
     player = &hero;

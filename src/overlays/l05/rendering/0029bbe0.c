@@ -9,7 +9,9 @@ extern float convert_integer_to_float(int) __asm__("FUN_001fa6c0");
 extern int random_integer_below(int) __asm__("FUN_00213260");
 unsigned char *D_L05_001B25C0 __attribute__((section(".data"))) = 0;
 
-unsigned char *FUN_L05_0029bbe0(float unscaled_particle_scalar, void *initial_position_source, void *initial_velocity_source, int life, int size, int color) {
+unsigned char *create_particle_with_velocity_and_lifetime(float unscaled_particle_scalar, void *initial_position_source, void *initial_velocity_source, int life, int size, int color) __asm__("FUN_L05_0029bbe0");
+
+unsigned char *create_particle_with_velocity_and_lifetime(float unscaled_particle_scalar, void *initial_position_source, void *initial_velocity_source, int life, int size, int color) {
     unsigned char *allocated_object = FUN_L00_002678b8(0x30);
     if (allocated_object != 0) {
         unsigned char *velocity_block;
@@ -47,13 +49,16 @@ extern unsigned char *FUN_L00_002678b8_q(int) __asm__("FUN_L00_002678b8");
 extern int truncate_float_to_s32_q(float) __asm__("FUN_001fa6d0");
 
 extern unsigned char *D_L05_001B25C8 __attribute__((section(".data")));
-unsigned char *FUN_L05_0029be70(void *pos, void *vel, int initial_word_at_04, int byte_table_index, float unscaled_particle_scalar, float b,
+unsigned char *create_particle_with_velocity_and_randomized_parameters(void *initial_position_source, void *initial_velocity_source, int initial_word_at_04, int byte_table_index, float unscaled_particle_scalar, float b,
+                                float initial_particle_scalar) __asm__("FUN_L05_0029be70");
+
+unsigned char *create_particle_with_velocity_and_randomized_parameters(void *initial_position_source, void *initial_velocity_source, int initial_word_at_04, int byte_table_index, float unscaled_particle_scalar, float b,
                                 float initial_particle_scalar) {
     unsigned char *allocated_object = FUN_L00_002678b8_q(0x32);
     unsigned char *velocity_block;
     if (allocated_object != 0) {
         velocity_block = allocated_object + 0x20;
-        qcopy(allocated_object + 0x10, pos);
+        qcopy(allocated_object + 0x10, initial_position_source);
         allocated_object[9] = truncate_float_to_s32_q(1.0f) + 0x40;
         allocated_object[3] = 0x44;
         allocated_object[1] = 0;
@@ -62,7 +67,7 @@ unsigned char *FUN_L05_0029be70(void *pos, void *vel, int initial_word_at_04, in
         *(float *)(allocated_object + 0xC) = unscaled_particle_scalar * 210000.0f;
         allocated_object[8] = (int)random_float_between_alt_q(0.0f, 255.0f);
         *(short *)(allocated_object + 0xA) = scale_game_frames_q(0xF);
-        qcopy(velocity_block, vel);
+        qcopy(velocity_block, initial_velocity_source);
         *(float *)(velocity_block + 0x10) = b;
         *(int *)(velocity_block + 0x14) = truncate_float_to_s32_q(random_float_between_alt_q(-3.0f, 3.0f));
         *(float *)(velocity_block + 0x18) = initial_particle_scalar;

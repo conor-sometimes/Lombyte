@@ -18,7 +18,9 @@ extern void add_vector_xyz_q(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void cross_vectors_xyz_q(void *, void *, void *) __asm__("FUN_001f9ad8");
 extern void scale_vector_xyz_q(void *out, void *a, f32 s) __asm__("FUN_001f9a68");
 
-void FUN_L03_0029c8a8(struct Moby *moby, float *out) {
+void add_moby_rotation_based_offsets(struct Moby *moby, float *out) __asm__("FUN_L03_0029c8a8");
+
+void add_moby_rotation_based_offsets(struct Moby *moby, float *out) {
     float unit_x_axis[4];
     float transformed_x_axis[4];
     float first_offset[4];
@@ -61,7 +63,9 @@ extern float D_L03_00161BE8 __attribute__((sda));
 extern void FUN_L00_00262b00(float, float, char *, float *, float *);
 extern void FUN_L00_00262b80(char *, char *, char *, float, float, float);
 
-void FUN_L03_002dd0f0(struct Moby *moby) {
+void update_moby_oscillation(struct Moby *moby) __asm__("FUN_L03_002dd0f0");
+
+void update_moby_oscillation(struct Moby *moby) {
     char *moby_pvars = (char *)moby->pvars;
     FUN_L00_00262b00(D_L03_00161BD8, D_L03_00161BDC * DEG_TO_RAD * frame_time, moby,
                      (float *)(moby_pvars + 0xac), (float *)(moby_pvars + 0xa8));

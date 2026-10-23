@@ -61,7 +61,9 @@ extern void scale_vector_xyz(void *, void *, float) __asm__("FUN_001f9a68");
 void mark_moby_for_removal(void *obj) __asm__("FUN_0020c828");
 extern int func_001F9908_i(void *) __asm__("FUN_001f9740");
 
-void FUN_L08_00307298(char *fire_bolt) {
+void update_fire_bolt(char *fire_bolt) __asm__("FUN_L08_00307298");
+
+void update_fire_bolt(char *fire_bolt) {
     enum {
         FIRE_BOLT_STATE_FLYING = 1,
         FIRE_BOLT_STATE_BURST_AND_REMOVE = 2
@@ -123,11 +125,11 @@ extern int D_L08_00162374;
 
 extern short D_L08_0016234C __attribute__((sda));
 extern short D_L08_00162350 __attribute__((sda));
-void FUN_L08_00307b90(int arg) {
+void FUN_L08_00307b90(int use_reduced_xy_range_preset) {
     float xy_random_range_scale, countdown_range_start, count_interpolation_end, count_interpolation_start;
     float xy_range_reference_vector[2];
     float xy_length_ratio;
-    if (arg == 0) {
+    if (use_reduced_xy_range_preset == 0) {
         xy_random_range_scale = 5.0f;
         countdown_range_start = 2.0f;
         count_interpolation_end = 8.0f;
@@ -202,7 +204,9 @@ extern void func_L08_00273A80_3091B0(void *, void *, float, void *) __asm__("FUN
 extern void func_L08_002803B8_3091B0(void *, void *, float, void *) __asm__("FUN_L08_0027f5f0");
 extern void func_L00_00264570_3091B0(void *) __asm__("FUN_L00_002634f8");
 
-void FUN_L08_00307cf0(Moby *moby) {
+void scatter_ground_particles(Moby *moby) __asm__("FUN_L08_00307cf0");
+
+void scatter_ground_particles(Moby *moby) {
     enum {
         GROUND_PARTICLES_STATE_INITIALIZE = 0,
         GROUND_PARTICLES_STATE_SCATTER = 2
@@ -210,7 +214,7 @@ void FUN_L08_00307cf0(Moby *moby) {
     V_3091B0 pt;
     V_3091B0 dv;
     V_3091B0 base;
-    V_3091B0 off;
+    V_3091B0 origin_delta_or_spawn_vector;
     V_3091B0 par;
     int flag;
     int big;
@@ -272,7 +276,7 @@ void FUN_L08_00307cf0(Moby *moby) {
             ((Cam_3091B0 *)(D_L08_00167640_3091B0 - 0x140))->f154);
         base.z = ((Cam_3091B0 *)(D_L08_00167640_3091B0 - 0x140))->f148 + D_L08_00162344;
         if (pass_attempt_count > 0) {
-            V_3091B0 *po = &off;
+            V_3091B0 *po = &origin_delta_or_spawn_vector;
             remaining_pass_attempts = pass_attempt_count;
             do {
                 float origin_distance_xy;
@@ -329,13 +333,13 @@ void FUN_L08_00307cf0(Moby *moby) {
             do {
                 float u;
                 float t;
-                off.x = D_L08_00162360[0] + func_002140F8_3091B0(negative_spread, spread);
+                origin_delta_or_spawn_vector.x = D_L08_00162360[0] + func_002140F8_3091B0(negative_spread, spread);
                 u = func_002140F8_3091B0(negative_spread, spread);
                 t = hi * frame_time;
-                *(int *)&off.w = 0;
+                *(int *)&origin_delta_or_spawn_vector.w = 0;
                 *(u128_3091B0 *)&pt = *(u128_3091B0 *)&base;
-                off.y = D_L08_00162364 + u;
-                off.z = -t;
+                origin_delta_or_spawn_vector.y = D_L08_00162364 + u;
+                origin_delta_or_spawn_vector.z = -t;
                 w = func_001F9F90_3091B0(func_002140F8_3091B0(0.0f, 6.2831855f));
                 w = w * func_002140F8_3091B0(0.0f, 8.0f);
                 pt.x += w;
@@ -350,8 +354,8 @@ void FUN_L08_00307cf0(Moby *moby) {
                     } else {
                         w = ground_height;
                     }
-                    if (flag == 0) func_L08_00273A80_3091B0(&pt, 0, w, &off);
-                    if (flag == 1) func_L08_002803B8_3091B0(&pt, 0, w, &off);
+                    if (flag == 0) func_L08_00273A80_3091B0(&pt, 0, w, &origin_delta_or_spawn_vector);
+                    if (flag == 1) func_L08_002803B8_3091B0(&pt, 0, w, &origin_delta_or_spawn_vector);
                 }
             } while (--remaining_pass_attempts != 0);
         }
@@ -412,9 +416,11 @@ extern float fast_sin(float) __asm__("func_001F9DE0");
 extern void FUN_L08_00272cb8(void *, void *, void *, float);
 extern void subtract_vector_xyz(void *out, void *a, void *b) __asm__("FUN_001f9a28");
 
-void FUN_L08_003085f0(char *moby) {
+void spawn_moby_radial_particles(char *moby) __asm__("FUN_L08_003085f0");
+
+void spawn_moby_radial_particles(char *moby) {
     float v[4];
-    float pos[4];
+    float spawn_center_position[4];
     float w[4];
     float randomized_spawn_vector[4];
     char *moby_data = *(char **)(moby + 0x78);
@@ -425,16 +431,16 @@ void FUN_L08_003085f0(char *moby) {
         float angle_start_radians, angle_end_radians, xy_random_range;
         i = 0;
         xy_random_range = *(float *)(moby_data + 0x24) * frame_time;
-        *(OvlQuad *)pos = *(OvlQuad *)(moby + 0x10);
+        *(OvlQuad *)spawn_center_position = *(OvlQuad *)(moby + 0x10);
         angle_start_radians = (*(float *)(moby_data + 0x28) - 180.0f) / 180.0f * 3.1415927f;
         angle_end_radians = (*(float *)(moby_data + 0x2C) - 180.0f) / 180.0f * 3.1415927f;
         for (; i < *(int *)(moby_data + 0x14); i++) {
-            float ang, rad;
-            *(OvlQuad *)v = *(OvlQuad *)pos;
-            ang = random_float_between_alt(angle_start_radians, angle_end_radians);
+            float spawn_angle_radians, rad;
+            *(OvlQuad *)v = *(OvlQuad *)spawn_center_position;
+            spawn_angle_radians = random_float_between_alt(angle_start_radians, angle_end_radians);
             rad = random_float_between_alt(*(float *)(moby_data + 0xC), *(float *)(moby_data + 8));
-            v[0] = v[0] + fast_cos(ang) * rad;
-            v[1] = v[1] + fast_sin(ang) * rad;
+            v[0] = v[0] + fast_cos(spawn_angle_radians) * rad;
+            v[1] = v[1] + fast_sin(spawn_angle_radians) * rad;
             subtract_vector_xyz(w, v, D_L08_001675C0);
             if (!(vector_length_xy(w) <= *(float *)(moby_data + 0x10))) {
                 randomized_spawn_vector[0] = D_L08_00162360[0] + random_float_between_alt(-xy_random_range, xy_random_range);
@@ -467,7 +473,9 @@ extern void build_look_at_matrix(void *out, void *dir, void *axis, f32 angle) __
 extern char D_0013E550[];
 extern char D_0013E5E0[];
 
-void FUN_L08_00316fa8(char *moby) {
+void update_ground_height_modulated_voice(char *moby) __asm__("FUN_L08_00316fa8");
+
+void update_ground_height_modulated_voice(char *moby) {
     float point[4];
     float radius[4];
     float axis[4];

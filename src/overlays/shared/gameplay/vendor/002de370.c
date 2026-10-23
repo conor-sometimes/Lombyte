@@ -21,11 +21,13 @@ extern void FUN_L00_001ff290(void *, void *, void *);
 void mark_moby_for_removal(struct Obj *obj) __asm__("FUN_0020c828");
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
-void FUN_L03_002de370(char *moby) {
-    float v[4];
+void update_falling_moby(char *moby) __asm__("FUN_L03_002de370");
+
+void update_falling_moby(char *moby) {
+    float unused_vector_add_argument[4];
     char *moby_data = *(char **)(moby + 0x78);
     *(float *)(moby_data + 8) = *(float *)(moby_data + 8) - frame_time_sq * 9.8f;
-    FUN_L00_001ff290(v, moby + 0x10, moby_data);
+    FUN_L00_001ff290(unused_vector_add_argument, moby + 0x10, moby_data);
     *(float *)(moby + 0x40) = fast_add_rotations(*(float *)(moby + 0x40), *(float *)(moby_data + 0x10));
     *(float *)(moby + 0x44) = fast_add_rotations(*(float *)(moby + 0x44), *(float *)(moby_data + 0x14));
     *(float *)(moby + 0x48) = fast_add_rotations(*(float *)(moby + 0x48), *(float *)(moby_data + 0x18));
@@ -50,22 +52,24 @@ extern int D_L03_0015EF50;
 extern void RaiseKernelTrap();
 extern void euler_rotation_matrix(float *, float *) __asm__("FUN_001fa050");
 
-void FUN_L03_002e8628(char *cam) {
+void initialize_transform_state_from_level_table(char *transform_state) __asm__("FUN_L03_002e8628");
+
+void initialize_transform_state_from_level_table(char *transform_state) {
     float v[4] __attribute__((aligned(16)));
     float mat[16] __attribute__((aligned(16)));
-    CamSub *camera_subrecord = &(*(CamInfo **)(cam + 0x70))->sub;
+    CamSub *camera_subrecord = &(*(CamInfo **)(transform_state + 0x70))->sub;
     CamInfo *camera_info;
     char *ent;
     int level_table_entry_index;
     char *entry_subrecord;
     camera_subrecord->x4C = 1.5f;
     camera_subrecord->x40 = 0;
-    (*(CamInfo **)(cam + 0x70))->x80 = 0;
-    camera_info = *(CamInfo **)(cam + 0x70);
+    (*(CamInfo **)(transform_state + 0x70))->x80 = 0;
+    camera_info = *(CamInfo **)(transform_state + 0x70);
     camera_info->f4 = 0.02f;
     camera_info->f8 = 0.1f;
     camera_info->fC = 0;
-    level_table_entry_index = *(short *)(cam + 0x84);
+    level_table_entry_index = *(short *)(transform_state + 0x84);
     ent = (char *)D_L03_0015EF50 + (level_table_entry_index << 5);
     entry_subrecord = *(char **)(ent + 0x1C);
     if (level_table_entry_index < 0) {
@@ -73,14 +77,14 @@ void FUN_L03_002e8628(char *cam) {
     } else {
         camera_subrecord->x4C = *(float *)(entry_subrecord + 0x18);
     }
-    qcopy(cam + 0x30, ent);
+    qcopy(transform_state + 0x30, ent);
     qcopy(v, ent + 0x10);
     euler_rotation_matrix(mat, v);
-    qcopy(cam, mat);
-    qcopy(cam + 0x10, mat + 4);
-    qcopy(cam + 0x20, mat + 8);
-    qcopy(cam + 0x40, cam);
-    *(short *)(cam + 0x7E) = 0;
+    qcopy(transform_state, mat);
+    qcopy(transform_state + 0x10, mat + 4);
+    qcopy(transform_state + 0x20, mat + 8);
+    qcopy(transform_state + 0x40, transform_state);
+    *(short *)(transform_state + 0x7E) = 0;
 }
 #include "sda.h"
 
@@ -93,12 +97,14 @@ extern f32 approximate_arcsine(f32) __asm__("func_001F9DF8");
 extern f32 dot_vectors_xyz(void *, void *) __asm__("func_001F9AB0");
 extern float D_L03_00166F30[];
 extern float rope_spring_turn(void *, float, float, float, float, float) __asm__("FUN_L00_001eb328");
-extern void FUN_L03_0024e6f8(float, float *, float *, float *, int);
+extern void rotate_vector_by_scaled_angle_between_vectors(float, float *, float *, float *, int) __asm__("FUN_L03_0024e6f8");
 extern void cross_vectors_xyz(void *, void *, void *) __asm__("func_001F9AD8");
 extern void normalize_vector_xyz(void *, void *, f32) __asm__("FUN_001f9bf8");
 extern void subtract_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a28");
 
-void FUN_L03_002e8730(char *transform_state) {
+void smooth_transform_orientation_toward_hero(char *transform_state) __asm__("FUN_L03_002e8730");
+
+void smooth_transform_orientation_toward_hero(char *transform_state) {
     float position[4] __attribute__((aligned(16)));
     float direction[4] __attribute__((aligned(16)));
     char *data = *(char **)(transform_state + 0x70);
@@ -113,7 +119,7 @@ void FUN_L03_002e8730(char *transform_state) {
     angle = approximate_arcsine(dot_vectors_xyz(direction, transform_state));
     rotation_scale = rope_spring_turn(data, 0.0f, 1.57079637f - angle, *(float *)(data + 4),
                          *(float *)(data + 8), *(float *)(data + 12));
-    FUN_L03_0024e6f8(rotation_scale, (float *)transform_state, (float *)result, direction, 1);
+    rotate_vector_by_scaled_angle_between_vectors(rotation_scale, (float *)transform_state, (float *)result, direction, 1);
     normalize_vector_xyz(result, transform_state, 1.0f);
     qcopy(transform_state, result);
     cross_vectors_xyz(transform_state + 0x10, transform_state, D_L03_00166F30);

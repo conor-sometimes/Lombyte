@@ -33,8 +33,10 @@ extern u8 *spawn_particle(void *, void *, s32, s32, s32, s32, f32, f32, f32, f32
 extern void rand_vec(void *, f32, f32) __asm__("FUN_L00_00257d78");
 
 /* Shard debris update: drifts along its velocity, sheds particle trails and expires when its timer runs out. */
-void FUN_L02_002ebf20(struct Moby *m);
-void FUN_L02_002ebf20(struct Moby *moby) {
+void update_shard_debris(struct Moby *moby) __asm__("FUN_L02_002ebf20");
+
+void update_shard_debris(struct Moby *m) __asm__("FUN_L02_002ebf20");
+void update_shard_debris(struct Moby *moby) {
     enum {
         SHARD_STATE_REMOVE = 0,
         SHARD_STATE_ACTIVE = 1
@@ -93,7 +95,9 @@ int D_L02_00161F50 = 0x60;
 int D_L02_00161F54 = 0x10;
 
 /* Spawns a projectile moby from src at pos, heading along dir, with its lifetime in the moby data. */
-char *FUN_L02_002ec228(char *source_moby, void *pos, float *dir) {
+char *spawn_projectile_moby(char *source_moby, void *pos, float *dir) __asm__("FUN_L02_002ec228");
+
+char *spawn_projectile_moby(char *source_moby, void *pos, float *dir) {
     char *moby;
     char *data;
     moby = create_moby_c(0x4B8);
@@ -153,7 +157,9 @@ extern void queue_dialogue_message(int arg0, int arg1) __asm__("FUN_L00_00263d40
 extern char D_00141968[];
 extern s32 D_0014EE90[];
 
-void FUN_L02_002ee890(struct Moby *moby) {
+void update_tutorial_hint_triggers(struct Moby *moby) __asm__("FUN_L02_002ee890");
+
+void update_tutorial_hint_triggers(struct Moby *moby) {
     enum {
         AIRBORNE_DIALOGUE_UNARMED = 0,
         AIRBORNE_DIALOGUE_ARMED = 1
@@ -443,7 +449,9 @@ s32 D_L02_00162164 = 0x10019;
 /* Smoke vent: once visible within 120 units it puffs bursts (D_L02_001620C8 / D_L02_00162118 parameter blocks)
  * on a timer plus occasional single puffs (D_L02_00162088 / D_L02_00162048); state 2 alternates its puff life.
  * Each burst and puff block has its own locals: shared ones become long-lived pseudos and shift the allocation. */
-void FUN_L02_002ef020(struct Moby *moby) {
+void update_smoke_vent(struct Moby *moby) __asm__("FUN_L02_002ef020");
+
+void update_smoke_vent(struct Moby *moby) {
     enum {
         SMOKE_VENT_STATE_INITIALIZE = 0,
         SMOKE_VENT_STATE_VIEW_GATED_EMISSION = 1,
@@ -584,17 +592,19 @@ void FUN_L02_002ef020(struct Moby *moby) {
 extern void FUN_L00_001ed630(void *, void *, void *);
 
 /* Sets the vendor camera mode; mode 3 also aims it from the hero's position. */
-void FUN_L02_002f8a18(int mode, int camera_argument_value) {
+void set_vendor_camera_mode(int mode, int camera_argument_value) __asm__("FUN_L02_002f8a18");
+
+void set_vendor_camera_mode(int mode, int camera_argument_value) {
     enum {
         VENDOR_CAMERA_MODE_SET_ARGUMENT_PAIR = 2,
         VENDOR_CAMERA_MODE_CAPTURE_HERO_POSITION = 3
     };
     char *g = D_L02_00167280;
-    char *cam = *(char **)(g + 0x180);
-    char *camera_data = *(char **)(cam + 0x70);
+    char *vendor_camera = *(char **)(g + 0x180);
+    char *camera_data = *(char **)(vendor_camera + 0x70);
     char *camera_argument_pair = camera_data + 0xE0;
 
-    cam[0x88] = mode;
+    vendor_camera[0x88] = mode;
     switch (mode) {
     case VENDOR_CAMERA_MODE_CAPTURE_HERO_POSITION:
         qcopy(camera_data + 0x110, &hero.motion.pos);

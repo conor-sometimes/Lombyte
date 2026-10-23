@@ -238,7 +238,9 @@ extern void FUN_001ff3c0_262030(OvlVec4 *, OvlVec4 *, OvlVec4 *) __asm__("FUN_00
 extern f32 FUN_001ff3d8_262030(OvlVec4 *) __asm__("FUN_001f9af0");
 extern void FUN_001ff500_262030(f32, OvlVec4 *, OvlVec4 *) __asm__("FUN_001f9bf8");
 
-s32 FUN_L00_00262030(f32 distance, s32 path_index, OvlVec4 *point, OvlVec4 *out) {
+s32 resolve_point_path_segment_clearance(f32 distance, s32 path_index, OvlVec4 *point, OvlVec4 *out) __asm__("FUN_L00_00262030");
+
+s32 resolve_point_path_segment_clearance(f32 distance, s32 path_index, OvlVec4 *point, OvlVec4 *out) {
     OvlVec4 difference;
     OvlVec4 scaled_difference;
     OvlVec4 working;
@@ -366,7 +368,9 @@ extern void multiply_matrix(void *, void *, void *) __asm__("FUN_001fa378");
 extern void matrix_to_euler(void *, void *) __asm__("FUN_00214598");
 
 /* Multiplies the 001fa050 matrices of (x, y, z) and of a+0x40, stored back by matrix_to_euler. */
-void FUN_L00_00262480(char *rotation_target, float x, float y, float z) {
+void compose_target_euler_rotation(char *rotation_target, float x, float y, float z) __asm__("FUN_L00_00262480");
+
+void compose_target_euler_rotation(char *rotation_target, float x, float y, float z) {
     float in[3];
     float input_rotation_matrix[16], target_rotation_matrix[16];
     in[0] = x;
@@ -384,7 +388,9 @@ void FUN_L00_00262480(char *rotation_target, float x, float y, float z) {
 /* Ported from rac1-decomp (src/overlays/shared/mobyutil_00261B00.c: func_L00_00263578), where it is exact; names translated to the US level program. */
 
 /* Unless the flag at b+0x13C is set: sets it, stores a at 0x134, clears 0x130..0x138. */
-void FUN_L00_00262500(int source_moby, char *history_state) {
+void initialize_moby_transform_history(int source_moby, char *history_state) __asm__("FUN_L00_00262500");
+
+void initialize_moby_transform_history(int source_moby, char *history_state) {
     if (*(int *)(history_state + 0x13C) == 0) {
         *(int *)(history_state + 0x134) = source_moby;
         *(int *)(history_state + 0x13C) = 1;
@@ -420,7 +426,9 @@ typedef struct {
     s32 x138;
 } O00262528;
 E00262528 *create_moby(s32) __asm__("FUN_0020c4f8");
-void FUN_L00_00262528(O00262528 *history_state, s32 initial_decay_value, s32 sample_delay) {
+void create_moby_transform_history_entry(O00262528 *history_state, s32 initial_decay_value, s32 sample_delay) __asm__("FUN_L00_00262528");
+
+void create_moby_transform_history_entry(O00262528 *history_state, s32 initial_decay_value, s32 sample_delay) {
     E00262528 *spawned_moby;
     if (history_state->x138 == 4)
         return;
@@ -460,7 +468,9 @@ void FUN_L00_00262840_262608(S_262608 *) __asm__("FUN_L00_00262840");
 void FUN_0020c880_262608(void *) __asm__("FUN_0020c880");
 void FUN_L00_00250df8_262608(void *) __asm__("FUN_L00_00250df8");
 
-void FUN_L00_00262608(S_262608 *history_state, int dec) {
+void update_moby_transform_history(S_262608 *history_state, int dec) __asm__("FUN_L00_00262608");
+
+void update_moby_transform_history(S_262608 *history_state, int dec) {
     unsigned char *src;
     unsigned char *destination;
     int history_write_index, i, k, done;
@@ -600,9 +610,9 @@ void FUN_L00_00262b00(float x, float y, char *moby, float *phase_angle, float *p
 extern float fast_cos(float) __asm__("FUN_001f9dc8");
 
 /* Sets o[16] and o[17] from r and the sines/cosines of the two angles, then advances the angles by l1 and l2. */
-void FUN_L00_00262b80(float *moby, float *first_phase_angle, float *second_phase_angle, float r, float first_phase_increment, float second_phase_increment) {
-    moby[0x10] = r * fast_sin(*first_phase_angle) * fast_sin(*second_phase_angle);
-    moby[0x11] = r * fast_sin(*first_phase_angle) * fast_cos(*second_phase_angle);
+void FUN_L00_00262b80(float *moby, float *first_phase_angle, float *second_phase_angle, float oscillation_amplitude, float first_phase_increment, float second_phase_increment) {
+    moby[0x10] = oscillation_amplitude * fast_sin(*first_phase_angle) * fast_sin(*second_phase_angle);
+    moby[0x11] = oscillation_amplitude * fast_sin(*first_phase_angle) * fast_cos(*second_phase_angle);
     *first_phase_angle = fast_add_rotations(*first_phase_angle, first_phase_increment);
     *second_phase_angle = fast_add_rotations(*second_phase_angle, second_phase_increment);
 }

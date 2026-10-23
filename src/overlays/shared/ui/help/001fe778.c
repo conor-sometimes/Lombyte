@@ -18,28 +18,28 @@ extern int hero_slot_item_id(int) __asm__("FUN_L00_0020d498");
 
 /* Same routine as FUN_L06_0021d0a0, with case 2 in place of case 1. */
 int FUN_L15_001fe778(int allow_item_lookup) {
-    struct Hero *g = &hero;
-    switch (g->vehicle_mode) {
-    case 2:
+    struct Hero *vehicle_check_hero = &hero;
+    switch (vehicle_check_hero->vehicle_mode) {
+    case HERO_VEHICLE_MODE_GIANT_CLANK:
         return 0;
     case 3:
         return 0;
     }
     {
-        struct Hero *g2 = &hero;
-        if (g2->health.hp == 1) {
+        struct Hero *status_check_hero = &hero;
+        if (status_check_hero->health.hp == 1) {
             return 0x54;
         }
         if (allow_item_lookup == 0) {
             return 0;
         }
-        if (g2->unk20A8 == 0) {
+        if (status_check_hero->unk20A8 == 0) {
             return 0;
         }
-        if (g2->unk20AA == 0) {
+        if (status_check_hero->unk20AA == 0) {
             return 0;
         }
-        if (g2->unk22C8 != 0) {
+        if (status_check_hero->unk22C8 != 0) {
             return 0;
         }
     }
@@ -81,7 +81,7 @@ void subtract_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a28");
 f32 FUN_001f9ab0_c(void *, void *) __asm__("FUN_001f9ab0");
 void FUN_001f9a68_c(void *, void *, f32) __asm__("FUN_001f9a68");
 void FUN_001f9bf8_c(void *, void *, f32) __asm__("FUN_001f9bf8");
-void FUN_L00_00216078(void *, void *);
+void compute_rotated_vector_angles(void *, void *) __asm__("FUN_L00_00216078");
 void FUN_L00_002335c8(void *, f32, f32, f32);
 f32 FUN_001f99c0(f32);
 
@@ -95,7 +95,9 @@ extern CollisionHit HH __asm__("D_L15_00174440") __attribute__((section(".data")
 #define HF(o) (*(f32 *)(D_L15_00174440 + (o)))
 
 extern struct Hero hero_lui __asm__("D_0013F350") __attribute__((section(".data")));
-void FUN_L15_0020a7a0(void) {
+void update_hero_ground_contact(void) __asm__("FUN_L15_0020a7a0");
+
+void update_hero_ground_contact(void) {
     V shared_ray_endpoint, ground_ray_endpoint, ground_displacement_or_angles, surface_probe_endpoint, unused_probe_vector, probe_surface_angles, probe_surface_normal;
     f32 f;
     s32 collision_sound_class;
@@ -231,7 +233,7 @@ d1:
     if (!(hero.ground_distance < 0.25f)) {
         return;
     }
-    FUN_L00_00216078(&hero.unk270, &ground_displacement_or_angles);
+    compute_rotated_vector_angles(&hero.unk270, &ground_displacement_or_angles);
     if (-0.78539819f < ground_displacement_or_angles.f[1] && ground_displacement_or_angles.f[1] < 0.78539819f) {
         hero.ground_pitch.f = ground_displacement_or_angles.f[1];
     }
@@ -252,7 +254,7 @@ d1:
                 hero.unk2C0.f[i] = 0.0f;
             }
             FUN_00125180_c(&probe_surface_normal, (u8 *)&HH.normal_x);
-            FUN_L00_00216078(&probe_surface_normal, &probe_surface_angles);
+            compute_rotated_vector_angles(&probe_surface_normal, &probe_surface_angles);
             if (-0.78539819f < probe_surface_angles.f[1] && probe_surface_angles.f[1] < 0.78539819f) {
                 hero.unk2C8.f[i] = probe_surface_angles.f[1];
             }

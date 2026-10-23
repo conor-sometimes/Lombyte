@@ -21,11 +21,21 @@ extern void moby_point_position(void *, int, void *) __asm__("FUN_L00_0024f7c8")
 extern void draw_trail(void *, void *, void *, float, float) __asm__("FUN_L00_00263b70");
 extern void enqueue_callback_list_1_overlay(void *, void *) __asm__("FUN_L18_002020c8");
 extern float fast_arc_tan(float, float) __asm__("FUN_001f9e90");
-extern void FUN_L18_002fa250(void *, void *, void *, float, float);
-extern void FUN_L18_002f9780(void);
-extern void FUN_L18_002f9a98(void *);
-extern void FUN_L18_002f9c20(struct Moby *);
-extern void FUN_L18_002f9eb8(struct Moby *);
+void spawn_deplanetizer_gun_trail_effects(void *first_position_source, void *second_position_source, void *effect_velocity_source, float f0, float f1) __asm__("FUN_L18_002fa250");
+
+extern void spawn_deplanetizer_gun_trail_effects(void *, void *, void *, float, float) __asm__("FUN_L18_002fa250");
+void draw_three_scaled_camera_facing_quads(void) __asm__("FUN_L18_002f9780");
+
+extern void draw_three_scaled_camera_facing_quads(void) __asm__("FUN_L18_002f9780");
+void draw_moby_color_cycling_bone_glows(void *moby) __asm__("FUN_L18_002f9a98");
+
+extern void draw_moby_color_cycling_bone_glows(void *) __asm__("FUN_L18_002f9a98");
+void draw_moby_two_tint_glow_quads(struct Moby *m) __asm__("FUN_L18_002f9c20");
+
+extern void draw_moby_two_tint_glow_quads(struct Moby *) __asm__("FUN_L18_002f9c20");
+void draw_moby_three_scaled_two_tint_quads(struct Moby *m) __asm__("FUN_L18_002f9eb8");
+
+extern void draw_moby_three_scaled_two_tint_quads(struct Moby *) __asm__("FUN_L18_002f9eb8");
 extern void func_L00_0025F4A8_alt(void *, void *, void *, float, float, int, int, int,
                                float, float, float, float, int, float, int, int, int, int)
     __asm__("FUN_L00_0025e450");
@@ -73,7 +83,9 @@ extern float D_L18_00162520;
 extern float D_L18_0016252C;
 extern char D_L18_001679D0[];
 /* Preserve the state-4 frame conversion and the state-7 raw-frame arithmetic. */
-void FUN_L18_002f88e8(struct Moby *moby) {
+void update_deplanetizer_gun_sequence_effects(struct Moby *moby) __asm__("FUN_L18_002f88e8");
+
+void update_deplanetizer_gun_sequence_effects(struct Moby *moby) {
     enum {
         INITIALIZE_EFFECT_TIMING = 0,
         UPDATE_SEQUENCE_EFFECTS = 1
@@ -191,7 +203,7 @@ void FUN_L18_002f88e8(struct Moby *moby) {
             denominator = convert_integer_to_float(frames_9780(D_L18_001624C0 - D_L18_001624BC));
             numerator = numerator / denominator;
             D_L18_00162524 = truncate_float_to_s32(numerator * 255.0f);
-            enqueue_callback_list_1_overlay(FUN_L18_002f9c20, D_L18_00162528);
+            enqueue_callback_list_1_overlay(draw_moby_two_tint_glow_quads, D_L18_00162528);
         }
         if (frames_9780(D_L18_001624C4) <= D_L18_0016D260_update.n &&
             D_L18_0016D260_update.n < frames_9780(D_L18_001624C8)) {
@@ -201,11 +213,11 @@ void FUN_L18_002f88e8(struct Moby *moby) {
             numerator *= 200.0f;
             numerator += 0.25f;
             D_L18_0016252C = numerator;
-            enqueue_callback_list_1_overlay(FUN_L18_002f9eb8, D_L18_00162528);
+            enqueue_callback_list_1_overlay(draw_moby_three_scaled_two_tint_quads, D_L18_00162528);
         }
         if (frames_9780(D_L18_00162498) <= D_L18_0016D260_update.n &&
             D_L18_0016D260_update.n < frames_9780(D_L18_001624A0)) {
-            enqueue_callback_list_1_overlay(FUN_L18_002f9780, D_L18_0016D260_update.objects[0]);
+            enqueue_callback_list_1_overlay(draw_three_scaled_camera_facing_quads, D_L18_0016D260_update.objects[0]);
             if (D_L18_0016D260_update.n >= frames_9780(D_L18_0016249C)) {
                 D_L18_00162520 = 10.0f;
             } else {
@@ -240,7 +252,7 @@ void FUN_L18_002f88e8(struct Moby *moby) {
             denominator = convert_integer_to_float(D_L18_001624C0 - D_L18_001624BC);
             numerator = numerator / denominator;
             D_L18_00162524 = truncate_float_to_s32(numerator * 255.0f);
-            enqueue_callback_list_1_overlay(FUN_L18_002f9c20, D_L18_00162528);
+            enqueue_callback_list_1_overlay(draw_moby_two_tint_glow_quads, D_L18_00162528);
         }
         if (frames_9780(D_L18_001624C4) <= D_L18_0016D260_update.n &&
             D_L18_0016D260_update.n < frames_9780(D_L18_001624C8)) {
@@ -250,11 +262,11 @@ void FUN_L18_002f88e8(struct Moby *moby) {
             numerator *= 200.0f;
             numerator += 0.25f;
             D_L18_0016252C = numerator;
-            enqueue_callback_list_1_overlay(FUN_L18_002f9eb8, D_L18_00162528);
+            enqueue_callback_list_1_overlay(draw_moby_three_scaled_two_tint_quads, D_L18_00162528);
         }
         if (frames_9780(D_L18_00162498) <= D_L18_0016D260_update.n &&
             D_L18_0016D260_update.n < frames_9780(D_L18_001624A0)) {
-            enqueue_callback_list_1_overlay(FUN_L18_002f9780, D_L18_0016D260_update.objects[0]);
+            enqueue_callback_list_1_overlay(draw_three_scaled_camera_facing_quads, D_L18_0016D260_update.objects[0]);
             if (D_L18_0016D260_update.n >= D_L18_0016249C) {
                 D_L18_00162520 = 10.0f;
             } else {
@@ -266,7 +278,7 @@ void FUN_L18_002f88e8(struct Moby *moby) {
         }
     }
     if (D_L18_0016D260_update.state == 1 && D_L18_0016D260_update.objects[3])
-    enqueue_callback_list_1_overlay(FUN_L18_002f9a98, D_L18_0016D260_update.objects[3]);
+    enqueue_callback_list_1_overlay(draw_moby_color_cycling_bone_glows, D_L18_0016D260_update.objects[3]);
     if (D_L18_0016D260_update.state == 5 && frames_9780(138) <= D_L18_0016D260_update.n &&
         D_L18_0016D260_update.n <= frames_9780(264)) {
         struct Moby *target = D_L18_0016D260_update.objects[2];
@@ -279,8 +291,8 @@ void FUN_L18_002f88e8(struct Moby *moby) {
                     fraction = convert_integer_to_float(i) / 12.0f;
                     interpolate_vector(&interpolated_joint_zero_position, &scratch.vectors.pos, &D_L18_00162530, fraction);
                     interpolate_vector(&interpolated_joint_two_position, &scratch.vectors.velocity, &D_L18_00162540, fraction);
-                    FUN_L18_002fa250(&interpolated_joint_zero_position, &interpolated_joint_zero_position, D_L18_0015F580, D_L18_001624D0, D_L18_001624D0 * 0.4f);
-                    FUN_L18_002fa250(&interpolated_joint_two_position, &interpolated_joint_two_position, D_L18_0015F580, D_L18_001624D0, D_L18_001624D0 * 0.4f);
+                    spawn_deplanetizer_gun_trail_effects(&interpolated_joint_zero_position, &interpolated_joint_zero_position, D_L18_0015F580, D_L18_001624D0, D_L18_001624D0 * 0.4f);
+                    spawn_deplanetizer_gun_trail_effects(&interpolated_joint_two_position, &interpolated_joint_two_position, D_L18_0015F580, D_L18_001624D0, D_L18_001624D0 * 0.4f);
                 }
                 qcopy(&D_L18_00162530, &scratch.vectors.pos);
                 qcopy(&D_L18_00162540, &scratch.vectors.velocity);
@@ -321,7 +333,7 @@ void FUN_L18_002f88e8(struct Moby *moby) {
         goto burst;
     }
     if (D_L18_0016D260_update.objects[2])
-    enqueue_callback_list_1_overlay(FUN_L18_002f9a98, D_L18_0016D260_update.objects[2]);
+    enqueue_callback_list_1_overlay(draw_moby_color_cycling_bone_glows, D_L18_0016D260_update.objects[2]);
 burst:
     if (D_L18_0016D260_update.state == 3 && D_L18_0016D260_update.n == frames_9780(586)) {
         char *matrix = D_L18_001679D0;
@@ -381,7 +393,7 @@ float D_L18_001DFB90[4][4] = {
     {0.0f, 1.0f, 1.0f, 1.0f},
     {0.0f, 1.0f, -1.0f, 1.0f},
 };
-void FUN_L18_002f9780(void) {
+void draw_three_scaled_camera_facing_quads(void) {
     Pk_9780 pk;
     float quad_transform[4][4];
     float up[4];
@@ -475,7 +487,7 @@ extern float D_L18_00162454 ;
 extern float D_L18_00162450 ;
 
 extern short D_L18_00162500 __attribute__((sda));
-void FUN_L18_002f9a98(void *moby) {
+void draw_moby_color_cycling_bone_glows(void *moby) {
     char glow_position[16];
     char bone_transform_rows0_1[32];
     char bone_transform_row2[16];
@@ -531,9 +543,9 @@ extern int D_L18_00162504 __attribute__((sda));
 extern float D_L18_00162508 __attribute__((sda));
 extern float D_L18_0016250C __attribute__((sda));
 extern int D_L18_00162510 __attribute__((sda));
-void FUN_L18_002f9c20(struct Moby *m) {
+void draw_moby_two_tint_glow_quads(struct Moby *m) {
     Pk_9c20 pk;
-    float mat[4][4];
+    float quad_transform[4][4];
     float up[4];
     int c;
     int second_quad_color;
@@ -550,16 +562,16 @@ void FUN_L18_002f9c20(struct Moby *m) {
     pk.a = 0;
     gs_9c20(0x4A, 0);
     gs_9c20(0x47, 0x51001);
-    rot_9c20(mat[3], &D_L18_00162560, &m->rot_row0);
-    add_9c20(mat[3], mat[3], &m->pos);
-    sub_9c20(mat[0], mat[3], D_L18_001677C0_9c20);
-    norm_9c20(mat[0], mat[0], 1.0f);
+    rot_9c20(quad_transform[3], &D_L18_00162560, &m->rot_row0);
+    add_9c20(quad_transform[3], quad_transform[3], &m->pos);
+    sub_9c20(quad_transform[0], quad_transform[3], D_L18_001677C0_9c20);
+    norm_9c20(quad_transform[0], quad_transform[0], 1.0f);
     *(u128_9c20 *)up = 0;
     up[2] = 1.0f;
     up[3] = 1.0f;
-    cross_9c20(mat[1], mat[0], up);
-    norm_9c20(mat[1], mat[1], 1.0f);
-    cross_9c20(mat[2], mat[1], mat[0]);
+    cross_9c20(quad_transform[1], quad_transform[0], up);
+    norm_9c20(quad_transform[1], quad_transform[1], 1.0f);
+    cross_9c20(quad_transform[2], quad_transform[1], quad_transform[0]);
     c = D_L18_00162504 | (D_L18_00162524 << 24);
     pk.uv[0] = 1.0f;
     pk.uv[1] = 1.0f;
@@ -575,7 +587,7 @@ void FUN_L18_002f9c20(struct Moby *m) {
     pk.col[0] = c;
     for (i = 0; i < 4; i++) {
         scale_9c20(pk.m[i], D_L18_001DFB90[i], D_L18_00162508);
-        xform_9c20(pk.m[i], pk.m[i], mat);
+        xform_9c20(pk.m[i], pk.m[i], quad_transform);
     }
     draw_9c20(&pk, 0, 0);
     second_quad_color = D_L18_00162510 | (D_L18_00162524 << 24);
@@ -585,7 +597,7 @@ void FUN_L18_002f9c20(struct Moby *m) {
     pk.col[0] = second_quad_color;
     for (i = 0; i < 4; i++) {
         scale_9c20(pk.m[i], D_L18_001DFB90[i], D_L18_0016250C);
-        xform_9c20(pk.m[i], pk.m[i], mat);
+        xform_9c20(pk.m[i], pk.m[i], quad_transform);
     }
     draw_9c20(&pk, 0, 0);
 }
@@ -594,7 +606,7 @@ extern float D_L18_00162514 __attribute__((sda));
 extern float D_L18_00162518 __attribute__((sda));
 extern float D_L18_0016251C __attribute__((sda));
 extern float D_L18_001DFBD0[4][4];
-void FUN_L18_002f9eb8(struct Moby *m) {
+void draw_moby_three_scaled_two_tint_quads(struct Moby *m) {
     Pk_9c20 pk;
     float quad_transform[4][4];
     float up[4];
@@ -700,7 +712,7 @@ extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 extern char *func_L00_0026DEA0_c(void *, int, void *, float, float, float, float,
                                  int) __asm__("FUN_L00_0026d000");
 
-void FUN_L18_002fa250(void *first_position_source, void *b, void *effect_velocity_source, float f0, float f1) {
+void spawn_deplanetizer_gun_trail_effects(void *first_position_source, void *second_position_source, void *effect_velocity_source, float f0, float f1) {
     char first_effect_position[16];
     char second_effect_position[16];
     int i;
@@ -709,7 +721,7 @@ void FUN_L18_002fa250(void *first_position_source, void *b, void *effect_velocit
     int x;
     int k2, k7f;
     qcopy(first_effect_position, first_position_source);
-    qcopy(second_effect_position, b);
+    qcopy(second_effect_position, second_position_source);
     for (i = 1; i >= 0; i--) {
         random_magnitude_or_effect = (char *)random_integer_below(16);
         random_magnitude_or_effect = func_L00_0026DEA0_c(first_effect_position, random_integer_below(2) ? -(int)random_magnitude_or_effect : (int)random_magnitude_or_effect, effect_velocity_source, 0.0f, 1.0f, 0.9f,
@@ -751,8 +763,10 @@ extern f32 fast_add_rotations(f32 a, f32 b) __asm__("FUN_001fa580");
 extern int D_L18_0015F5C4;
 extern int D_L18_0016D290_lui __asm__("D_L18_0016D290") __attribute__((section(".data")));
 
-void FUN_L18_002fa640(struct Moby *moby);
-void FUN_L18_002fa640(struct Moby *moby) {
+void update_moby_visibility_and_half_turn(struct Moby *moby) __asm__("FUN_L18_002fa640");
+
+void update_moby_visibility_and_half_turn(struct Moby *moby) __asm__("FUN_L18_002fa640");
+void update_moby_visibility_and_half_turn(struct Moby *moby) {
     enum {
         INITIALIZE_STATE_MACHINE = 0,
         WAIT_TO_HIDE_AND_TURN = 1,
@@ -796,7 +810,9 @@ extern void FUN_L00_00250df8(void *);
 extern void update_entity_matrix(char *a, void *b, void *c, void *d) __asm__("FUN_L00_00260738");
 extern char *func_0020D348_m(int) __asm__("FUN_0020c4f8");
 
-void FUN_L18_002fa728(char *moby) {
+void update_moby_transform_and_child(char *moby) __asm__("FUN_L18_002fa728");
+
+void update_moby_transform_and_child(char *moby) {
     enum {
         INITIALIZE_TRANSFORM_HISTORY = 0,
         UPDATE_TRANSFORM_FROM_HISTORY = 1
@@ -840,7 +856,9 @@ extern int D_L18_0015FFD8;
  * Ported from rac1-decomp (src/overlays/l18_veldin2/vendor_002F9D48.c:
  * func_L18_002FBCE8), where it is exact; names translated to the US level
  * program. */
-void FUN_L18_002fa888(int group_index, int value) {
+void set_group_class_0630_moby_byte_bc(int group_index, int value) __asm__("FUN_L18_002fa888");
+
+void set_group_class_0630_moby_byte_bc(int group_index, int value) {
     unsigned short *table = (unsigned short *)D_L18_001AC240[group_index];
 
     if (table != 0) {
@@ -876,7 +894,9 @@ typedef struct {
     short class_id;
 } L18VM_a8e0;
 
-void FUN_L18_002fa8e0(L18VM_a8e0 *moby) {
+void mark_class_0630_moby_and_child_for_removal(L18VM_a8e0 *moby) __asm__("FUN_L18_002fa8e0");
+
+void mark_class_0630_moby_and_child_for_removal(L18VM_a8e0 *moby) {
     if (moby->class_id == 0x630) {
         void *child = moby->data->child;
         if (child != 0) {
@@ -910,7 +930,9 @@ extern void draw_trail(void *, void *, void *, float, float) __asm__("FUN_L00_00
 extern short D_L18_00162578 __attribute__((sda));
 extern short D_L18_0016257C __attribute__((sda));
 extern short D_L18_00162580 __attribute__((sda));
-void FUN_L18_002fad28(M2 *moby) {
+void update_selected_moby_joint_trail(M2 *moby) __asm__("FUN_L18_002fad28");
+
+void update_selected_moby_joint_trail(M2 *moby) {
     enum {
         INITIALIZE_TRAIL_EFFECT = 0,
         UPDATE_TRAIL_EFFECT = 1
@@ -973,8 +995,10 @@ extern int random_integer_below(int);
 extern int scale_game_frames(int);
 extern float D_L18_00162600 __attribute__((sda));
 extern void FUN_L00_002599e8(void *, float, float, float, int, int, int, int, int);
-extern void FUN_L18_002fc100(struct Moby *);
-void FUN_L18_002fc860(struct Moby *m);
+extern void update_gadgebot_damage_target_and_glow(struct Moby *) __asm__("FUN_L18_002fc100");
+void draw_gadgebot_launch_glow_quad(struct Moby *m) __asm__("FUN_L18_002fc860");
+
+void draw_gadgebot_launch_glow_quad(struct Moby *m) __asm__("FUN_L18_002fc860");
 extern void add_vector_xyz(void *, void *, void *);
 extern void blend_moby_animation(void *, int, int, int) __asm__("FUN_00212f90");
 extern void enqueue_callback_list_1(void *, void *) __asm__("FUN_001f4600");
@@ -1001,7 +1025,7 @@ void gadgebot_update(unsigned char *moby) {
     char position_scratch[16];
     unsigned char *moby_vars = *(unsigned char **)(moby + 0x78);
     unsigned char *moby_transform_ptr;
-    FUN_L18_002fc100((struct Moby *)moby);
+    update_gadgebot_damage_target_and_glow((struct Moby *)moby);
     switch (moby[0x20]) {
     case GADGEBOT_INITIALIZE: {
         unsigned short moby_flags;
@@ -1134,7 +1158,7 @@ void gadgebot_update(unsigned char *moby) {
         g = g - *(float *)(moby_vars + 0x1F4);
         scale_vector_xyz(moby_transform_ptr, moby_transform_ptr, g);
         scale_vector_xyz(moby + 0xD0, moby + 0xD0, g);
-        enqueue_callback_list_1(FUN_L18_002fc860, moby);
+        enqueue_callback_list_1(draw_gadgebot_launch_glow_quad, moby);
     }
 }
 #include "rnc/gameplay/hero.h"
@@ -1142,7 +1166,9 @@ void gadgebot_update(unsigned char *moby) {
 extern int game_frame __asm__("D_L18_0015F5CC");
 extern int D_L18_0015F5C4;
 extern int *D_L18_001B0EB0[] __asm__("D_L18_001B0EB0");
-extern void FUN_L18_002fca98(struct Moby *moby);
+void draw_group_class_0772_joint_glows(struct Moby *moby) __asm__("FUN_L18_002fca98");
+
+extern void draw_group_class_0772_joint_glows(struct Moby *moby) __asm__("FUN_L18_002fca98");
 extern float fast_add_rotations_c100(float, float) __asm__("FUN_001fa580");
 extern float fast_sin_c100(float) __asm__("FUN_001f9de0");
 extern int tween_color_c100(int, int, float) __asm__("FUN_001fa6e0");
@@ -1200,7 +1226,7 @@ extern float D_L18_00162620 __attribute__((sda));
 extern float D_L18_00162624 __attribute__((sda));
 extern float D_L18_00162628 __attribute__((sda));
 /* Sentry update: spins and tints the moby, takes hits (knockback, then a fall), and follows its path toward the hero. */
-void FUN_L18_002fc100(struct Moby *moby) {
+void update_gadgebot_damage_target_and_glow(struct Moby *moby) {
     SentryVars_c100 *sentry_vars = (SentryVars_c100 *)moby->pvars;
     union { u128 q; float f[4]; } v;
     int hit;
@@ -1216,7 +1242,7 @@ void FUN_L18_002fc100(struct Moby *moby) {
     }
     if (moby->state != 7 && game_frame != D_L18_00162604) {
         D_L18_00162604 = game_frame;
-        enqueue_callback_list_1(FUN_L18_002fca98, moby);
+        enqueue_callback_list_1(draw_group_class_0772_joint_glows, moby);
     }
     speed = D_L18_00162614;
     if (moby->state == 4 || moby->state == 5) {
@@ -1353,7 +1379,9 @@ extern float randf_sym(float, float) __asm__("FUN_L00_00257c48");
 
 /* Launches the first idle (state 8) class-0x772 moby of group `group` from `from` towards `to` at `speed`.
    Returns 1 when one was launched. */
-int FUN_L18_002fc668(int group, void *from, void *to, float speed) {
+int launch_first_idle_group_class_0772_moby(int group, void *from, void *to, float speed) __asm__("FUN_L18_002fc668");
+
+int launch_first_idle_group_class_0772_moby(int group, void *from, void *to, float speed) {
     unsigned short *group_moby_entry = (unsigned short *)D_L18_001AC240[group];
     struct Moby *table;
     struct Moby *moby;
@@ -1389,7 +1417,9 @@ int FUN_L18_002fc668(int group, void *from, void *to, float speed) {
 extern int D_L18_001AC240[];
 extern int D_L18_0015FFD8;
 
-short FUN_L18_002fc7e0(int group_index) {
+short count_group_class_0772_mobys_not_in_state_8(int group_index) __asm__("FUN_L18_002fc7e0");
+
+short count_group_class_0772_mobys_not_in_state_8(int group_index) {
     unsigned short *group_moby_entry = (unsigned short *)D_L18_001AC240[group_index];
     short n = 0;
     int base;
@@ -1432,10 +1462,10 @@ extern float D_L18_00162648 __attribute__((sda));
 extern float D_L18_0016264C __attribute__((sda));
 extern float D_L18_00162650 __attribute__((sda));
 extern float D_L18_001EFCD0[4][2];
-void FUN_L18_002fc860(struct Moby *m) {
+void draw_gadgebot_launch_glow_quad(struct Moby *m) {
     char *d = (char *)m->pvars;
     Pk_c860 pk;
-    float mat[4][4];
+    float quad_transform[4][4];
     float horizontal_axis_scale;
     float vertical_axis_scale;
     int c;
@@ -1443,15 +1473,15 @@ void FUN_L18_002fc860(struct Moby *m) {
     float *quad_vertex;
     vertical_axis_scale = *(float *)(d + 0x1F4) + 1.0f + D_L18_0016264C;
     horizontal_axis_scale = 1.0f - *(float *)(d + 0x1F4) + D_L18_00162650;
-    qcopy(mat[3], &m->pos);
-    mat[3][2] -= D_L18_00162648;
-    clear_g(mat[2]);
-    mat[2][2] = vertical_axis_scale;
-    sub_g(mat[0], D_L18_001677C0_g, &m->pos);
-    cross_g(mat[1], mat[0], mat[2]);
-    cross_g(mat[0], mat[1], mat[2]);
-    norm_g(mat[0], mat[0], horizontal_axis_scale);
-    norm_g(mat[1], mat[1], horizontal_axis_scale);
+    qcopy(quad_transform[3], &m->pos);
+    quad_transform[3][2] -= D_L18_00162648;
+    clear_g(quad_transform[2]);
+    quad_transform[2][2] = vertical_axis_scale;
+    sub_g(quad_transform[0], D_L18_001677C0_g, &m->pos);
+    cross_g(quad_transform[1], quad_transform[0], quad_transform[2]);
+    cross_g(quad_transform[0], quad_transform[1], quad_transform[2]);
+    norm_g(quad_transform[0], quad_transform[0], horizontal_axis_scale);
+    norm_g(quad_transform[1], quad_transform[1], horizontal_axis_scale);
     pk.b = tex_g(D_L18_00162644);
     pk.c = 0x0000FF9000000260ULL;
     pk.a = 0;
@@ -1474,7 +1504,7 @@ void FUN_L18_002fc860(struct Moby *m) {
         quad_vertex[3] = 1.0f;
         pk.col[i] = c;
     }
-    draw_g(&pk, mat, 0);
+    draw_g(&pk, quad_transform, 0);
 }
 #include "sda.h"
 
@@ -1486,7 +1516,7 @@ extern short D_L18_00162654;
 extern unsigned short *D_L18_001AC240_c[] __asm__("D_L18_001AC240");
 extern void FUN_L00_00263618(void *, int, float, float);
 
-void FUN_L18_002fca98(struct Moby *moby) {
+void draw_group_class_0772_joint_glows(struct Moby *moby) {
     unsigned short *group_moby_entry = D_L18_001AC240_c[moby->group];
     if (group_moby_entry != 0) {
         while (1) {

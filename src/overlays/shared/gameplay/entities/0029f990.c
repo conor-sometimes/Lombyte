@@ -32,7 +32,9 @@ extern void transform_scaled_vertex_batch(char *arg0, int arg1, void *arg2,
                                           char *arg3) __asm__("FUN_0020cd48");
 extern void vu1_add_g_sregister(int, long);
 
-void FUN_L00_0029f990(char *vertex_batch) {
+void draw_vendor_inset_quads(char *vertex_batch) __asm__("FUN_L00_0029f990");
+
+void draw_vendor_inset_quads(char *vertex_batch) {
     float A[4];
     float B[4];
     float C[4];
@@ -124,7 +126,7 @@ void FUN_L00_0029fcd0(void *moby) {
     OvlQuad inset_offset[1];
     OvlQuad quad_corners[4];
     OvlQuad pad[5];
-    OvlQuad bounds_first_corner, b;
+    OvlQuad bounds_first_corner, bounds_opposite_corner;
     int x, y, w, h;
     float len;
     ids = D_L00_00161178;
@@ -145,8 +147,8 @@ void FUN_L00_0029fcd0(void *moby) {
     FUN_001f9a10_29fcd0(&quad_corners[2], base, second_edge);
     FUN_001f9a10_29fcd0(&quad_corners[3], &quad_corners[2], first_edge);
     bounds_first_corner = quad_corners[0];
-    b = quad_corners[3];
-    FUN_00237a78_29fcd0(&bounds_first_corner, &b, &x, &y, &w, &h);
+    bounds_opposite_corner = quad_corners[3];
+    FUN_00237a78_29fcd0(&bounds_first_corner, &bounds_opposite_corner, &x, &y, &w, &h);
     FUN_00239690_29fcd0(9, 7, 1.0f);
     FUN_001fb740_29fcd0(0x200, 0x200);
     FUN_00233980_29fcd0(0x42, 0x8000000064L);
@@ -285,7 +287,7 @@ extern void FUN_L00_002a09d8(s32);
 extern s32 sce_gs_sync_v(s32) __asm__("FUN_00122298");
 extern void FUN_L00_002a08c8(void);
 extern void swap_render_buffer_chain(void) __asm__("FUN_00233630");
-extern void FUN_L00_001f99c0(s32);
+extern void capture_draw_buffer(s32) __asm__("FUN_L00_001f99c0");
 extern void update_camera_view_matrices(void) __asm__("FUN_001f2260");
 extern void fast_vec_cross(void *, void *, void *) __asm__("FUN_001f9ad8");
 extern void init_moby_instance(void *, s32) __asm__("FUN_0020c5f0");
@@ -294,7 +296,7 @@ extern void pack_render_command_fields(void *, s32, s32, s32, s32) __asm__("FUN_
 extern void FUN_L00_0029b680(void);
 extern void fast_mem_zero16(void *, s32) __asm__("FUN_001f9810");
 extern s32 start_audio_stream_read(void *, s32, s32) __asm__("FUN_00216788");
-extern void FUN_L00_002a0fc8(s32, u32, u32);
+extern void append_draw_buffer_upload_packets(s32, u32, u32) __asm__("FUN_L00_002a0fc8");
 extern void setup_gif_paging(s32) __asm__("FUN_001f4280");
 extern void reset_gs_registers(void) __asm__("FUN_001f3868");
 extern void draw_mobys_setup(void) __asm__("FUN_0020d278");
@@ -311,7 +313,9 @@ extern void restore_moby_class_dists(void) __asm__("FUN_0020d248");
 extern void draw_mobys_clean_up(void) __asm__("FUN_0020d3b0");
 extern void patch_moby_gifs(void) __asm__("FUN_0020cef8");
 
-void FUN_L00_002a02b0(void) {
+void draw_vendor_screen(void) __asm__("FUN_L00_002a02b0");
+
+void draw_vendor_screen(void) {
     A02b0_obj *e;
     A02b0_tab *g;
 #define p (&D_L00_001CA4C0)
@@ -341,7 +345,7 @@ void FUN_L00_002a02b0(void) {
         FUN_L00_002a08c8();
         swap_render_buffer_chain();
         D_L00_001611CC = 0x60000;
-        FUN_L00_001f99c0(p->f10);
+        capture_draw_buffer(p->f10);
         *(u16 *)(p->f1C + 0x34) &= 0xFFFE;
         *(f32 *)(p->f1C + 0x2C) = 0.14190800487995148f;
         if (p->f40 != 0) {
@@ -395,7 +399,7 @@ void FUN_L00_002a02b0(void) {
     default:
         return;
     }
-    FUN_L00_002a0fc8(p->f10, draw_buffer_address, frame_size[0] << 11);
+    append_draw_buffer_upload_packets(p->f10, draw_buffer_address, frame_size[0] << 11);
     setup_gif_paging(0);
     update_camera_view_matrices();
     reset_gs_registers();
@@ -420,7 +424,7 @@ void FUN_L00_002a02b0(void) {
     if (p->f5C != 0) {
         FUN_L00_0029fcd0_c(p->f20 + 0x400);
     }
-    FUN_L00_0029f990(p->f1C);
+    draw_vendor_inset_quads(p->f1C);
     FUN_00233980(0x42, 0x8000000044LL);
     update_hud();
     do_gif_paging();

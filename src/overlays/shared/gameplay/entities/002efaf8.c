@@ -7,11 +7,11 @@
 #include "sda.h"
 
 
-extern int FUN_L00_002dbb20(void *);
+extern int store_moby_in_suck_cannon(void *) __asm__("FUN_L00_002dbb20");
 
 /* Moby state 0xE while FUN_L00_002dbb20 reports a hit, back to 1 when it stops. */
 int FUN_L01_002efaf8(char *a) {
-    int r = FUN_L00_002dbb20(a);
+    int r = store_moby_in_suck_cannon(a);
     if (r == 0) {
         if (*(unsigned char *)(a + 0x20) == 0xe)
             a[0x20] = 1;
@@ -21,11 +21,11 @@ int FUN_L01_002efaf8(char *a) {
     return r;
 }
 
-extern int FUN_L00_002dbe20(void *);
+extern int cancel_suck_cannon_suction(void *) __asm__("FUN_L00_002dbe20");
 
 /* Runs FUN_L00_002dbe20 on the moby and sets its state to 0xE. */
 int FUN_L01_002efb98(char *moby) {
-    int helper_result = FUN_L00_002dbe20(moby);
+    int helper_result = cancel_suck_cannon_suction(moby);
     moby[0x20] = 0xe;
     return helper_result;
 }
@@ -46,11 +46,11 @@ s32 FUN_L01_002efbc8(T6 *moby) {
     return 0;
 }
 
-extern int FUN_L00_002db8f8(void *);
+extern int process_moby_suck_cannon_suction(void *) __asm__("FUN_L00_002db8f8");
 
 /* Moby state 7 while FUN_L00_002db8f8 reports a hit, back to 1 when it stops. */
 int FUN_L01_002f1c78(char *a) {
-    int r = FUN_L00_002db8f8(a);
+    int r = process_moby_suck_cannon_suction(a);
     if (r == 0) {
         if (*(unsigned char *)(a + 0x20) == 0x7)
             a[0x20] = 1;
@@ -61,13 +61,17 @@ int FUN_L01_002f1c78(char *a) {
 }
 
 /* Runs FUN_L00_002dbe20 on the moby and sets its state to 7. */
-int FUN_L01_002f1dc8(char *moby) {
-    int helper_result = FUN_L00_002dbe20(moby);
+int run_moby_helper_and_set_state_7(char *moby) __asm__("FUN_L01_002f1dc8");
+
+int run_moby_helper_and_set_state_7(char *moby) {
+    int helper_result = cancel_suck_cannon_suction(moby);
     moby[0x20] = 0x7;
     return helper_result;
 }
 /* Returns the moby data pointer plus 0x60, or 0 when either is null. */
-s32 FUN_L01_002f1df8(T6 *moby) {
+s32 get_moby_data_plus_0x60(T6 *moby) __asm__("FUN_L01_002f1df8");
+
+s32 get_moby_data_plus_0x60(T6 *moby) {
     s32 moby_data_address;
     if (moby != 0) {
         moby_data_address = moby->f;
@@ -92,7 +96,9 @@ typedef struct {
 s32 random_integer_below(s32) __asm__("FUN_00213260");
 s32 scale_game_frames(s32) __asm__("FUN_001f96f8");
 /* Fills a moby data block: four random values, fixed constants, four frame-scaled counts. */
-void FUN_L01_00308470(O_FUN_L01_00308470 *moby) {
+void initialize_gold_bolt_data(O_FUN_L01_00308470 *moby) __asm__("FUN_L01_00308470");
+
+void initialize_gold_bolt_data(O_FUN_L01_00308470 *moby) {
     M_FUN_L01_00308470 *m = moby->m;
     s32 i;
     for (i = 0; i < 4; i++)

@@ -14,7 +14,9 @@ extern void FUN_L10_002ea7b0_c(void *,short *) __asm__("FUN_L10_002ea7b0");
 void FUN_L10_002eaa08_c(void *pos, short *timer, short *burst, float height) __asm__("FUN_L10_002eaa08");
 extern void func_L10_002EBDC8_a01(float,void *,short *,short *) __asm__("FUN_L10_002eaa08");
 
-void FUN_L10_002ea1f0(char *moby) {
+void update_configurable_particle_emitter(char *moby) __asm__("FUN_L10_002ea1f0");
+
+void update_configurable_particle_emitter(char *moby) {
     enum {
         EFFECT_STATE_INITIALIZE = 0,
         EFFECT_STATE_EMIT_BURST_PARTICLES = 1,
@@ -106,7 +108,7 @@ extern void random_vector(float *, float, float) __asm__("FUN_L00_00257d78");
 extern void clear_u64_value(void *) __asm__("FUN_001f99f8");
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
-void FUN_L10_002ea4e8(void *pos, short *timer, short *burst) {
+void FUN_L10_002ea4e8(void *emission_position, short *timer, short *burst) {
     float visibility_sphere[4];
     float vel[4];
     float acc[4];
@@ -122,9 +124,9 @@ void FUN_L10_002ea4e8(void *pos, short *timer, short *burst) {
             -func_001FA898_r(random_float_between((float)D_L10_00161FB4, (float)D_L10_00161FB8));
         return;
     }
-    if (32.0f < fast_vec_dist(D_L10_00167240, pos))
+    if (32.0f < fast_vec_dist(D_L10_00167240, emission_position))
         return;
-    qcopy(visibility_sphere, pos);
+    qcopy(visibility_sphere, emission_position);
     visibility_sphere[3] = 2.0f;
     if (fast_bsphere_check((char *)visibility_sphere, 32.0f) == -1 && random_integer_below(3) != 0)
         return;
@@ -141,7 +143,7 @@ void FUN_L10_002ea4e8(void *pos, short *timer, short *burst) {
     second_frame_count = func_001FA898_r((float)D_L10_00161F88 * frame_count_scale);
     third_frame_count = func_001FA898_r((float)D_L10_00161F8C * frame_count_scale);
     initial_spark_color = fast_tween_color(D_L10_00161F94, D_L10_00161F98, random_float_between(0.0f, 1.0f));
-    spawn_spark(pos, vel, acc, initial_spark_color,
+    spawn_spark(emission_position, vel, acc, initial_spark_color,
                  fast_tween_color(D_L10_00161F9C, D_L10_00161FA0, random_float_between(0.0f, 1.0f)), frame_count,
                  second_frame_count, third_frame_count, -1);
     *timer = func_001FA898_r(random_float_between((float)D_L10_00161FA4, (float)D_L10_00161FA8));
@@ -185,15 +187,15 @@ extern void random_vector(float *, float, float) __asm__("FUN_L00_00257d78");
 extern void clear_u64_value(void *);
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
-void FUN_L10_002ea7b0(void *pos, short *timer) {
+void FUN_L10_002ea7b0(void *emission_position, short *timer) {
     float visibility_sphere[4];
     float vel[4];
     float acc[4];
     float frame_count_scale;
     int frame_count, second_frame_count, third_frame_count, initial_spark_color;
-    if (32.0f < fast_vec_dist(D_L10_00167240, pos))
+    if (32.0f < fast_vec_dist(D_L10_00167240, emission_position))
         return;
-    qcopy(visibility_sphere, pos);
+    qcopy(visibility_sphere, emission_position);
     visibility_sphere[2] += 6.0f;
     visibility_sphere[3] = 5.0f;
     if (fast_bsphere_check((char *)visibility_sphere, 32.0f) == -1 && random_integer_below(3) != 0)
@@ -211,7 +213,7 @@ void FUN_L10_002ea7b0(void *pos, short *timer) {
     second_frame_count = func_001FA898_r((float)D_L10_00161FDC * frame_count_scale);
     third_frame_count = func_001FA898_r((float)D_L10_00161FE0 * frame_count_scale);
     initial_spark_color = fast_tween_color(D_L10_00161FE8, D_L10_00161FEC, random_float_between(0.0f, 1.0f));
-    spawn_spark(pos, vel, acc, initial_spark_color,
+    spawn_spark(emission_position, vel, acc, initial_spark_color,
                  fast_tween_color(D_L10_00161FF0, D_L10_00161FF4, random_float_between(0.0f, 1.0f)), frame_count,
                  second_frame_count, third_frame_count, -1);
     *timer = func_001FA898_r(random_float_between((float)D_L10_00161FF8, (float)D_L10_00161FFC));
@@ -254,7 +256,7 @@ extern short D_L10_00162050 __attribute__((sda));
 extern void random_vector(float *, float, float) __asm__("FUN_L00_00257d78");
 extern int func_001FA898_r(float) __asm__("FUN_001fa6d0");
 
-void FUN_L10_002eaa08(void *pos, short *timer, short *burst, float height) {
+void FUN_L10_002eaa08(void *emission_position, short *timer, short *burst, float height) {
     float visibility_sphere[4];
     float vel[4];
     float acc[4];
@@ -269,7 +271,7 @@ void FUN_L10_002eaa08(void *pos, short *timer, short *burst, float height) {
         if (++*burst != 0) return;
         *burst = func_001FA898_r(random_float_between((float)*(int *)&D_L10_0016203C, (float)*(int *)&D_L10_00162040));
     }
-    qcopy(visibility_sphere, pos);
+    qcopy(visibility_sphere, emission_position);
     visibility_sphere[3] = 3.0f;
     visibility_sphere[2] -= 4.0f;
     if (fast_bsphere_check((char *)visibility_sphere, 32.0f) == -1) return;
@@ -284,7 +286,7 @@ void FUN_L10_002eaa08(void *pos, short *timer, short *burst, float height) {
     vel[3] = random_float_between(*(float *)&D_L10_00162008, *(float *)&D_L10_0016200C);
     acc[3] = random_float_between(*(float *)&D_L10_00162010, *(float *)&D_L10_00162014);
     initial_spark_color = fast_tween_color(D_L10_00162024, D_L10_00162028, random_float_between(0.0f, 1.0f));
-    spawn_spark(pos, vel, acc, initial_spark_color, fast_tween_color(D_L10_0016202C, D_L10_00162030, random_float_between(0.0f, 1.0f)), frame_count, second_frame_count, third_frame_count, D_L10_0016204C);
+    spawn_spark(emission_position, vel, acc, initial_spark_color, fast_tween_color(D_L10_0016202C, D_L10_00162030, random_float_between(0.0f, 1.0f)), frame_count, second_frame_count, third_frame_count, D_L10_0016204C);
     *timer = func_001FA898_r(random_float_between((float)*(int *)&D_L10_00162034, (float)*(int *)&D_L10_00162038));
 }
 #define NOT_SDA
@@ -304,7 +306,9 @@ struct L10Data {
 extern struct L10Data D_L10_0016CCE0;
 extern void cutscene_set_camera_target(int) __asm__("FUN_L00_002637f8");
 
-void FUN_L10_002eacd8(struct Moby *moby) {
+void update_level_mode_dispatcher(struct Moby *moby) __asm__("FUN_L10_002eacd8");
+
+void update_level_mode_dispatcher(struct Moby *moby) {
     enum {
         LEVEL_MODE_STATE_INITIALIZE = 0,
         LEVEL_MODE_STATE_DISPATCH = 1
@@ -342,7 +346,9 @@ extern void FUN_L00_00263e30(void *, int, int, int, int, int, int);
 extern void FUN_L01_002787a0(void *);
 void mark_moby_for_removal(struct Moby *moby) __asm__("FUN_0020c828");
 
-void FUN_L10_002eb6f0(struct Moby *moby) {
+void update_hit_triggered_fragment_spawner(struct Moby *moby) __asm__("FUN_L10_002eb6f0");
+
+void update_hit_triggered_fragment_spawner(struct Moby *moby) {
     enum {
         HIT_RESPONSE_STATE_INITIALIZE = 0,
         HIT_RESPONSE_STATE_WAIT_FOR_HIT = 1,
@@ -371,9 +377,11 @@ void FUN_L10_002eb6f0(struct Moby *moby) {
 /* per-frame update: wait for a condition, then run, then clean up */
 /* Ported from rac1-decomp (src/overlays/l10_orxon/vendor_002E30F8.c: func_L10_002ECBA0), where it is exact; names translated to the US level program. */
 
-extern void FUN_L01_00278e20(void *, int);
+extern void spawn_moby_from_placement(void *, int) __asm__("FUN_L01_00278e20");
 
-void FUN_L10_002eb7e0(struct Moby *moby) {
+void update_hit_triggered_moby_spawner(struct Moby *moby) __asm__("FUN_L10_002eb7e0");
+
+void update_hit_triggered_moby_spawner(struct Moby *moby) {
     enum {
         HIT_RESPONSE_STATE_INITIALIZE = 0,
         HIT_RESPONSE_STATE_WAIT_FOR_HIT = 1,
@@ -396,7 +404,7 @@ void FUN_L10_002eb7e0(struct Moby *moby) {
     case HIT_RESPONSE_STATE_RESPOND_AND_REMOVE:
         allocate_voice_for_target_entry(0, 0, (int)moby);
         FUN_L01_002787a0(moby);
-        FUN_L01_00278e20(moby, 0x741);
+        spawn_moby_from_placement(moby, 0x741);
         mark_moby_for_removal(moby);
         break;
     }
