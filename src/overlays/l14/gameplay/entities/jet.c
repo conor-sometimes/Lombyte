@@ -517,7 +517,7 @@ void shuttle_update(struct Moby *shuttle_moby) {
     FUN_L00_001fff28(shuttle_vars->wobble, 0, shuttle_vars->angle);
     lift_sub(&delta, &shuttle_moby->pos, &old);
     update_entity_matrix(shuttle_vars->spring, &delta, &rot, &shuttle_moby->rot);
-    if (hero.state.control_mode == 13 && hero.unk964 == rider) {
+    if (hero.state.control_mode == 13 && hero.grapple_target == rider) {
         if (shuttle_vars->riding == 0) {
             shuttle_vars->riding = 1;
             shuttle_vars->timer = lift_frames(shuttle_enter_riding_transition_frames_gp);
@@ -652,7 +652,7 @@ void update_wind_control(struct Moby *wind_control_moby) {
         }
         update_wind_sparks(wind_control_moby);
         hero_base = (struct Hero *)(pos - 0x80);
-        if (hero_base->unk308 == 0 && hero_base->unk2284 != 13 && (hero_base->unk12E2 != 0 || hero_base->frames_off_ground.s != 0) &&
+        if (hero_base->unk308 == 0 && hero_base->unk2284 != 13 && (hero_base->on_ice_ground != 0 || hero_base->frames_off_ground.s != 0) &&
             wind_inside(pos, wind_vars->clip_push) != 0) {
             float t;
             float k;
@@ -678,7 +678,7 @@ void update_wind_control(struct Moby *wind_control_moby) {
             wind_vars->period_timer = wind_frames(wind_vars->period);
             wind_vars->period_inv = 1.0f / wind_itof(wind_vars->period_timer);
         }
-        if (hero.unk308 != 0 || hero.unk12E2 == 0) {
+        if (hero.unk308 != 0 || hero.on_ice_ground == 0) {
             if (wind_vars->push_timer > wind_frames(15)) {
                 wind_vars->push_timer = wind_frames(15);
                 wind_vars->push_inv = 1.0f / (float)wind_vars->push_timer;
@@ -1225,7 +1225,7 @@ extern short D_L14_00161C60 __attribute__((sda));
 extern short D_L14_00161C64 __attribute__((sda));
 extern void deactivate_recorded_moby(void) __asm__("FUN_L00_0028e990");
 extern void start_scene(int) __asm__("FUN_L00_00298840");
-extern void FUN_L01_002a2480(void);
+extern void show_tracked_moby(void) __asm__("FUN_L01_002a2480");
 extern void update_branched_lightning_arc(char *) __asm__("FUN_L14_002ed530");
 extern int *D_L14_001B0F30_ee[] __asm__("D_L14_001B0BB0");
 extern float D_L14_00161CD0_f __asm__("D_L14_00161CD0");
@@ -1238,7 +1238,7 @@ void update_path_lightning_controller(struct Moby *moby) {
     float visibility_test_point[4];
     int moby_state;
     if (MOBY(moby)->state == 0) {
-        if (current_level_index == 0xE) hero.unk22D8 = 1;
+        if (current_level_index == 0xE) hero.pack_disabled = 1;
         MOBY(moby)->state = 1;
         moby->update_dist = 0xFF;
         *(int *)&D_L14_00161C58 = 0;
@@ -1259,7 +1259,7 @@ void update_path_lightning_controller(struct Moby *moby) {
     if (moby_state == 2) {
         if (D_L14_0015F5C4 == moby_state) return;
         MOBY(moby)->state = 3;
-        FUN_L01_002a2480();
+        show_tracked_moby();
         return;
     }
     if (tick_countdown_32_alt(&D_L14_00161C50) == 0) return;
@@ -2176,7 +2176,7 @@ void rebuild_elevator_world_path(u8 *moby) {
         world_path_point_cursor += 0x10;
     } while (i >= 0);
     x = &hero;
-    x->unk22DA = *(u16 *)(data + 0x114);
+    x->path_constrain_pending = *(u16 *)(data + 0x114);
 }
 
 #define NOT_SDA
@@ -2499,7 +2499,7 @@ void taxi_update(struct Moby *moby) {
     if (moby->state >= 3 && moby->state <= 4) {
         struct Hero *g = &hero;
         if (g->ground_moby == moby && g->air_frames.s == 0) {
-            g->unk1F2 = 2;
+            g->jump_lock_timer = 2;
             g->unk1F4 = 2;
             transform_moby_vector_table_to_world_space((char *)moby);
         }
@@ -2852,7 +2852,7 @@ void qwark_oltanis_update(L14WatchMoby *moby) {
                 fast_dec_timer(&moby_vars->moving_timer);
         } else if (moby_vars->moving_timer) {
             moby_vars->moving_timer = 0;
-            qcopy(moby_vars->target, hero.motion.unkD0.f);
+            qcopy(moby_vars->target, hero.motion.body_center.f);
         }
         if (fast_dec_timer(&moby_vars->target_timer)) {
             float heading;
@@ -2864,7 +2864,7 @@ void qwark_oltanis_update(L14WatchMoby *moby) {
             FUN_001f9a10_c(moby_vars->target, moby_vars->target, moby->position);
         }
         if (moby_vars->moving_timer) {
-            qcopy(scratch.target, hero.motion.unkD0.f);
+            qcopy(scratch.target, hero.motion.body_center.f);
             rate = 0.04f;
             head_rate = 0.3f;
         } else {

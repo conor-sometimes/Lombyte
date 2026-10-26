@@ -242,7 +242,7 @@ extern void FUN_L00_00257470(void *, int, int);
 extern void trooper_start_knockback(void *, void *, int, int, int, float) __asm__("FUN_L00_0025c558");
 extern void trooper_anim_finish(void *, void *) __asm__("FUN_L00_0025d538");
 extern void cart_burst(void *, void *, int, float, float) __asm__("FUN_L00_0025f090");
-extern void FUN_L14_002ffc08(void *);
+extern void moby_set_state_one(void *) __asm__("FUN_L14_002ffc08");
 extern void initialize_moby_path_state(void *) __asm__("FUN_L14_002fe900");
 extern void update_linked_moby_position(void *) __asm__("FUN_L14_002fec28");
 extern void emit_moby_offset_particles(void *) __asm__("FUN_L14_002feca8");
@@ -380,7 +380,7 @@ void bolt_thief_update(L16CrateMoby *moby) {
                 set_moby_animation(moby, 4, 0);
             } else {
                 if (settle_data->child) {
-                    FUN_L14_002ffc08(settle_data->child);
+                    moby_set_state_one(settle_data->child);
                     settle_data->child = 0;
                 }
                 moby->state = 5;
@@ -670,7 +670,7 @@ void sam_update(L14WatchMoby *moby) {
                 fast_dec_timer(&moby_data->moving_timer);
         } else if (moby_data->moving_timer) {
             moby_data->moving_timer = 0;
-            qcopy(moby_data->target, hero.motion.unkD0.f);
+            qcopy(moby_data->target, hero.motion.body_center.f);
         }
         if (fast_dec_timer(&moby_data->target_timer)) {
             float heading;
@@ -683,7 +683,7 @@ void sam_update(L14WatchMoby *moby) {
             fast_vec_add(moby_data->target, moby_data->target, moby->position);
         }
         if (moby_data->moving_timer) {
-            qcopy(scratch.target, hero.motion.unkD0.f);
+            qcopy(scratch.target, hero.motion.body_center.f);
             rate = 0.04f;
             head_rate = 0.3f;
         } else {

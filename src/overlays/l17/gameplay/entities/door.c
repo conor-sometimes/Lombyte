@@ -301,7 +301,7 @@ void update_drone_flight_and_sparks(struct Moby *moby) {
         moby->draw_dist = 0;
         moby->visible = 0;
         target_position = drone_vars + 0x10;
-        *(OvlQuad *)lowered_hero_position = *(OvlQuad *)(&hero.motion.unkD0);
+        *(OvlQuad *)lowered_hero_position = *(OvlQuad *)(&hero.motion.body_center);
         lowered_hero_position[2] = lowered_hero_position[2] - 0.5f;
         if (FUN_001f9b80_q(lowered_hero_position, target_position) < 8.0f) {
             FUN_001f9a40_q(target_position, lowered_hero_position, target_position, 0.99f);
@@ -2361,7 +2361,7 @@ void build_magnet_elevator_camera_pose(struct Moby *moby, char *camera_position,
     add_vector_xyz(camera_position, camera_position, &moby->pos);
     clear_u64_value(state);
     *(float *)(state + 8) =
-        fast_arc_tan(hero.motion.unkD0.f[0] - *(float *)camera_position, hero.motion.unkD0.f[1] - *(float *)(camera_position + 4));
+        fast_arc_tan(hero.motion.body_center.f[0] - *(float *)camera_position, hero.motion.body_center.f[1] - *(float *)(camera_position + 4));
     *(int *)(state + 4) = 0;
 }
 /* Ported from rac1-decomp (src/overlays/l17_fleet/vendor_002AA068.c: func_L17_002F0580), where it is exact; names translated to the US level program. */
@@ -2384,7 +2384,7 @@ void rebuild_magnet_elevator_world_path(struct Moby *moby) {
             *(float *)(world_path_point + 0xC) = 1.0f;
             world_path_point += 0x10;
         }
-        hero.unk22DA = *(unsigned short *)(state + 0x80);
+        hero.path_constrain_pending = *(unsigned short *)(state + 0x80);
     }
 }
 /* UpdateMoby for class 1382: hides or shows the moby by its clip volumes, then runs its state machine. */
@@ -2450,7 +2450,7 @@ extern void FUN_L00_00258278(char *moby, float *vel, float target, float k, floa
 extern void spawn_nearby_effect(int, int, int, void *, void *, float) __asm__("FUN_L00_00259bc8");
 extern void FUN_L00_0025a120(void *);
 extern void cart_burst(void *, void *, int, float, float) __asm__("FUN_L00_0025f090");
-extern void FUN_L00_00263b38(void *, float);
+extern void manipulator_set_scale(void *, float) __asm__("FUN_L00_00263b38");
 extern void spawn_moby_break_fragments(void *, int, int, int, int, int, int) __asm__("FUN_L00_00263e30");
 void update_robot_dog_hit_reaction_and_target_detection(void *moby_v, int clip_volume_suppressed) __asm__("FUN_L17_002efa48");
 
@@ -2508,7 +2508,7 @@ void robot_dog_update(unsigned char *robot_dog_moby) {
     update_robot_dog_aim_joint(robot_dog_moby);
     update_robot_dog_glow_effects(robot_dog_moby);
     facing_target_moby = robot_dog_vars->target;
-    FUN_L00_00263b38(robot_dog_vars->a230, 2.1f);
+    manipulator_set_scale(robot_dog_vars->a230, 2.1f);
     if (robot_dog_moby[0x31] != 0 && FUN_001f9b48(robot_dog_moby + 0x10, D_L17_001676C0) < 29.0f) {
         FUN_L00_0025a120(robot_dog_moby);
         robot_dog_moby[0x7F] = 0x17;
@@ -2952,7 +2952,7 @@ void update_robot_dog_hit_reaction_and_target_detection(void *moby_v, int clip_v
         yaw = fast_difference_between_rotations(moby->f48, target_heading);
         qcopy(position_buffer, moby->pos);
         position_buffer[2] += 1.0f;
-        line_query_clear = coll_line_fix(position_buffer, (&hero.motion.unkD0), 2, 0, 0) == 0;
+        line_query_clear = coll_line_fix(position_buffer, (&hero.motion.body_center), 2, 0, 0) == 0;
         moby_vars->b1E4 = line_query_clear;
         if (yaw < 1.0471976f) {
             moby_vars->b1E4 = line_query_clear << 1;
@@ -2993,7 +2993,8 @@ extern int scale_ticks(int) __asm__("FUN_001f96f8");
 extern int process_moby_suck_cannon_suction(void *) __asm__("FUN_L00_002db8f8");
 void blend_moby_animation_u(MobyAnim *arg0, int arg1, int arg2, int arg3) __asm__("FUN_00212f90");
 
-int FUN_L17_002efea8(struct Moby *moby) {
+int enemy_stun_update(struct Moby *moby) __asm__("FUN_L17_002efea8");
+int enemy_stun_update(struct Moby *moby) {
     int result = process_moby_suck_cannon_suction(moby);
     if (result) {
         moby->state = 12;
@@ -3043,7 +3044,7 @@ void update_robot_dog_aim_joint(struct Moby *moby) {
     float pitch;
     qcopy(aim_origin, &moby->pos);
     aim_origin[2] += 0.5f;
-    subtract_vector_xyz(aim_delta, (&hero.motion.unkD0), aim_origin);
+    subtract_vector_xyz(aim_delta, (&hero.motion.body_center), aim_origin);
     yaw = fast_subtract_rotations(fast_arc_tan(aim_delta[0], aim_delta[1]), moby->rot.z);
     pitch = -fast_arc_tan(vector_length_xy(aim_delta), aim_delta[2]);
     if (yaw > 1.0471976f) {
@@ -3321,7 +3322,8 @@ extern void get_moby_color(void *, void *, void *, void *) __asm__("FUN_L00_0025
 extern void vu1_add_g_sregister(s32, unsigned long) __asm__("func_00233980");
 void font_queue_vu_state(void) __asm__("FUN_001f76a0");
 
-void FUN_L17_002f0948(struct Moby *moby) {
+void draw_ripple_ring(struct Moby *moby) __asm__("FUN_L17_002f0948");
+void draw_ripple_ring(struct Moby *moby) {
     RippleData_c *d = (RippleData_c *)moby->pvars;
     T4_c t;
     float scale;

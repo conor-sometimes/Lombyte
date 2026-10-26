@@ -186,7 +186,8 @@ extern void set_moby_color(void *, int, int, int) __asm__("FUN_L00_002502f0");
 extern void draw_moby_radial_ripple_mesh_buffers(void) __asm__("FUN_L15_002eac90");
 void enqueue_callback_list_1(s32 arg0, s32 arg1) __asm__("FUN_001f4600");
 
-void FUN_L15_002eb0a0(char *moby) {
+void ripple_strips_moby_update(char *moby) __asm__("FUN_L15_002eb0a0");
+void ripple_strips_moby_update(char *moby) {
     if (*(unsigned char *)(moby + 0x20) == 0) {
         set_moby_color(moby, 0x40, 0x40, 0x40);
         moby[0x20] = 1;
@@ -367,15 +368,15 @@ void giant_clank_pad_update(struct Moby *moby) {
             enter_hero_vehicle_mode(2, 0x5a, pad);
             if (current_level_index == 0xf) {
                 start_scene(8);
-                *(u128 *)hero.unk1D00 = *(u128 *)&hero.motion.pos;
-                *(u128 *)(hero.unk1D00 + 16) = *(u128 *)&hero.motion.rot;
+                *(u128 *)hero.saved_pos_rot = *(u128 *)&hero.motion.pos;
+                *(u128 *)(hero.saved_pos_rot + 16) = *(u128 *)&hero.motion.rot;
                 jet_game_state(2, 4);
                 return;
             }
             if (current_level_index != 0x12) return;
             start_scene(6);
-            *(u128 *)hero.unk1D00 = *(u128 *)&hero.motion.pos;
-            *(u128 *)(hero.unk1D00 + 16) = *(u128 *)&hero.motion.rot;
+            *(u128 *)hero.saved_pos_rot = *(u128 *)&hero.motion.pos;
+            *(u128 *)(hero.saved_pos_rot + 16) = *(u128 *)&hero.motion.rot;
             moby->state = 3;
             return;
         }

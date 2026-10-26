@@ -8,13 +8,13 @@
 #include "rnc/gameplay/state/usage_stats.h"
 
 extern unsigned char D_0013E529[];
-void FUN_L00_00235ea0(char *);
+void hud_update_counter(char *) __asm__("FUN_L00_00235ea0");
 int scale_game_frames(int) __asm__("FUN_001f96f8");
 /* Sets p+8 to 10 or 5 by D_0013E529, then sets or caps the 0x7C timer by the hero mode. */
 void update_hud_counter_cap_and_visibility(char *hud_element) __asm__("FUN_L00_002377b8");
 
 void update_hud_counter_cap_and_visibility(char *hud_element) {
-    FUN_L00_00235ea0(hud_element);
+    hud_update_counter(hud_element);
     if (D_0013E529[0] != 0)
         *(int *)(hud_element + 8) = 10;
     else
@@ -58,7 +58,8 @@ extern void draw_rotated_hud_sprite(int, int, int, int, int, int) __asm__("FUN_L
 extern void append_screen_rect_packet(s32, s32, s32, s32, u64, s32) __asm__("func_00200E08");
 int FUN_L00_00235a70_c2(HudElem_237840 *rec, int *x, int *y) __asm__("FUN_L00_00235a70");
 
-int FUN_L00_00237840(HudElem_237840 *e) {
+int hud_draw_gauge_frame(HudElem_237840 *e) __asm__("FUN_L00_00237840");
+int hud_draw_gauge_frame(HudElem_237840 *e) {
     int pos[2];
     int left, top, right, bottom, w, h, bh, step, i;
     {
@@ -1007,7 +1008,7 @@ s32 draw_health_hud_panel(Hud *hud_element) {
     if (cnt == 0)
         sel = 0x1E;
     if (hero.vehicle_mode == 1)
-        mode = hero.health.unk22AC;
+        mode = hero.health.vehicle_mode_hp;
     if (mode == 8) {
         tab = D_L00_0017E478;
         first_panel_half_width = truncate_float_to_s32(ratio_x * 48.0f);

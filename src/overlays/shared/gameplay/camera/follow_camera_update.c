@@ -566,7 +566,7 @@ void update_hero_aligned_camera_from_input(u8 *camera_object) {
     FUN_001f9bf8_c(camera_object + 0x10, camera_object + 0x10, 1.0f);
     fast_vec_cross(camera_object + 0x20, camera_object + 0x10, camera_object);
 }
-/* FUN_L00_002ea488 -- camera-state steering: either replays the scripted
+/* camera_transition_update -- camera-state steering: either replays the scripted
  * look (state 0x51 or the moby's own state) or steers toward the current
  * camera target, bailing out when the two are already within 80 degrees.
  *
@@ -626,9 +626,9 @@ extern f32 FUN_001f9af0_2ea488(void *) __asm__("FUN_001f9af0");
 extern void FUN_L00_001ed280_2ea488(void) __asm__("FUN_L00_001ed280");
 extern void FUN_001f9740_2ea488(void *) __asm__("FUN_001f9740");
 #define P D_0013F350_2ea488
-int FUN_L00_002ea488(u8 *, char *) __asm__("FUN_L00_002ea488");
+int camera_transition_update(u8 *, char *) __asm__("FUN_L00_002ea488");
 
-int FUN_L00_002ea488(u8 *m, char *mode_check_object) {
+int camera_transition_update(u8 *m, char *mode_check_object) {
     Q_2ea488 *q;
     char *o;
     char *r;
@@ -1486,8 +1486,8 @@ void update_target_tracking_camera_position(char *camera_object) {
     unsigned short *neighbours;
     int i;
 
-    if (hero.unk994 != 0 && hero.state.current == 0x2c) {
-        fraction = ((float *)hero.unk994)[6] - hero.motion.pos.f[2];
+    if (hero.swing_target_moby != 0 && hero.state.current == 0x2c) {
+        fraction = ((float *)hero.swing_target_moby)[6] - hero.motion.pos.f[2];
         if (fraction > hero.unk9A0) fraction = hero.unk9A0;
         else if (fraction < 0.0f) fraction = 0.0f;
         fraction /= hero.unk9A0;
@@ -1506,13 +1506,13 @@ void update_target_tracking_camera_position(char *camera_object) {
 
     if (hero.state.current == 0x2c) {
         if ((current_level_index != 14 && current_level_index != 7 && current_level_index != 9) ||
-            (hero.unk994 != 0 && *(unsigned char *)((char *)hero.unk994 + 0x21) == 255)) {
+            (hero.swing_target_moby != 0 && *(unsigned char *)((char *)hero.swing_target_moby + 0x21) == 255)) {
             *angle = rope_spring_turn(angle + 1, *angle, hero.motion.rot.f[2], 0.00125f, 0.175f, 0.0f);
         } else {
             chosen = 0;
             turn = angle + 1;
             best = 1000.0f;
-            current_target = (char *)hero.unk994;
+            current_target = (char *)hero.swing_target_moby;
             /* Fakematch: a dead compare with 10.0f loads that constant early, which fixes the
              * register order of the loop constants and of turn. */
             if (target == 10.0f) { }
@@ -1642,13 +1642,13 @@ void update_target_tracking_camera(char *camera_object) {
     if (hero_state == 0x2C) {
         camera_position = camera_object + 0x30;
         x = *(int *)(camera_target_state + 8);
-        y = ((int)b->unk994);
+        y = ((int)b->swing_target_moby);
     } else {
         camera_position = camera_object + 0x30;
         if ((unsigned)(hero_state - 0x24) >= 3)
             goto done;
         x = *(int *)(camera_target_state + 8);
-        y = ((int)b->unk964);
+        y = ((int)b->grapple_target);
     }
     if (x != y) {
         char *g = D_L00_00166D80_c;

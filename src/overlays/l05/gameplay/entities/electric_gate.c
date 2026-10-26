@@ -9,6 +9,8 @@
 #include "qcopy.h"
 #include "rnc/math/vector.h"
 #include "rnc/gameplay/entities/moby.h"
+#include "rnc/rendering/geometry_quad.h"
+#include "eetypes.h"
 
 /* Taxi stop selection shared by route helpers. */
 enum TaxiStop {
@@ -83,7 +85,7 @@ extern float FUN_001f9b48(void *, void *);
 extern int D_L05_0015F5CC_e[] __asm__("D_L05_0015F5C4") __attribute__((section(".sdata")));
 extern int allocate_voice_for_target_entry() __asm__("FUN_0022da68");
 extern short D_L05_0015FFD8_d __asm__("D_L05_0015FFD8");
-extern void FUN_L05_0030de90(char *moby);
+extern void draw_electric_gate_beams(char *moby) __asm__("FUN_L05_0030de90");
 void enqueue_callback_list_1(int arg0, int arg1) __asm__("FUN_001f4600");
 extern int func_0022ED80_i(int, int, void *) __asm__("FUN_0022da68");
 
@@ -114,7 +116,7 @@ void electric_gate_update(char *gate_moby) {
     case ELECTRIC_GATE_WAIT_FOR_TRIGGER:
         if (*(int *)&D_L05_00161D38 != D_L05_0015F5CC_e[2]) {
             *(int *)&D_L05_00161D38 = D_L05_0015F5CC_e[2];
-            enqueue_callback_list_1(FUN_L05_0030de90, gate_moby);
+            enqueue_callback_list_1(draw_electric_gate_beams, gate_moby);
         }
         gate_position = gate_moby + 0x10;
         tab = D_L05_001671C0;
@@ -156,11 +158,6 @@ void electric_gate_update(char *gate_moby) {
         break;
     }
 }
-#ifndef NON_MATCHING
-INCLUDE_ASM("config/us/overlays/asm/FUN_L05_0030de90.s", FUN_L05_0030de90);
-#else
-#include "rnc/rendering/geometry_quad.h"
-#include "eetypes.h"
 extern float convert_integer_to_float(int) __asm__("FUN_001fa6c0");
 extern float angle_sin(float) __asm__("FUN_001f9de0");
 extern float fast_add_rotations(float, float) __asm__("FUN_001fa580");
@@ -182,28 +179,24 @@ extern Vec4 D_L05_0020B760[4];
 extern Vec4 D_L05_0020B7A0[4];
 extern short *D_L05_001ABCC0[];
 extern int frame_number __asm__("D_L05_0015F5CC");
-void FUN_L05_0030de90(char *moby) {
+void draw_electric_gate_beams(char *moby) {
     struct GeometryQuad quads[2][5];
     char matrix[0x40];
     u64 texture;
-    int i, j, k, n, next_i, next_j, outer_color, inner_color, offset;
+    int i, j, k, n, outer_color, inner_color, offset;
     float angle, blend;
     unsigned short *list;
     unsigned short *next;
     short id;
 
     angle = convert_integer_to_float(frame_number & 0x3F) / 63.0f * 6.28318f;
-    i = 0;
-    do {
-        next_i = i + 1;
+    for (i = 0; i < 5; i++) {
         blend = (angle_sin(angle) + 1.0f) * 0.5f;
         outer_color = fast_tween_color(D_L05_00161D3C, D_L05_00161D40, blend);
         inner_color = fast_tween_color(D_L05_00161D44, D_L05_00161D48, blend);
         angle = fast_add_rotations(angle, 1.2566371f);
-        j = 0;
-        do {
+        for (j = 0; j < 2; j++) {
             texture = get_effect_texture(D_L05_00161D98);
-            next_j = j + 1;
             quads[j][i].primitive = (s64)D_L05_00161D70 | ((s64)D_L05_00161D74 << 2) | ((s64)D_L05_00161D78 << 4)
                                     | ((s64)D_L05_00161D7C << 6) | 0x8000000000LL;
             quads[j][i].texture = texture;
@@ -222,10 +215,8 @@ void FUN_L05_0030de90(char *moby) {
                     quads[0][i].positions[n].f[2] += (float)(i + 1);
                 }
             }
-            j = next_j;
-        } while (j < 2);
-        i = next_i;
-    } while (i < 5);
+        }
+    }
 
     list = (unsigned short *)D_L05_001ABCC0[*(unsigned char *)(moby + 0x21)];
     do {
@@ -246,7 +237,6 @@ void FUN_L05_0030de90(char *moby) {
         list = next;
     } while (id >= 0);
 }
-#endif
 
 /* Fog zone: switches the level fog between its two settings when the hero enters either trigger volume, and
  * tints a colour by the hero's side of a gate while inside the third. */
@@ -2362,7 +2352,7 @@ void taxi_update(struct Moby *moby) {
     apply_moby_position_and_rotation_wobble(moby);
     if (moby->state >= 3 && moby->state <= 5) {
         travel_hero = &hero;
-        travel_hero->unk1F2 = 2;
+        travel_hero->jump_lock_timer = 2;
         travel_hero->unk1F4 = 2;
         transform_moby_vector_table_to_world_space(moby);
         if (voice_is_playing(moby, *(short *)(taxi_data + 0xB2)) == 0) {

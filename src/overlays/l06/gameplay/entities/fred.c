@@ -5718,9 +5718,9 @@ extern void enqueue_callback_list_1(int, char *) __asm__("FUN_L06_00210fc8");
 extern void allocate_voice_for_target_entry_ffcb0(int, int, char *) __asm__("FUN_0022da68");
 
 extern void FUN_L06_00300958(void);
-extern void FUN_L06_00300720(void);
+extern void effect_quad_draw_single(void) __asm__("FUN_L06_00300720");
 extern void FUN_L06_00300588(void);
-extern void FUN_L06_003003f0(void);
+extern void draw_backdrop_mesh(void) __asm__("FUN_L06_003003f0");
 
 extern int D_L06_0015F408;
 extern float camera_sequence_moby_scale_multiplier_gp __asm__("D_L06_00162048") __attribute__((sda));
@@ -5868,10 +5868,10 @@ void update_moby_camera_sequence_and_draw_selection(char *moby) {
         break;
     }
     if (data[1] != 0) {
-        if (data[0] != 0) enqueue_callback_list_1((int)FUN_L06_00300720, moby);
+        if (data[0] != 0) enqueue_callback_list_1((int)effect_quad_draw_single, moby);
         else enqueue_callback_list_1((int)FUN_L06_00300958, moby);
     } else {
-        if (data[0] != 0) enqueue_callback_list_1((int)FUN_L06_003003f0, moby);
+        if (data[0] != 0) enqueue_callback_list_1((int)draw_backdrop_mesh, moby);
         else enqueue_callback_list_1((int)FUN_L06_00300588, moby);
     }
 }
@@ -5959,7 +5959,7 @@ extern void vmul_3003f0(void *, void *, float) __asm__("FUN_001f9a68");
 extern void draw_3003f0(void *, void *, int) __asm__("FUN_001f7d30");
 
 /* Draws the 64 quads of the backdrop mesh, each corner scaled from the shared vertex table. */
-void FUN_L06_003003f0(void) {
+void draw_backdrop_mesh(void) {
     Q3003f0 quad;
     B3003f0 buf;
     unsigned int c;
@@ -6010,7 +6010,7 @@ extern void fast_vec_normalize(void *, void *, float) __asm__("FUN_001f9bf8");
 extern void transform_vector_by_basis(void *, void *, void *) __asm__("FUN_001f9cf8");
 extern float fast_vec_dot(void *, void *) __asm__("FUN_001f9ab0");
 
-void FUN_L06_00300720(void) {
+void effect_quad_draw_single(void) {
     FRow_l06 m[4];
     int colors[4];
     float uv[4][2];
@@ -6408,13 +6408,13 @@ void fred_update(struct Moby *moby) {
             tracking = 1;
             if (vector_distance_301070(((float *)&moby->pos), player) < 8.0f &&
                 fast_difference_between_rotations_301070(moby->rot.z,
-                    angle_atan2_301070(hero.motion.unkD0.f[0] - moby->pos.x,
-                        hero.motion.unkD0.f[1] - moby->pos.y)) < 1.5707964f) {
+                    angle_atan2_301070(hero.motion.body_center.f[0] - moby->pos.x,
+                        hero.motion.body_center.f[1] - moby->pos.y)) < 1.5707964f) {
                 if (vector_length_xyz_301070(player + 0x80) > 0.01f) fred_vars->f158 = scale_game_frames_301070(120);
                 else FUN_001f9740_301070(&fred_vars->f158);
             } else if (fred_vars->f158) {
                 fred_vars->f158 = 0;
-                qcopy(fred_vars->f140, &hero.motion.unkD0);
+                qcopy(fred_vars->f140, &hero.motion.body_center);
             }
             if (FUN_001f9740_301070(&fred_vars->f15C)) {
                 float heading;
@@ -6424,7 +6424,7 @@ void fred_update(struct Moby *moby) {
                 add_vector_xyz_301070(fred_vars->f140, fred_vars->f140, ((float *)&moby->pos));
             }
             if (fred_vars->f158) {
-                qcopy(target, &hero.motion.unkD0);
+                qcopy(target, &hero.motion.body_center);
                 rate = 0.04f;
                 head_rate = 0.3f;
             } else {

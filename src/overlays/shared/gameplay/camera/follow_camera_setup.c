@@ -139,7 +139,7 @@ extern void FUN_L00_002e8620(void);
 extern void follow_camera_set_height(f32, f32) __asm__("FUN_L00_002e84b8");
 extern void follow_camera_set_distance(s32, f32, f32) __asm__("FUN_L00_002e8450");
 extern void follow_camera_set_offset_scale(s32, f32, f32) __asm__("FUN_L00_002e84f0");
-extern void FUN_L00_002e8568(s32);
+extern void set_follow_camera_orbit_clamp_mode(s32) __asm__("FUN_L00_002e8568");
 extern void follow_camera_set_lateral_spring(f32, f32) __asm__("FUN_L00_002e8590");
 
 /* Per-frame follow camera adjustments driven by the hero's state: sway, zoom and lookat tweaks, then the shake timers in m->h12/h14/h16. */
@@ -161,7 +161,7 @@ void follow_camera_apply_overrides(O_2e6000 *camera_moby) {
 
     camera_override_state = (S220_2e6000 *)((u8 *)camera_moby->m + 0x220);
     if (hero.unk2284 == 0xD && camera_override_state->i10 != 0x14D) {
-        rotation_or_blend_value = fast_add_rotations(hero.unk4E4, 3.14159265f);
+        rotation_or_blend_value = fast_add_rotations(hero.ledge_normal_yaw, 3.14159265f);
         direction_or_rotation_deltas[0] = fast_cos(rotation_or_blend_value);
         direction_or_rotation_deltas[1] = fast_sin(rotation_or_blend_value);
         direction_or_rotation_deltas[2] = 0.0f;
@@ -209,7 +209,7 @@ void follow_camera_apply_overrides(O_2e6000 *camera_moby) {
         camera_spring_state->f44 = D_L00_00161DA4;
     }
     if (hero.unk20AA != 0 && hero.state.control_mode != 0xF) {
-        FUN_L00_002e8568(0);
+        set_follow_camera_orbit_clamp_mode(0);
         follow_camera_start_slide();
         follow_camera_set_lateral_spring(0.04f, 0.2f);
     }
@@ -243,7 +243,7 @@ void follow_camera_apply_overrides(O_2e6000 *camera_moby) {
         }
     }
     if (hero.state.current == 0x81 && (D_0013CAE0[0] & 3)) {
-        FUN_L00_002e8568(0);
+        set_follow_camera_orbit_clamp_mode(0);
         follow_camera_start_slide();
         follow_camera_set_lateral_spring(0.04f, 0.2f);
         { M_2e6000 *mm = camera_moby->m;
@@ -341,7 +341,7 @@ void rebuild_follow_camera_pose(int snap) {
         part[2] = *(float *)(orbit + 0x30);
         part[3] = 0.0f;
         mask = 0x94;
-        copy_matrix3x4(basis, player->unk0);
+        copy_matrix3x4(basis, player->rot_matrix);
         transform_vector_by_basis(offset, part, *(char **)(target + 0xC0) + 0xC0);
         add_vector_xyz(camera_moby + 0x30, target, offset);
         scale_vector_xyz(rise, *(char **)(target + 0xC0) + 0xE0, *(float *)(target + 0xB0));

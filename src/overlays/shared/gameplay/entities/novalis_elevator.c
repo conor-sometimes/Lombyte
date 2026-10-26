@@ -352,7 +352,7 @@ void novalis_elevator_update(unsigned char *moby) {
     case NOVALIS_ELEVATOR_TRAVERSE_PATH:
         if (*(int *)(data + 0xC8) == 0 && is_hero_on_moby(moby)) {
             struct Hero *player = &hero;
-            player->unk1F2 = 4;
+            player->jump_lock_timer = 4;
             player->unk1F4 = 4;
         }
         if (*(short *)(data + 0xBA) != 0 ||
@@ -803,13 +803,13 @@ void bolt_crank_update(struct Moby *moby) {
         if (absolute_float(crank->speed) < frame_time_sq * 5.5f * 0.25f) crank->speed = 0.0f;
         fast_vec_normalize(step, facing, crank->speed);
 
-        if (hero.unkA98 & 2) {
+        if (hero.anim_flags & 2) {
             if (hero.moby->prev_seq == 0x44) {
                 set_hero_animation(0x3F, 0, (float)scale_game_frames(7));
             }
         }
         if (hero.moby->prev_seq != 0x44) {
-            if (hero.unkA9C == 0) {
+            if (hero.anim_changing == 0) {
                 if (hero.moby->seq == 0x40 && absolute_float(crank->speed) == 0.0f) {
                     set_hero_animation(0x3F, 0, (float)scale_game_frames(0xE));
                 } else {
@@ -1007,7 +1007,8 @@ extern void add_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void normalize_vector_xyz(void *out, void *a, f32 len) __asm__("FUN_001f9bf8");
 
 extern float D_L01_001DEB40[];
-void FUN_L01_002e3110(char *a, char *m) {
+void sand_mouse_compute_target(char *a, char *m) __asm__("FUN_L01_002e3110");
+void sand_mouse_compute_target(char *a, char *m) {
     Vs t0;
     Vs t1;
     struct Hero *g = &hero;
@@ -1384,7 +1385,7 @@ extern float random_float_between_alt(float, float) __asm__("FUN_002132a8");
 extern float fast_add_rotations(float, float) __asm__("FUN_001fa580");
 extern void mark_moby_for_removal(void *) __asm__("FUN_0020c828");
 extern void compute_sand_mouse_approach_target(int, void *) __asm__("FUN_L01_002e30b8");
-extern void FUN_L01_002e3110(char *, char *);
+extern void sand_mouse_compute_target(char *, char *) __asm__("FUN_L01_002e3110");
 extern s32 update_sand_mouse_fall_motion(void *, struct Moby *) __asm__("FUN_L01_002e3208");
 extern void update_sand_mouse_targeted_spawning(char *, char *) __asm__("FUN_L01_002e35a8");
 extern void update_hover_moby_steering(struct Moby *, char *) __asm__("FUN_L01_002e3830");
@@ -1585,7 +1586,7 @@ void sand_mouse_update(struct Moby *moby) {
             && hero_2e3f20->b20A4 == 0
             && !fast_dec_timer(&sand_mouse_vars->t60)
             && sand_mouse_vars->count < D_L01_0016191C) {
-            FUN_L01_002e3110((char *)moby, (char *)sand_mouse_vars);
+            sand_mouse_compute_target((char *)moby, (char *)sand_mouse_vars);
             update_hover_moby_steering(moby, sand_mouse_vars);
         } else {
             if (moby->prev_seq != 5) {
@@ -2901,11 +2902,11 @@ void update_nearest_area_moby_selection(struct Moby *moby) {
     }
 in_range:
     target_distance = FUN_001f9b80_2f2eb8(&moby->pos, &target);
-    if (target_distance < hero.unk2044) {
-        hero.unk2040 = moby;
-        hero.unk2044 = target_distance;
+    if (target_distance < hero.detector_target_dist) {
+        hero.metal_detector_target = moby;
+        hero.detector_target_dist = target_distance;
         if (target_distance < 20.0f) {
-            hero.unk2048 = 1;
+            hero.nearby_moby_close = 1;
         }
     }
 }

@@ -434,10 +434,10 @@ void update_hero_relocation_trigger(struct Moby *moby) {
         ((struct Moby *)((vars->target << 8) + (int)D_L10_0015FFD8_98b68))->flags |= 1;
         ((struct Moby *)((vars->target << 8) + (int)D_L10_0015FFD8_98b68))->flags |= 2;
         ((struct Moby *)((vars->target << 8) + (int)D_L10_0015FFD8_98b68))->collision = 0;
-        hero.unk22CB = 1;
+        hero.vent_updraft = 1;
         mark_moby_for_removal_98b68(moby);
     } else {
-        hero.unk22CB = 1;
+        hero.vent_updraft = 1;
         mark_moby_for_removal_98b68(moby);
     }
 }
@@ -473,7 +473,7 @@ extern void * spawn_moving_resizing_height_snapped_alpha_fade_particle(void *, i
 extern void * FUN_L00_00272060(void *, int, float, float, int, int, int, void *, float);
 extern void add_vectors(void *, void *, void *) __asm__("FUN_L00_001ff290");
 extern void FUN_L00_00216f90(void *, void *, int, int);
-extern void FUN_L00_002e8568(int);
+extern void set_follow_camera_orbit_clamp_mode(int) __asm__("FUN_L00_002e8568");
 extern void follow_camera_set_lateral_spring(float, float) __asm__("FUN_L00_002e8590");
 extern void FUN_L00_002e8648(void);
 extern void set_follow_camera_blend_output_flags(void) __asm__("FUN_L00_002e8680");
@@ -500,7 +500,7 @@ extern struct Moby * D_L10_0015FFD8;
 #define func_L00_002E9A40_2BFBB8 follow_camera_set_lateral_spring
 #define func_L00_002E9B30_2BFBB8 set_follow_camera_blend_output_flags
 #define func_L00_002E9AF8_2BFBB8 FUN_L00_002e8648
-#define func_L00_002E9A18_2BFBB8 FUN_L00_002e8568
+#define func_L00_002E9A18_2BFBB8 set_follow_camera_orbit_clamp_mode
 
 void gadgebot_telepot_pad_update(char *moby) __asm__("FUN_L10_002be858");
 void gadgebot_telepot_pad_update(char *moby)
@@ -1601,7 +1601,7 @@ extern f32 distance_xyz(void *, void *) __asm__("func_001F9B48");
 extern int *D_L10_001B0930[];
 extern int D_L10_0015F5CC;
 extern int allocate_colored_effect_slot(float *, float, float, float, float, float) __asm__("FUN_L00_0023e738");
-extern int FUN_L00_00262360();
+extern int path_sample_at_distance() __asm__("FUN_L00_00262360");
 extern s32 random_integer_below(s32) __asm__("func_00213260");
 extern s32 scale_game_frames(s32) __asm__("func_001F96F8");
 extern void release_point_light_slot(int) __asm__("FUN_L00_0023e838");
@@ -2228,9 +2228,6 @@ void render_data_processor_linked_effect(u8 *moby) {
         group = next_group;
     } while (group < 4);
 }
-#ifndef NON_MATCHING
-INCLUDE_ASM("config/us/overlays/asm/FUN_L10_002dcc58.s", FUN_L10_002dcc58);
-#else
 extern unsigned char D_001413F4[];
 extern int D_L10_00161D64;
 extern int D_L10_00161D68;
@@ -2249,7 +2246,8 @@ typedef struct {
 } PlatformWaveVars;
 
 
-void FUN_L10_002dcc58(struct Moby *moby) {
+void update_jitter_strand_grid_moby(struct Moby *moby) __asm__("FUN_L10_002dcc58");
+void update_jitter_strand_grid_moby(struct Moby *moby) {
     PlatformWaveVars *vars = (PlatformWaveVars *)moby->pvars;
     Vec4 jitter[20][10];
 
@@ -2306,7 +2304,6 @@ void FUN_L10_002dcc58(struct Moby *moby) {
     }
     }
 }
-#endif
 
 /* Spawns a moby at a spot, fills its data block and starts its fade and sound. */
 extern float D_0015ED6C_dd __asm__("D_0015ED6C");

@@ -1171,11 +1171,11 @@ void compute_suck_cannon_suction_aim_and_origin(u8 *cannon_moby, f32 *out_suctio
         out_suction_origin[0] = suction_origin_offset.x + hero_data.motion.pos.f[0];
         out_suction_origin[1] = suction_origin_offset.y + hero_data.motion.pos.f[1];
     } else if (hero_data.unk22C8 == 1) {
-        *out_suction_yaw = hero_data.unk688;
+        *out_suction_yaw = hero_data.held_pose_yaw;
         *out_suction_pitch = *(f32 *)(cannon_moby + 0x44);
     } else {
-        *out_suction_yaw = hero_data.unk688;
-        *out_suction_pitch = hero_data.unk684;
+        *out_suction_yaw = hero_data.held_pose_yaw;
+        *out_suction_pitch = hero_data.basis_pitch;
     }
 }
 typedef struct {
@@ -1213,7 +1213,7 @@ extern G2T D_0013F350_c __asm__("D_0013F350");
 #define G2 (&D_0013F350_c)
 extern void FUN_L00_002db848(void);
 extern void FUN_L00_002da250_c(void *, f32 *, f32 *, void *) __asm__("FUN_L00_002da250");
-extern void FUN_L00_002ddf60(void *, void *);
+extern void suck_beam_update(void *, void *) __asm__("FUN_L00_002ddf60");
 extern R *FUN_L00_002db890_c(M_da360 *) __asm__("FUN_L00_002db890");
 extern f32 vector_distance_xy(void *, void *) __asm__("FUN_001f9b80");
 extern s32 FUN_L00_002d9f78_c(void) __asm__("FUN_L00_002d9f78");
@@ -1235,7 +1235,7 @@ void update_suck_cannon_suction(u8 *cannon_moby, void *cannon_data) {
     s32 stored_moby_count;
 
     FUN_L00_002da250_c(cannon_moby, &suction_yaw, &suction_pitch, cannon_suction_origin);
-    FUN_L00_002ddf60(cannon_moby, cannon_suction_origin);
+    suck_beam_update(cannon_moby, cannon_suction_origin);
     for (candidate_moby = D_L00_0015FFE4; candidate_moby != 0; candidate_moby = candidate_moby->next) {
         if (candidate_moby->a6 != 0 && (candidate_moby->f34 & 0x1000) &&
             *(void **)*(u8 **)(candidate_moby->p24 + 0x2c) != (void *)FUN_L00_002db848) {
@@ -1448,12 +1448,12 @@ extern void start_equipped_item_animation(void) __asm__("FUN_L00_0020e4c8");
 extern void cancel_hero_item_animation(void) __asm__("FUN_L00_0020e698");
 extern void FUN_L00_002223f8(int,int);
 extern void update_hud_counter_cap_and_visibility(void) __asm__("FUN_L00_002377b8");
-extern void FUN_L00_00237840(void);
+extern void hud_draw_gauge_frame(void) __asm__("FUN_L00_00237840");
 extern void FUN_L00_0024f7c8(void *, int, void *);
 extern void compose_moby_rotation_with_euler_offset(char *,char *,void *) __asm__("FUN_L00_002d9fd0");
 extern void update_suck_cannon_suction(u8 *,void *) __asm__("FUN_L00_002da360");
 extern void refresh_suck_cannon_slots(void) __asm__("FUN_L00_002da660");
-extern void FUN_L00_002defe0(int);
+extern void suck_beam_queue_draw(int) __asm__("FUN_L00_002defe0");
 void stop_suck_cannon_suction_effect(int callback_context) __asm__("FUN_L00_002df048");
 
 extern void stop_suck_cannon_suction_effect(int) __asm__("FUN_L00_002df048");
@@ -1498,10 +1498,10 @@ void suckcannon_update(SuckMoby *self) {
     SuckMoby *stored;
 
     queue_animation_update_alt(4, 0x753F, (int)suck_delete_callback, (int)update_hud_counter_cap_and_visibility,
-                 (int)FUN_L00_00237840, (int)&suck_hero.count, 5);
+                 (int)hud_draw_gauge_frame, (int)&suck_hero.count, 5);
     cannon = self->data;
     slot_released = suck_hero.slot_state == 3;
-    if ((u8)self->state != 3 && (u8)self->state != 0) FUN_L00_002defe0((int)self);
+    if ((u8)self->state != 3 && (u8)self->state != 0) suck_beam_queue_draw((int)self);
     refresh_suck_cannon_slots();
     switch ((u8)self->state) {
     case SUCKCANNON_STATE_INITIALIZE:
@@ -2489,8 +2489,8 @@ int FUN_L00_002dc9f0(struct Moby *moby, char *vars) {
                 moby->collision = 0;
             }
             if (distance < record->f98) {
-                ((struct Hero *)D_0013F450_2DDEA0)->unk207C--;
-                ((struct Hero *)D_0013F450_2DDEA0)->unk2078++;
+                ((struct Hero *)D_0013F450_2DDEA0)->suck_cannon_incoming--;
+                ((struct Hero *)D_0013F450_2DDEA0)->sucked_moby_count++;
                 func_L00_002DB6C8_2DDEA0(moby, &work.v[0]);
                 ((struct Hero *)D_0013F450_2DDEA0)->unk2050[record->idx]->flags &= 0xEFFF;
             } else {
@@ -2721,7 +2721,8 @@ extern void fast_draw_quad_real(void *, void *, int);
 extern void subtract_vector_xyz_c4(void *, void *, void *) __asm__("FUN_001f9a28");
 extern void vu1_add_g_sregister(s32, u64) __asm__("func_00233980");
 
-void FUN_L00_002dd8e8(void) {
+void suck_beam_draw_mesh(void) __asm__("FUN_L00_002dd8e8");
+void suck_beam_draw_mesh(void) {
     Pkt s;
     float vc[4];
     float vd[4];
@@ -2833,7 +2834,8 @@ extern void clear_u64_value_c2(void *) __asm__("func_001F99F8");
 extern void fast_vec_normalize_c2(void *, void *, f32) __asm__("FUN_001f9bf8");
 extern void fast_vec_scale_c2(void *, void *, f32) __asm__("func_001F9A68");
 
-void FUN_L00_002ddcb8(char *a, char *b) {
+void suck_beam_build(char *a, char *b) __asm__("FUN_L00_002ddcb8");
+void suck_beam_build(char *a, char *b) {
     u128_DF168 s[7];
     char *v;
     short *w;
@@ -2888,9 +2890,6 @@ void FUN_L00_002ddcb8(char *a, char *b) {
         for (j = 199; j >= 0; j--) ((E04_DF168 *)D_L00_001E4C80)[j].f14 = 0;
     }
 }
-#ifndef NON_MATCHING
-INCLUDE_ASM("config/us/overlays/asm/FUN_L00_002ddf60.s", FUN_L00_002ddf60);
-#else
 /* Form the Suck Cannon's bending suction tube and update its particles. */
 /* Ported from rac1-decomp (nonmatching/shared/func_L00_002DF410.c: func_L00_002DF410). */
 typedef unsigned int Q41 __attribute__((mode(TI)));
@@ -2950,7 +2949,7 @@ extern s32 truncate_float_to_s32(f32) __asm__("func_001FA6D0");
 extern short D_L00_001E6008[];
 extern void FUN_L00_0025b6b8(void *,void *,void *,float);
 extern void FUN_L00_00267a08(void *);
-extern void FUN_L00_002dd8e8(void);
+extern void suck_beam_draw_mesh(void) __asm__("FUN_L00_002dd8e8");
 extern void add_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a10");
 extern void clear_u64_value(void *) __asm__("func_001F99F8");
 extern void cross_vectors_xyz(void *, void *, void *) __asm__("func_001F9AD8");
@@ -2961,21 +2960,21 @@ extern void lerp_vector(void *, void *, void *, f32) __asm__("func_001F9A40");
 extern void subtract_vector_xyz(void *, void *, void *) __asm__("FUN_001f9a28");
 extern void transform_vector_by_basis(void *, void *, void *) __asm__("func_001F9CF8");
 float absolute_float(float input) __asm__("func_001F99C0");
-s32 scale_frames_ddf60(s32) __asm__("FUN_001f96f8");
-void FUN_L00_002ddcb8(char *a, char *b);
+s32 scale_game_frames(s32) __asm__("FUN_001f96f8");
+void suck_beam_build(char *a, char *b) __asm__("FUN_L00_002ddcb8");
 extern Particle41 *new_particle41(void *,float,float,float,int,void *,float,int) __asm__("FUN_L00_0026d000");
 
-void FUN_L00_002ddf60(void *moby,void *position) {
+void suck_beam_update(void *moby,void *position) {
     V41 step,up,orient[3],ray_end,start,end,axis,tmp_a,tmp_b,
         frame[3],tmp_c,motion,tmp_d,tmp_e,interp,cross_c,basis_c,tmp_f,unused_a,unused_b;
     V41 *orientation;
     int i,j,n,segment,next_ring;
-    float t,angle,turn,delta,dot,length,radius,phase,amount,speed;
+    float t,angle,turn,delta,dot,length,amount,speed;
     Particle41 *p;
     V41 *anchor,*previous,*source;
 
 
-    FUN_L00_002ddcb8(moby,position);
+    suck_beam_build(moby,position);
     if((((Hero41 *)&hero)->camera_mode==30 || ((Hero41 *)&hero)->camera_mode==1) && (((Hero41 *)&hero)->moby->flags&1)) {
         qcopy(&orient[0],D_L00_00166FD0);
         qcopy(&orient[1],D_L00_00166FD0+16);
@@ -3016,12 +3015,12 @@ void FUN_L00_002ddf60(void *moby,void *position) {
     add_vector_xyz(&start,&start,&step);
     transform_vector_by_basis(&end,&(*(V41 *)D_L00_00161B70),orientation);
     add_vector_xyz(&end,&end,&step);
-    t=(float)D_L00_00161B54/convert_integer_to_float(scale_frames_ddf60(60));
+    t=(float)D_L00_00161B54/convert_integer_to_float(scale_game_frames(60));
     D_L00_00161B54++;
     step.f.x=start.f.x+(end.f.x-start.f.x)*t;
     step.f.y=start.f.y+(end.f.y-start.f.y)*t;
     step.f.z=start.f.z+(end.f.z-start.f.z)*t;
-    if(D_L00_00161B54>=scale_frames_ddf60(60)) {
+    if(D_L00_00161B54>=scale_game_frames(60)) {
         qcopy(&(*(V41 *)D_L00_00161B60),&(*(V41 *)D_L00_00161B70));
         fast_vec_normalize(&axis,orientation,D_L00_00161B84);
         tmp_a.q=0; tmp_b.q=0;
@@ -3071,21 +3070,19 @@ void FUN_L00_002ddf60(void *moby,void *position) {
         fast_vec_normalize(&cross_c,&cross_c,1.0f);
         cross_vectors_xyz(&basis_c,&cross_c,&interp);
         qcopy(&axis,&basis_c);
-        radius=(float)i*0.3f;
-        phase=(float)i*0.7f;
-        { V41 *dst=((V41 *)D_L00_001E6020)+i*20; unsigned int j;
+        { int j;
         for(j=0;j<20;j++) {
-            angle=radius+0.1f;
-            angle+=fast_sin(fast_add_rotations((*(float *)&D_L00_00161B58_gp)+phase,0.0f))*0.1f;
-            fast_vec_scale(&tmp_f,(char *)D_L00_001E4B40+j*16,angle);
+            angle=(float)i*0.3f+0.1f;
+            angle+=fast_sin(fast_add_rotations((*(float *)&D_L00_00161B58_gp)+(float)i*0.7f,0.0f))*0.1f;
+            fast_vec_scale(&tmp_f,&D_L00_001E4B40[j],angle);
             transform_vector_by_basis(&tmp_f,&tmp_f,&interp);
-            add_vector_xyz(dst+j,D_L00_001E5F40+i*16,&tmp_f);
+            add_vector_xyz(&((V41 (*)[20])D_L00_001E6020)[i][j],D_L00_001E5F40+i*16,&tmp_f);
         }
         }
         fast_vec_normalize(&step,&motion,D_L00_00161B84);
     }
     }
-    enqueue_callback_list_1_alt(FUN_L00_002dd8e8,(int)moby);
+    enqueue_callback_list_1_alt(suck_beam_draw_mesh,(int)moby);
     { int count,sparks;
     count=0; sparks=0;
     for(i=0;i<200;i++) {
@@ -3094,9 +3091,10 @@ void FUN_L00_002ddf60(void *moby,void *position) {
             if(segment>0) {
                 if(segment>=2 && sparks<2) {
                     { int k=random_integer_below(20);
+                    V41 *ring;
                     amount=random_float_between(0.2f,1.0f);
-                    k=(int)&((V41 *)D_L00_001E6020)[k];
-                    lerp_vector(&tmp_a,(V41 *)k,(V41 *)k+segment*20,amount); }
+                    ring=(V41 *)D_L00_001E6020+k;
+                    lerp_vector(&tmp_a,ring,ring+segment*20,amount); }
                     lerp_vector(&tmp_c,D_L00_001E5F40,D_L00_001E5F40+segment*16,amount);
                     speed=random_float_between(60000.0f,180000.0f);
                     p=new_particle41(&tmp_a,0.0f,1.0f,1.03f,random_integer_below(5)+1,&tmp_b,speed,0x404040);
@@ -3172,7 +3170,6 @@ void FUN_L00_002ddf60(void *moby,void *position) {
     }
 }
 }
-#endif
 #define NOT_SDA
 
 #define MACRO_ADDR
@@ -3184,7 +3181,7 @@ extern void FUN_L00_002dd8e8_u(void) __asm__("FUN_L00_002dd8e8");
 void enqueue_callback_list_1(s32 arg0, s32 arg1) __asm__("FUN_001f4600");
 
 /* When D_L00_001E6008[0] > 0: caps the ten counters at 0x40, lowers each by 4, queues 002dd8e8. */
-void FUN_L00_002defe0(int arg0) {
+void suck_beam_queue_draw(int arg0) {
     int i;
     if (D_L00_001E6008[0] > 0) {
         for (i = 0; i < 10; i++) {
@@ -3231,7 +3228,7 @@ extern float vector_length_xyz(void *);
 extern s32 D_L00_00161B40_gp __asm__("D_L00_00161B40") __attribute__((sda));
 extern s32 D_L00_00161B44_gp __asm__("D_L00_00161B44") __attribute__((sda));
 extern f32 D_L00_00161B50_gp __asm__("D_L00_00161B50") __attribute__((sda));
-extern void FUN_L00_002defe0(int);
+extern void suck_beam_queue_draw(int) __asm__("FUN_L00_002defe0");
 extern void add_vector_xyz(void *, void *, void *);
 extern void scale_vector_xyz(void *, void *, float);
 extern void subtract_vector_xyz(void *, void *, void *);
@@ -3262,7 +3259,7 @@ void stop_suck_cannon_suction_effect(int callback_context) {
             *(short *)(p + 0xA) = 0x46;
         }
     }
-    FUN_L00_002defe0(callback_context);
+    suck_beam_queue_draw(callback_context);
 }
 typedef struct {
     u8 pad[0x46];
@@ -3282,7 +3279,8 @@ s32 is_moby_class_e2_cc_de_3ee_d6_e1_d5_or_df(O_2df1e0 *) __asm__("FUN_L00_0025e
 f32 FUN_001f9b48(void *, void *);
 void begin_bolt_attraction(O_2df1e0 *, void *, f32, f32) __asm__("FUN_L00_002a7210");
 void try_collect_ammo_pickup(O_2df1e0 *) __asm__("FUN_L00_002c5be8");
-void FUN_L00_002df1e0(O_2df1e0 *p) {
+void scatter_moby_from_hazards(O_2df1e0 *p) __asm__("FUN_L00_002df1e0");
+void scatter_moby_from_hazards(O_2df1e0 *p) {
     s32 i;
     f32 f;
     if (p == 0)
