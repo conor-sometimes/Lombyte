@@ -206,9 +206,6 @@ void blend_racer_and_child_animations(char *moby, int animation_index, int frame
     }
 }
 
-#ifndef NON_MATCHING
-INCLUDE_ASM("config/us/overlays/asm/FUN_L05_002d1688.s", FUN_L05_002d1688);
-#else
 typedef unsigned int U128_2d1688 __attribute__((mode(TI)));
 extern char *D_L05_001B0930[];
 extern float D_L05_00161388 __attribute__((sda));
@@ -376,6 +373,14 @@ state_three:
                     v[2] = h->water_surface_z;
                     spawn_sharkigator_splash_effects((int)moby, (char *)v);
                     set_camera_2d1688(&h->motion.pos, &h->motion.rot, 0x72, 0);
+                    /* Fakematch: a zero-byte asm between set_camera (the last call in
+                       this block) and the block-ending branch. haifa add_branch_dependences
+                       makes that last call depend on every insn in the block, incl. the
+                       a0=moby move; splitting the call from the branch drops that dep so a0
+                       loses the 2-wide delay-slot tie to a1+the water store and rotates into
+                       the jal slot, as retail. Sibling rocket.c FUN_L18_002a7220 gets the
+                       same ordering from a real intermediate call. */
+                    __asm__ __volatile__("");
                 } else {
                     qcopy(&h->motion.pos, moby + 0x10);
                 }
@@ -419,7 +424,6 @@ state_three:
             set_action_2d1688(moby, 1, 0, timer_2d1688(10));
     }
 }
-#endif
 
 typedef float V2d1e30[4] __attribute__((aligned(16)));
 extern int tick_2d1e30(void *) __asm__("FUN_001f9740");
